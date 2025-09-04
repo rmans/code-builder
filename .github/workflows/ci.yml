@@ -18,10 +18,8 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Set up pnpm
-        run: |
-          corepack enable
-          pnpm --version
+      - name: Enable pnpm via corepack
+        run: corepack enable
 
       - name: Install deps
         run: pnpm install --frozen-lockfile

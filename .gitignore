@@ -2,27 +2,42 @@
 node_modules/
 pnpm-lock.yaml
 
-# Builds & artifacts
+# Builds & coverage
 dist/
 coverage/
 *.log
 
-# Editor/OS
+# Editors / OS junk
 .DS_Store
 *.swp
 .idea/
 .vscode/
 
-# Python venv
+# Python
 .venv/
 
 # Builder runtime cache
 builder/cache/
 
-# Don’t commit compiled JS/typings in src
+# Don’t commit compiled outputs under src/test
 src/**/*.js
 src/**/*.mjs
 src/**/*.cjs
 src/**/*.map
 src/**/*.d.ts
 src/**/*.d.mts
+test/**/*.js
+test/**/*.mjs
+test/**/*.cjs
+test/**/*.map
+test/**/*.d.ts
+test/**/*.d.mts
+
+# Root-level compiled configs and maps
+*.map
+*.d.ts
+*.d.mts
+*.js
+*.mjs
+*.cjs
+!vitest.config.ts
