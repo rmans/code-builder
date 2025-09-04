@@ -32,3 +32,12 @@ test/**/*.cjs
 test/**/*.map
 test/**/*.d.ts
 test/**/*.d.mts
+
+# Root-level compiled configs & maps (keep the TS sources)
+*.map
+*.d.ts
+*.d.mts
+*.js
+*.mjs
+*.cjs
+!vitest.config.ts
