@@ -1,0 +1,28 @@
+# Node / pnpm
+node_modules/
+pnpm-lock.yaml
+
+# Builds & artifacts
+dist/
+coverage/
+*.log
+
+# Editor/OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Python venv
+.venv/
+
+# Builder runtime cache
+builder/cache/
+
+# Don’t commit compiled JS/typings in src
+src/**/*.js
+src/**/*.mjs
+src/**/*.cjs
+src/**/*.map
+src/**/*.d.ts
+src/**/*.d.mts
