@@ -1,0 +1,41 @@
+{
+  "trace": {
+    "prd": "PRD#TBD",
+    "arch": "ARCH#TBD",
+    "ux": "UX#TBD",
+    "integration": "INT#TBD",
+    "adrs": []
+  },
+  "acceptance": [
+    "compiles",
+    "tests pass"
+  ],
+  "goal": "Scaffolded by plan:auto",
+  "name": "Scaffold",
+  "feature": "auth",
+  "rules": {
+    "rules_markdown": "---\ndescription: Token & auth safety in browser code\nglobs: src/**/*.ts,src/**/*.tsx\nalwaysApply: true\n---\n# Tokens in httpOnly Cookies \u2014 Never localStorage/sessionStorage\n## Rule\n- Never use localStorage/sessionStorage for tokens\n- Never pass tokens in querystrings or URL fragments\n- Always use httpOnly, secure cookies\n- Always send requests with withCredentials true\n\n\n---\n\n---\ndescription: Project conventions (naming, exports, tests)\nglobs: src/**/*,test/**/*.ts\nalwaysApply: true\n---\n# Project Rules\n## Rule\n1. **Always use** kebab-case for filenames\n2. **Always use** camelCase for vars, PascalCase for React components\n3. **Always use** named exports (no default exports)\n4. **Always create** test files that mirror acceptance criteria\n\n\n---\n\n---\ndescription: Global defaults that apply everywhere\nglobs: src/**/*,test/**/*\nalwaysApply: true\n---\n# Global Rules\n- Keep files under 300 LOC.\n- Tests mirror acceptance criteria 1:1.\n- Public APIs must include JSDoc/docstrings.\n",
+    "guardrails": {
+      "forbiddenPatterns": [
+        {
+          "pattern": "localStorage\\.(setItem|getItem)\\(",
+          "message": "Do not store tokens in localStorage/sessionStorage"
+        },
+        {
+          "pattern": "throw\\s*['\"`]",
+          "message": "Do not throw string literals; use Error or subclass"
+        }
+      ],
+      "hints": [
+        {
+          "pattern": "axios\\.create\\(",
+          "message": "Use shared http client instead of axios.create()"
+        },
+        {
+          "pattern": "fetch\\(",
+          "message": "Prefer shared http client (src/utils/http.ts)"
+        }
+      ]
+    }
+  }
+}

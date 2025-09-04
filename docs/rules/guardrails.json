@@ -1,0 +1,10 @@
+{
+  "forbiddenPatterns": [
+    { "pattern": "localStorage\\.(setItem|getItem)\\(", "message": "Do not store tokens in localStorage/sessionStorage" },
+    { "pattern": "throw\\s*['\"`]", "message": "Do not throw string literals; use Error or subclass" }
+  ],
+  "hints": [
+    { "pattern": "axios\\.create\\(", "message": "Use shared http client instead of axios.create()" },
+    { "pattern": "fetch\\(", "message": "Prefer shared http client (src/utils/http.ts)" }
+  ]
+}

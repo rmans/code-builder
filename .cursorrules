@@ -1,0 +1,19 @@
+# Cursor Project Rules (Code Builder)
+
+- Scope decision context:
+  - Load ADRs whose front-matter `related_files` includes the current file; include the parent ADR.
+- Merge docs/rules with precedence:
+  1) feature/<feature>.md (from builder/cache/context.json)
+  2) stack/*<stack>.md
+  3) 10-project.md
+  4) 00-global.md
+- Enforce docs/rules/guardrails.json (forbiddenPatterns). If a violation exists, propose a compliant rewrite.
+- Follow doc flow: PRD → Architecture → UX/UI → Integration → Spec → Tasks. Regenerate downstream if upstream changes.
+- Use an ABC iteration (3–5 rounds): A=base, B=+10% temp/top-p, C=−10%. Score, promote, and log to builder/cache.
+
+Recipe: “Apply Code Builder Flow”
+1) Read builder/cache/context.json and detect `feature` & rule set.
+2) Load ADRs related to the file; include parent ADR.
+3) Generate/update code + tests; map acceptance criteria 1:1 to tests.
+4) Apply guardrails; fix violations.
+5) Run an ABC refinement plan and present the winner.

@@ -1,0 +1,27 @@
+{
+	"type": "module",
+	"devDependencies": {
+		"@types/node": "^24.3.1",
+		"@typescript-eslint/eslint-plugin": "^8.42.0",
+		"@typescript-eslint/parser": "^8.42.0",
+		"eslint": "^9.34.0",
+		"typescript": "^5.9.2",
+		"vitest": "^3.2.4"
+	},
+	"scripts": {
+		"builder:plan": ".venv/bin/python builder/cli.py plan:sync",
+		"builder:adr:new": ".venv/bin/python builder/cli.py adr:new --title",
+		"builder:iter": ".venv/bin/python builder/cli.py iter:run",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"build": "tsc -p tsconfig.build.json",
+		"spec:hello": ".venv/bin/python builder/gen_spec.py",
+		"rules:show": ".venv/bin/python builder/cli.py rules:show",
+		"rules:check": ".venv/bin/python builder/cli.py rules:check",
+		"lint": "eslint 'src/**/*.{ts,tsx}'",
+		"builder:plan:auto": ".venv/bin/python builder/cli.py plan:auto"
+	},
+	"dependencies": {
+		"axios": "^1.11.0"
+	}
+}

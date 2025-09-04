@@ -1,0 +1,25 @@
+---
+id: {{ id }}
+title: {{ title }}
+status: proposed
+date: {{ date }}
+parent: {{ parent }}
+related_files:
+{% for f in related_files %}
+  - {{ f }}
+{% endfor %}
+tags: [{{ tags }}]
+last_modified: {{ date }}
+---
+
+## Context
+{{ context }}
+
+## Decision
+{{ decision }}
+
+## Consequences
+{{ consequences }}
+
+## Alternatives Considered
+{{ alternatives }}

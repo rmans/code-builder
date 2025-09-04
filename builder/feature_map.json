@@ -1,0 +1,5 @@
+{
+  "src/auth/**": "auth",
+  "src/content/**": "content-engine",
+  "src/utils/**": "platform"
+}
