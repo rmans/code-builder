@@ -19,7 +19,8 @@
 		"rules:show": ".venv/bin/python builder/cli.py rules:show",
 		"rules:check": ".venv/bin/python builder/cli.py rules:check",
 		"lint": "eslint 'src/**/*.{ts,tsx}'",
-		"builder:plan:auto": ".venv/bin/python builder/cli.py plan:auto"
+		"builder:plan:auto": ".venv/bin/python builder/cli.py plan:auto",
+		"rules:check:ci": "python builder/cli.py rules:check 'src/**/*.ts' --feature auth --stacks typescript,react"
 	},
 	"dependencies": {
 		"axios": "^1.11.0"
