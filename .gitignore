@@ -16,7 +16,7 @@ coverage/
 # Python
 .venv/
 
-# Builder runtime cache
+# Builder cache
 builder/cache/
 
 # Don’t commit compiled outputs under src/test
@@ -32,12 +32,3 @@ test/**/*.cjs
 test/**/*.map
 test/**/*.d.ts
 test/**/*.d.mts
-
-# Root-level compiled configs and maps
-*.map
-*.d.ts
-*.d.mts
-*.js
-*.mjs
-*.cjs
-!vitest.config.ts
