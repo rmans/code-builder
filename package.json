@@ -25,6 +25,8 @@
 		"builder:iter": ".venv/bin/python builder/cli.py iter:run",
 		"test": "vitest run",
 		"test:watch": "vitest",
+		"test:python": ".venv/bin/python -m pytest builder/tests/test_golden_checks.py -v",
+		"test:all": "npm run test && npm run test:python",
 		"build": "tsc -p tsconfig.build.json",
 		"spec:hello": ".venv/bin/python builder/gen_spec.py",
 		"rules:show": ".venv/bin/python builder/cli.py rules:show",

@@ -43,6 +43,14 @@ jobs:
     - name: Install Node dependencies
       run: npm install
       
+    - name: Install Python test dependencies
+      run: |
+        pip install pytest
+      
+    - name: Run golden checks
+      run: |
+        python -m pytest builder/tests/test_golden_checks.py -v
+      
     - name: Create cache directory
       run: mkdir -p builder/cache
       
