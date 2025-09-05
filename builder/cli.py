@@ -1696,7 +1696,8 @@ def context_scan(output, stats_only):
 @click.option("--feature", default="", help="Feature name for rules")
 @click.option("--stacks", default="typescript,react", help="Comma-separated stack names")
 @click.option("--token-limit", default=8000, help="Token budget limit")
-def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit):
+@click.option("--force", is_flag=True, help="Force rebuild, bypass cache")
+def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit, force):
     """Build enhanced context package using graph + selection + budget"""
     try:
         from context_graph import ContextGraphBuilder
@@ -1709,6 +1710,40 @@ def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit):
         click.echo(f"🔍 Building enhanced context for: {target_path}")
         click.echo(f"📋 Purpose: {purpose}, Feature: {feature or 'None'}")
         click.echo(f"💰 Token budget: {token_limit}")
+        
+        # Generate cache key
+        cache_key, cache_key_string = _generate_cache_key(target_path, purpose, feature, stacks, token_limit)
+        cache_path = _get_cache_path(cache_key)
+        
+        # Check cache first (unless force is specified)
+        if not force and os.path.exists(cache_path):
+            click.echo("💾 Loading from cache...")
+            context_package = _load_from_cache(cache_path)
+            if context_package:
+                click.echo(f"✅ Cache hit: {cache_key[:8]}...")
+                
+                # Write to standard output locations
+                pack_context_path = os.path.join(CACHE, "pack_context.json")
+                with open(pack_context_path, "w", encoding="utf-8") as f:
+                    json.dump(context_package, f, indent=2, ensure_ascii=False)
+                click.echo(f"✅ Created {pack_context_path}")
+                
+                # Generate context.md from cached data
+                context_md = _generate_enhanced_context_md(context_package)
+                context_md_path = os.path.join(CACHE, "context.md")
+                with open(context_md_path, "w", encoding="utf-8") as f:
+                    f.write(context_md)
+                click.echo(f"✅ Created {context_md_path}")
+                
+                # Show summary
+                budget_summary = context_package.get('constraints', {}).get('budget_summary', {})
+                _show_context_summary(context_package, budget_summary, token_limit)
+                return
+        
+        if force:
+            click.echo("🔄 Force rebuild: bypassing cache")
+        else:
+            click.echo("💾 Cache miss: building fresh context")
         
         # Step 1: Build context graph
         click.echo("📊 Building context graph...")
@@ -1739,20 +1774,26 @@ def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit):
             selected_items, overflow_items, budget_summary, rules
         )
         
-        # Step 6: Write pack_context.json
+        # Step 6: Save to cache
+        if _save_to_cache(cache_path, context_package):
+            click.echo(f"💾 Cached: {cache_key[:8]}...")
+        else:
+            click.echo("⚠️  Warning: Failed to save to cache")
+        
+        # Step 7: Write pack_context.json
         pack_context_path = os.path.join(CACHE, "pack_context.json")
         with open(pack_context_path, "w", encoding="utf-8") as f:
             json.dump(context_package, f, indent=2, ensure_ascii=False)
         click.echo(f"✅ Created {pack_context_path}")
         
-        # Step 7: Generate enhanced context.md
+        # Step 8: Generate enhanced context.md
         context_md = _generate_enhanced_context_md(context_package)
         context_md_path = os.path.join(CACHE, "context.md")
         with open(context_md_path, "w", encoding="utf-8") as f:
             f.write(context_md)
         click.echo(f"✅ Created {context_md_path}")
         
-        # Step 8: Show summary
+        # Step 9: Show summary
         _show_context_summary(context_package, budget_summary, token_limit)
         
     except Exception as e:
@@ -1925,6 +1966,113 @@ def _show_plan_auto_summary(context_package, budget_summary, token_limit):
     summary_line = f"📦 Context: {counts_str} | Budget: {total_used}/{token_limit} tokens ({budget_pct:.1f}%)"
     
     click.echo(summary_line)
+
+def _generate_cache_key(target_path, purpose, feature, stacks, token_limit):
+    """Generate cache key based on inputs and file hashes"""
+    import hashlib
+    import os
+    from pathlib import Path
+    
+    # Pack schema version (increment when structure changes)
+    PACK_SCHEMA_VERSION = "1.0"
+    
+    # Get file hashes for docs and src directories
+    def get_directory_hash(directory):
+        """Get combined hash of all files in directory"""
+        if not os.path.exists(directory):
+            return "no_dir"
+        
+        hashes = []
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if file.endswith(('.md', '.ts', '.tsx', '.js', '.jsx', '.json')):
+                    file_path = os.path.join(root, file)
+                    try:
+                        with open(file_path, 'rb') as f:
+                            file_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+                            hashes.append(f"{file}:{file_hash}")
+                    except Exception:
+                        continue
+        return hashlib.sha256('|'.join(sorted(hashes)).encode()).hexdigest()[:16]
+    
+    # Get rules hash
+    def get_rules_hash():
+        """Get hash of all rules files"""
+        rules_files = [
+            "docs/rules/00-global.md",
+            "docs/rules/10-project.md", 
+            "docs/rules/guardrails.json"
+        ]
+        
+        # Add feature-specific rules
+        if feature:
+            feature_rules = f"docs/rules/feature/30-{feature}.md"
+            if os.path.exists(feature_rules):
+                rules_files.append(feature_rules)
+        
+        # Add stack-specific rules
+        for stack in stacks.split(','):
+            stack_rules = f"docs/rules/stack/20-{stack.strip()}.md"
+            if os.path.exists(stack_rules):
+                rules_files.append(stack_rules)
+        
+        hashes = []
+        for rules_file in rules_files:
+            if os.path.exists(rules_file):
+                try:
+                    with open(rules_file, 'rb') as f:
+                        file_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+                        hashes.append(f"{os.path.basename(rules_file)}:{file_hash}")
+                except Exception:
+                    continue
+        
+        return hashlib.sha256('|'.join(sorted(hashes)).encode()).hexdigest()[:16]
+    
+    # Build cache key components
+    docs_hash = get_directory_hash("docs")
+    src_hash = get_directory_hash("src")
+    rules_hash = get_rules_hash()
+    
+    # Create cache key string
+    cache_key_parts = [
+        f"feature:{feature or 'none'}",
+        f"purpose:{purpose}",
+        f"target:{target_path}",
+        f"docs:{docs_hash}",
+        f"src:{src_hash}",
+        f"rules:{rules_hash}",
+        f"stacks:{stacks}",
+        f"tokens:{token_limit}",
+        f"schema:{PACK_SCHEMA_VERSION}"
+    ]
+    
+    cache_key_string = '|'.join(cache_key_parts)
+    cache_key = hashlib.sha256(cache_key_string.encode()).hexdigest()[:32]
+    
+    return cache_key, cache_key_string
+
+def _get_cache_path(cache_key):
+    """Get cache file path for given cache key"""
+    cache_dir = os.path.join(CACHE, "packs")
+    os.makedirs(cache_dir, exist_ok=True)
+    return os.path.join(cache_dir, f"{cache_key}.json")
+
+def _load_from_cache(cache_path):
+    """Load context package from cache"""
+    try:
+        with open(cache_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+def _save_to_cache(cache_path, context_package):
+    """Save context package to cache"""
+    try:
+        with open(cache_path, 'w', encoding='utf-8') as f:
+            json.dump(context_package, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception:
+        return False
 
 # -------------------- CONTEXT BUDGET --------------------
 
