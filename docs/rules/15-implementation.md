@@ -21,3 +21,8 @@ alwaysApply: true
 - **Handle missing files** - check existence before processing
 - **Validate inputs** - ensure data is in expected format before use
 
+## Terminal Usage
+- **Always open new terminal** - when executing commands, start fresh terminal session
+- **Avoid terminal reuse** - don't rely on previous terminal state or environment
+- **Fresh shell for each command** - ensures clean environment and avoids hanging issues
+
