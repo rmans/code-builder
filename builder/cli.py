@@ -54,6 +54,25 @@ def _load_rules(feature, stacks):
     from context_rules import merge_context_rules
     return merge_context_rules(feature or None, [s.strip() for s in stacks.split(",") if s.strip()])
 
+# -------------------- DOCUMENT HELPERS --------------------
+import re, yaml
+from pathlib import Path
+
+def _doc_load_front_matter(path):
+    txt = Path(path).read_text(encoding="utf-8")
+    m = re.search(r'^---\n(.*?)\n---\n', txt, flags=re.S)
+    if not m:
+        return None, txt, None
+    try:
+        fm = yaml.safe_load(m.group(1)) or {}
+    except Exception:
+        fm = {}
+    return fm, txt, m
+
+def _doc_save_front_matter(path, front, txt, m):
+    new = '---\n' + yaml.safe_dump(front, sort_keys=False).strip() + '\n---\n' + txt[m.end():]
+    Path(path).write_text(new, encoding="utf-8")
+
 # -------------------- PLAN --------------------
 @cli.command("plan:sync")
 @click.option("--feature", default="")
@@ -1301,22 +1320,41 @@ def ctx_build(target_path, purpose, feature, stacks, token_limit):
     else:
         click.echo(f"✅ Token usage within budget")
 
+# -------------------- DOCUMENT LINKS --------------------
+@cli.command("doc:set-links")
+@click.argument("file")
+@click.option("--prd", default=None)
+@click.option("--arch", default=None)
+@click.option("--adr", default=None)
+@click.option("--impl", default=None)
+@click.option("--exec", "exec_", default=None)
+@click.option("--ux", default=None)
+def doc_set_links(file, prd, arch, adr, impl, exec_, ux):
+    """Set front-matter links on a doc without manual editing."""
+    fm, txt, m = _doc_load_front_matter(file)
+    if m is None:
+        raise click.ClickException(f"No YAML front-matter found in {file}")
+    links = fm.get("links") or {}
+    if prd: links["prd"] = prd
+    if arch: links["arch"] = arch
+    if adr: links["adr"] = adr
+    if impl: links["impl"] = impl
+    if exec_: links["exec"] = exec_
+    if ux: links["ux"] = ux
+    fm["links"] = links
+    _doc_save_front_matter(file, fm, txt, m)
+    click.echo(f"Updated links in {file}: " + ", ".join([f"{k}={v}" for k,v in links.items()]))
+
 # -------------------- DOCUMENT VALIDATOR --------------------
 @cli.command("doc:check")
-@click.argument("path")
 @click.option("--output", default="builder/cache/schema.json", help="Output JSON report path")
 @click.option("--fail-fast", is_flag=True, help="Stop on first validation error")
-def doc_check(path, output, fail_fast):
-    """Validate document front-matter against schema"""
-    # Import at function level to avoid hanging
-    try:
-        import sys
-        sys.path.append(os.path.join(ROOT, "builder"))
-        from evaluators.doc_schema import validate_document_file, validate_documents_in_directory, save_schema_report
-    except ImportError as e:
-        click.echo(f"❌ Import error: {e}")
-        click.echo(f"Make sure doc_schema.py exists in {os.path.join(ROOT, 'builder', 'evaluators')}")
-        raise SystemExit(1)
+def doc_check(output, fail_fast):
+    """Validate docs front-matter and required sections; write builder/cache/schema.json."""
+    import subprocess, sys, os
+    ROOT = os.path.dirname(os.path.dirname(__file__))
+    rc = subprocess.call([sys.executable, os.path.join(ROOT,"builder","evaluators","doc_schema.py")])
+    sys.exit(rc)
     
     # Ensure output directory exists
     os.makedirs(os.path.dirname(output), exist_ok=True)

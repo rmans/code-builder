@@ -6,8 +6,7 @@ status: draft
 owner: TBD
 created: 2025-09-05
 links:
-  prd:
-  - PRD-auth-prd
+  prd: PRD-auth-prd
   ux: []
   impl: []
   exec: []

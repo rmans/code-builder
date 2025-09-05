@@ -24,7 +24,7 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 
 - 📝 **Auth Architecture** (`ARCH-auth-architecture`)
   - Owner: TBD | Created: 2025-09-05
-  - Links: prd:PRD-auth-prd
+  - Links: prd:P, R, D, -, a, u, t, h, -, p, r, d
 
 - 📝 **API Architecture** (`ARCH-api-architecture`)
   - Owner: John Doe | Created: 2025-09-05
