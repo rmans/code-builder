@@ -11,6 +11,14 @@ alwaysApply: true
 - **Use safe error handling** - graceful degradation instead of crashes
 - **Keep functions simple** - avoid complex nested operations that can fail
 
+## Loop and Control Flow
+- **Never use `while True:`** - always have clear exit conditions and timeouts
+- **Always add timeouts** to polling loops and waiting operations
+- **Use time-based conditions** instead of infinite loops (e.g., `while time.time() - start < timeout`)
+- **Provide clear exit conditions** - make loop termination obvious and reliable
+- **Add progress indicators** for long-running operations
+- **Handle timeout scenarios** gracefully with helpful messages
+
 ## Performance
 - **Fast execution** - code should complete quickly or have clear progress indicators
 - **Minimal dependencies** - avoid heavy imports that can cause delays

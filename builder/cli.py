@@ -194,22 +194,43 @@ def eval_objective(path, server):
         server_thread = threading.Thread(target=start_server, daemon=True)
         server_thread.start()
         
-        # Wait for completion
+        # Wait for completion with timeout
         import time
-        while True:
-            time.sleep(1)
-            # Check if evaluation is complete
-            try:
-                import requests
-                response = requests.get(f"http://127.0.0.1:5000/")
-                if response.status_code == 200:
-                    # Check if our evaluation is complete
-                    if eval_id in response.text and "completed" in response.text:
-                        break
-            except:
-                pass
+        import requests
+        max_wait_time = 300  # 5 minutes timeout
+        start_time = time.time()
         
-        click.echo("✅ Evaluation completed!")
+        click.echo(f"⏳ Waiting for Cursor response (timeout: {max_wait_time}s)...")
+        
+        while time.time() - start_time < max_wait_time:
+            try:
+                # Check server status with timeout
+                response = requests.get(f"http://127.0.0.1:5000/", timeout=5)
+                if response.status_code == 200:
+                    # Check if our evaluation is complete by looking for the eval_id in completed evaluations
+                    if f'completed_at' in response.text and eval_id in response.text:
+                        click.echo("✅ Evaluation completed!")
+                        return
+                
+                # Check if evaluation file exists and has completion timestamp
+                eval_file = os.path.join(ROOT, "builder", "cache", "evaluations", f"{eval_id}.json")
+                if os.path.exists(eval_file):
+                    with open(eval_file, 'r') as f:
+                        eval_data = json.load(f)
+                        if eval_data.get('completed_at'):
+                            click.echo("✅ Evaluation completed!")
+                            return
+                            
+            except requests.exceptions.RequestException as e:
+                click.echo(f"⚠️  Server check failed: {e}")
+            except Exception as e:
+                click.echo(f"⚠️  Error checking completion: {e}")
+            
+            time.sleep(2)  # Check every 2 seconds
+        
+        click.echo(f"⏰ Timeout reached ({max_wait_time}s). Evaluation may still be in progress.")
+        click.echo(f"🔗 You can check status at: http://127.0.0.1:5000/")
+        click.echo(f"📝 Evaluation ID: {eval_id}")
         return
     
     # Regular mode (existing logic)
