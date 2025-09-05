@@ -1,5 +1,4 @@
 // Variant B: Enhanced version
-// Variant B: Enhanced version
 /**
  * Returns a greeting.
  * @param name Optional name to greet.
