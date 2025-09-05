@@ -14,6 +14,7 @@ coverage/
 
 # Python
 .venv/
+.pytest_cache/
 
 # Builder cache
 builder/cache/
