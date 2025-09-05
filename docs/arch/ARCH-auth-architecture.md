@@ -8,6 +8,9 @@ created: 2025-09-05
 links:
   prd:
   - PRD-auth-prd
+  ux: []
+  impl: []
+  exec: []
 ---
 
 # Auth Architecture

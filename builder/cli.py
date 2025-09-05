@@ -51,7 +51,7 @@ def adr_new(title, parent, related, tags):
 
 # -------------------- RULES LOADER --------------------
 def _load_rules(feature, stacks):
-    from .context_rules import merge_context_rules
+    from context_rules import merge_context_rules
     return merge_context_rules(feature or None, [s.strip() for s in stacks.split(",") if s.strip()])
 
 # -------------------- PLAN --------------------
@@ -1403,7 +1403,7 @@ def doc_check(path, output, fail_fast):
 def context_scan(output, stats_only):
     """Scan project and build context graph of nodes and relationships"""
     try:
-        from .context_graph import ContextGraph
+        from context_graph import ContextGraph
         
         click.echo("🔍 Scanning project for context graph...")
         
@@ -1438,7 +1438,7 @@ def context_scan(output, stats_only):
 def context_select(start_path, feature, max_items, max_distance, summary_only):
     """Select and rank relevant context items from a starting path or feature"""
     try:
-        from .context_select import ContextSelector
+        from context_select import ContextSelector
         import json
         
         # Load context graph
@@ -1452,7 +1452,7 @@ def context_select(start_path, feature, max_items, max_distance, summary_only):
             graph_data = json.load(f)
             
         # Reconstruct graph
-        from .context_graph import ContextGraph, GraphNode, GraphEdge
+        from context_graph import ContextGraph, GraphNode, GraphEdge
         graph = ContextGraph()
         
         for node_data in graph_data['nodes']:
@@ -1532,8 +1532,8 @@ def context_budget(start_path, feature, token_limit, max_items, output):
         import sys
         import os
         sys.path.insert(0, os.path.dirname(__file__))
-        from .context_budget import ContextBudgetManager
-        from .context_select import ContextSelector
+        from context_budget import ContextBudgetManager
+        from context_select import ContextSelector
         import json
         
         # Load context graph
@@ -1547,7 +1547,7 @@ def context_budget(start_path, feature, token_limit, max_items, output):
             graph_data = json.load(f)
             
         # Reconstruct graph
-        from .context_graph import ContextGraph, GraphNode, GraphEdge
+        from context_graph import ContextGraph, GraphNode, GraphEdge
         graph = ContextGraph()
         
         for node_data in graph_data['nodes']:
@@ -1620,8 +1620,8 @@ def context_budget(start_path, feature, token_limit, max_items, output):
 def ctx_explain(target_path, feature, max_items):
     """Explain context selection with ranked table showing source, type, weight, reason, status, mtime."""
     try:
-        from .context_graph import ContextGraph, GraphNode, GraphEdge
-        from .context_select import ContextSelector
+        from context_graph import ContextGraph, GraphNode, GraphEdge
+        from context_select import ContextSelector
         import json
         from datetime import datetime
         
