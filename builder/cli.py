@@ -1828,95 +1828,95 @@ def context_scan(output, stats_only):
         raise SystemExit(1)
 
 # -------------------- CONTEXT SELECTION --------------------
-@cli.command("context:select")
-@click.argument("start_path", required=False)
-@click.option("--feature", help="Start from a specific feature")
-@click.option("--max-items", default=10, help="Maximum number of items to return")
-@click.option("--max-distance", default=2, help="Maximum distance (hops) to follow")
-@click.option("--summary-only", is_flag=True, help="Only show summary, not detailed results")
-def context_select(start_path, feature, max_items, max_distance, summary_only):
-    """Select and rank relevant context items from a starting path or feature"""
-    try:
-        from context_select import ContextSelector
-        import json
-        
-        # Load context graph
-        context_graph_path = os.path.join(ROOT, "builder", "cache", "context_graph.json")
-        if not os.path.exists(context_graph_path):
-            click.echo("❌ Context graph not found. Run 'context:scan' first.")
-            raise SystemExit(1)
-            
-        # Load graph from JSON
-        with open(context_graph_path, 'r') as f:
-            graph_data = json.load(f)
-            
-        # Reconstruct graph
-        from context_graph import ContextGraph, GraphNode, GraphEdge
-        graph = ContextGraph()
-        
-        for node_data in graph_data['nodes']:
-            node = GraphNode(
-                id=node_data['id'],
-                node_type=node_data['type'],
-                title=node_data['title'],
-                file_path=node_data['file_path'],
-                metadata=node_data['metadata'],
-                properties=node_data['properties']
-            )
-            graph.add_node(node)
-            
-        for edge_data in graph_data['edges']:
-            edge = GraphEdge(
-                source_id=edge_data['source'],
-                target_id=edge_data['target'],
-                edge_type=edge_data['type'],
-                weight=edge_data.get('weight', 1.0),
-                metadata=edge_data.get('metadata', {})
-            )
-            graph.add_edge(edge)
-            
-        # Create selector and get context
-        selector = ContextSelector(graph)
-        
-        if start_path:
-            click.echo(f"🔍 Selecting context for path: {start_path}")
-        if feature:
-            click.echo(f"🔍 Selecting context for feature: {feature}")
-            
-        items = selector.select_context(start_path, feature, max_items, max_distance)
-        
-        if not items:
-            click.echo("❌ No relevant context found")
-            return
-            
-        # Print results
-        if not summary_only:
-            click.echo(f"\n📊 Found {len(items)} relevant items:")
-            click.echo("=" * 60)
-            
-            for i, item in enumerate(items, 1):
-                click.echo(f"{i:2d}. {item}")
-                if item.reasons:
-                    click.echo(f"     Reasons: {', '.join(item.reasons)}")
-                click.echo()
-                
-        # Print summary
-        summary = selector.get_context_summary(items)
-        click.echo("📈 Summary:")
-        click.echo(f"  Total items: {summary['total_items']}")
-        click.echo(f"  By type: {summary['by_type']}")
-        click.echo(f"  By feature: {summary['by_feature']}")
-        click.echo(f"  By distance: {summary['by_distance']}")
-        if summary['total_items'] > 0:
-            click.echo(f"  Score range: {summary['score_range']['min']:.1f} - {summary['score_range']['max']:.1f} (avg: {summary['score_range']['avg']:.1f})")
-        
-    except ImportError as e:
-        click.echo(f"❌ Import error: {e}")
-        click.echo("Make sure context_select.py exists in the builder directory")
-        raise SystemExit(1)
-    except Exception as e:
-        click.echo(f"❌ Error: {e}")
-        raise SystemExit(1)
+# @cli.command("context:select")
+# @click.argument("start_path", required=False)
+# @click.option("--feature", help="Start from a specific feature")
+# @click.option("--max-items", default=10, help="Maximum number of items to return")
+# @click.option("--max-distance", default=2, help="Maximum distance (hops) to follow")
+# @click.option("--summary-only", is_flag=True, help="Only show summary, not detailed results")
+# def context_select(start_path, feature, max_items, max_distance, summary_only):
+#     """Select and rank relevant context items from a starting path or feature"""
+#     try:
+#         from context_select import ContextSelector
+#         import json
+#         
+#         # Load context graph
+#         context_graph_path = os.path.join(ROOT, "builder", "cache", "context_graph.json")
+#         if not os.path.exists(context_graph_path):
+#             click.echo("❌ Context graph not found. Run 'context:scan' first.")
+#             raise SystemExit(1)
+#             
+#         # Load graph from JSON
+#         with open(context_graph_path, 'r') as f:
+#             graph_data = json.load(f)
+#             
+#         # Reconstruct graph
+#         from context_graph import ContextGraph
+#         graph = ContextGraph()
+#         
+#         for node_data in graph_data['nodes']:
+#             node = GraphNode(
+#                 id=node_data['id'],
+#                 node_type=node_data['type'],
+#                 title=node_data['title'],
+#                 file_path=node_data['file_path'],
+#                 metadata=node_data['metadata'],
+#                 properties=node_data['properties']
+#             )
+#             graph.add_node(node)
+#             
+#         for edge_data in graph_data['edges']:
+#             edge = GraphEdge(
+#                 source_id=edge_data['source'],
+#                 target_id=edge_data['target'],
+#                 edge_type=edge_data['type'],
+#                 weight=edge_data.get('weight', 1.0),
+#                 metadata=edge_data.get('metadata', {})
+#             )
+#             graph.add_edge(edge)
+#             
+#         # Create selector and get context
+#         selector = ContextSelector(graph)
+#         
+#         if start_path:
+#             click.echo(f"🔍 Selecting context for path: {start_path}")
+#         if feature:
+#             click.echo(f"🔍 Selecting context for feature: {feature}")
+#             
+#         items = selector.select_context(start_path, feature, max_items, max_distance)
+#         
+#         if not items:
+#             click.echo("❌ No relevant context found")
+#             return
+#             
+#         # Print results
+#         if not summary_only:
+#             click.echo(f"\n📊 Found {len(items)} relevant items:")
+#             click.echo("=" * 60)
+#             
+#             for i, item in enumerate(items, 1):
+#                 click.echo(f"{i:2d}. {item}")
+#                 if item.reasons:
+#                     click.echo(f"     Reasons: {', '.join(item.reasons)}")
+#                 click.echo()
+#                 
+#         # Print summary
+#         summary = selector.get_context_summary(items)
+#         click.echo("📈 Summary:")
+#         click.echo(f"  Total items: {summary['total_items']}")
+#         click.echo(f"  By type: {summary['by_type']}")
+#         click.echo(f"  By feature: {summary['by_feature']}")
+#         click.echo(f"  By distance: {summary['by_distance']}")
+#         if summary['total_items'] > 0:
+#             click.echo(f"  Score range: {summary['score_range']['min']:.1f} - {summary['score_range']['max']:.1f} (avg: {summary['score_range']['avg']:.1f})")
+#         
+#     except ImportError as e:
+#         click.echo(f"❌ Import error: {e}")
+#         click.echo("Make sure context_select.py exists in the builder directory")
+#         raise SystemExit(1)
+#     except Exception as e:
+#         click.echo(f"❌ Error: {e}")
+#         raise SystemExit(1)
 
 # -------------------- ENHANCED CONTEXT BUILD --------------------
 @cli.command("ctx:build-enhanced")
@@ -1988,8 +1988,157 @@ def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit):
         click.echo(f"❌ Error: {e}")
         raise SystemExit(1)
 
+# -------------------- CONTEXT EXPLAIN --------------------
+@cli.command("ctx:explain")
+@click.option("--input", default="builder/cache/pack_context.json", help="Input pack_context.json file")
+@click.option("--selection", default="builder/cache/context_selection.json", help="Context selection file with scores")
+def ctx_explain(input, selection):
+    """Explain why specific context items were selected with ranked table"""
+    try:
+        import json
+        from pathlib import Path
+        from datetime import datetime
+        
+        # Check if files exist
+        if not os.path.exists(input):
+            click.echo(f"❌ Input file not found: {input}")
+            click.echo("Run 'ctx:build-enhanced' first to generate pack_context.json")
+            return
+        
+        if not os.path.exists(selection):
+            click.echo(f"❌ Selection file not found: {selection}")
+            click.echo("Run 'ctx:build-enhanced' first to generate context_selection.json")
+            return
+        
+        # Load pack_context.json
+        with open(input, 'r', encoding='utf-8') as f:
+            pack_context = json.load(f)
+        
+        # Load context_selection.json
+        with open(selection, 'r', encoding='utf-8') as f:
+            selection_data = json.load(f)
+        
+        # Extract task information
+        task = pack_context.get('task', {})
+        click.echo(f"🔍 Context Explanation for: {task.get('target_path', 'Unknown')}")
+        click.echo(f"📋 Purpose: {task.get('purpose', 'Unknown')}")
+        click.echo(f"🏷️  Feature: {task.get('feature', 'None')}")
+        click.echo()
+        
+        # Collect all selected items with their scores
+        all_items = []
+        
+        # Process each type in selection data
+        for item_type, items in selection_data.items():
+            for item in items:
+                node = item.get('node', {})
+                all_items.append({
+                    'id': item.get('id', 'unknown'),
+                    'type': item.get('type', item_type),
+                    'title': node.get('title', 'Untitled'),
+                    'file_path': node.get('file_path', ''),
+                    'score': item.get('score', 0.0),
+                    'reasons': item.get('reasons', []),
+                    'status': node.get('status', 'unknown'),
+                    'created': node.get('created', ''),
+                    'last_modified': _get_last_modified(node.get('file_path', ''))
+                })
+        
+        # Sort by score (highest first)
+        all_items.sort(key=lambda x: x['score'], reverse=True)
+        
+        # Display ranked table
+        click.echo("📊 Ranked Context Items (by selection score):")
+        click.echo("=" * 120)
+        
+        # Table header
+        header = f"{'Rank':<4} {'Score':<6} {'Type':<12} {'Status':<10} {'ID/Path':<30} {'Reasons':<20} {'Modified':<12}"
+        click.echo(header)
+        click.echo("-" * 120)
+        
+        # Table rows
+        for i, item in enumerate(all_items, 1):
+            # Truncate long paths
+            display_path = item['file_path']
+            if len(display_path) > 28:
+                display_path = "..." + display_path[-25:]
+            
+            # Format reasons
+            reasons_str = ", ".join(item['reasons'][:2])  # Show first 2 reasons
+            if len(item['reasons']) > 2:
+                reasons_str += f" (+{len(item['reasons'])-2})"
+            
+            # Format last modified
+            modified_str = item['last_modified'] or "Unknown"
+            
+            row = f"{i:<4} {item['score']:<6.1f} {item['type']:<12} {item['status']:<10} {display_path:<30} {reasons_str:<20} {modified_str:<12}"
+            click.echo(row)
+        
+        click.echo("-" * 120)
+        
+        # Summary statistics
+        total_items = len(all_items)
+        avg_score = sum(item['score'] for item in all_items) / total_items if total_items > 0 else 0
+        
+        # Count by type
+        type_counts = {}
+        for item in all_items:
+            item_type = item['type']
+            type_counts[item_type] = type_counts.get(item_type, 0) + 1
+        
+        # Count by reason
+        reason_counts = {}
+        for item in all_items:
+            for reason in item['reasons']:
+                reason_counts[reason] = reason_counts.get(reason, 0) + 1
+        
+        click.echo(f"\n📈 Summary Statistics:")
+        click.echo(f"  Total items: {total_items}")
+        click.echo(f"  Average score: {avg_score:.2f}")
+        click.echo(f"  Score range: {min(item['score'] for item in all_items):.1f} - {max(item['score'] for item in all_items):.1f}")
+        
+        click.echo(f"\n📊 Items by Type:")
+        for item_type, count in sorted(type_counts.items()):
+            click.echo(f"  {item_type}: {count}")
+        
+        click.echo(f"\n🎯 Selection Reasons:")
+        for reason, count in sorted(reason_counts.items(), key=lambda x: x[1], reverse=True):
+            click.echo(f"  {reason}: {count} items")
+        
+        # Show budget utilization if available
+        constraints = pack_context.get('constraints', {})
+        budget_summary = constraints.get('budget_summary', {})
+        if budget_summary:
+            click.echo(f"\n💰 Budget Utilization:")
+            total_budget = sum(summary.get('budget_limit', 0) for summary in budget_summary.values())
+            used_budget = sum(summary.get('used_tokens', 0) for summary in budget_summary.values())
+            utilization = (used_budget / total_budget * 100) if total_budget > 0 else 0
+            click.echo(f"  Used: {used_budget}/{total_budget} tokens ({utilization:.1f}%)")
+            
+            for budget_type, summary in budget_summary.items():
+                items_selected = summary.get('selected_items', 0)
+                items_total = summary.get('total_items', 0)
+                budget_used = summary.get('used_tokens', 0)
+                budget_limit = summary.get('budget_limit', 0)
+                click.echo(f"  {budget_type}: {items_selected}/{items_total} items ({budget_used}/{budget_limit} tokens)")
+        
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
+def _get_last_modified(file_path):
+    """Get last modified date for a file"""
+    try:
+        if os.path.exists(file_path):
+            stat = os.stat(file_path)
+            mtime = stat.st_mtime
+            return datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+    except Exception:
+        pass
+    return "Unknown"
+
 # -------------------- CONTEXT BUDGET --------------------
-@cli.command("context:budget")
+# @cli.command("context:budget")
 @click.argument("start_path", required=False)
 @click.option("--feature", help="Start from a specific feature")
 @click.option("--token-limit", default=8000, help="Total token budget limit")
@@ -2016,7 +2165,7 @@ def context_budget(start_path, feature, token_limit, max_items, output):
             graph_data = json.load(f)
             
         # Reconstruct graph
-        from context_graph import ContextGraph, GraphNode, GraphEdge
+        from context_graph import ContextGraph
         graph = ContextGraph()
         
         for node_data in graph_data['nodes']:
@@ -2082,14 +2231,14 @@ def context_budget(start_path, feature, token_limit, max_items, output):
         click.echo(f"❌ Error: {e}")
         raise SystemExit(1)
 
-@cli.command("ctx:explain")
-@click.option("--target-path", default="", help="Target path to explain context for")
-@click.option("--feature", default="", help="Feature name to explain context for")
-@click.option("--max-items", default=20, help="Maximum number of items to show")
-def ctx_explain(target_path, feature, max_items):
+# @cli.command("ctx:explain")
+# @click.option("--target-path", default="", help="Target path to explain context for")
+# @click.option("--feature", default="", help="Feature name to explain context for")
+# @click.option("--max-items", default=20, help="Maximum number of items to show")
+# def ctx_explain(target_path, feature, max_items):
     """Explain context selection with ranked table showing source, type, weight, reason, status, mtime."""
     try:
-        from context_graph import ContextGraph, GraphNode, GraphEdge
+        from context_graph import ContextGraph
         from context_select import ContextSelector
         import json
         from datetime import datetime
