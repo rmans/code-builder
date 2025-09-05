@@ -17,10 +17,23 @@ links:
 ## Overview
 A secure user authentication system that allows users to sign up, log in, and manage their accounts with proper security measures.
 
-## Problem Statement
+## Problem
 Users need a secure way to authenticate and access the application while maintaining their privacy and data security.
 
-## Goals & Success Metrics
+## Goals
+- 99.9% uptime for authentication services
+- < 2 second response time for login
+- Zero security breaches
+- 95% user satisfaction score
+
+## Requirements
+- User registration with email validation
+- Secure password-based authentication
+- Password reset functionality
+- Session management
+- Logout functionality
+
+## Metrics
 - 99.9% uptime for authentication services
 - < 2 second response time for login
 - Zero security breaches

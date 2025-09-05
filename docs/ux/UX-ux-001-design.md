@@ -14,6 +14,24 @@ links:
 
 # UX-001 Design
 
+## Users
+<!-- Target users and personas -->
+
+## Flows
+<!-- User journey flows -->
+
+## Screens
+<!-- Screen designs and layouts -->
+
+## Accessibility
+<!-- Accessibility requirements and considerations -->
+
+## Content
+<!-- Content strategy and copy -->
+
+## Components
+<!-- Reusable UI components -->
+
 ## User Research
 <!-- What research informed this design? -->
 

@@ -35,8 +35,8 @@ def _front_matter(text: str):
     return data, m.start(), m.end()
 
 def _has_section(md: str, name: str) -> bool:
-    # simple heading match
-    return re.search(rf'^#\s*{re.escape(name)}\b', md, flags=re.M|re.I) is not None
+    # simple heading match - look for ## headings
+    return re.search(rf'^##\s*{re.escape(name)}\b', md, flags=re.M|re.I) is not None
 
 def validate_file(path: Path):
     txt = path.read_text(encoding="utf-8")

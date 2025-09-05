@@ -17,6 +17,43 @@ links:
 ## Overview
 User experience design for the authentication system, covering all user interactions from registration to logout.
 
+## Users
+- New users registering for the first time
+- Returning users logging in
+- Users who forgot their password
+- Users with accessibility needs
+
+## Flows
+- Registration flow: Landing → Form → Verification → Welcome
+- Login flow: Login Page → Validation → Dashboard
+- Password reset flow: Forgot Password → Email → Reset → Confirmation
+
+## Screens
+- Landing page with sign up/login options
+- Registration form with validation
+- Login form with error handling
+- Password reset form
+- Welcome/dashboard page
+
+## Accessibility
+- Keyboard navigation support
+- Screen reader compatibility
+- High contrast mode support
+- Focus indicators
+- Error message announcements
+
+## Content
+- Clear, concise form labels
+- Helpful error messages
+- Success confirmations
+- Terms of service text
+
+## Components
+- Registration form with validation
+- Login form with show/hide password
+- Error state components
+- Loading state indicators
+
 ## User Journey Maps
 
 ### Registration Flow
