@@ -2004,20 +2004,47 @@ def _get_last_modified(file_path):
 
 def _show_plan_auto_summary(context_package, budget_summary, token_limit):
     """Show 1-line summary with counts per type and budget used"""
-    # Count items by type
+    # Check for rules presence
+    rules_present = bool(context_package.get('constraints', {}).get('rules_md', '').strip())
+    rules_status = "✓" if rules_present else "✗"
+    
+    # Check for acceptance criteria presence
+    acceptance_present = bool(context_package.get('acceptance', []))
+    acceptance_status = "✓" if acceptance_present else "✗"
+    
+    # Count items by type with specific abbreviations
     type_counts = {}
-    for section in ['acceptance', 'decisions', 'integrations', 'architecture', 'ux', 'code']:
+    type_abbrevs = {
+        'decisions': 'adr',
+        'integrations': 'integ', 
+        'architecture': 'arch',
+        'code': 'code'
+    }
+    
+    for section, abbrev in type_abbrevs.items():
         items = context_package.get(section, [])
-        type_counts[section] = len(items)
+        count = len(items)
+        if count > 0:
+            type_counts[abbrev] = count
     
-    # Calculate total budget used
+    # Calculate budget percentage
     total_used = sum(summary.get('used_tokens', 0) for summary in budget_summary.values())
-    budget_pct = (total_used / token_limit * 100) if token_limit > 0 else 0
+    budget_pct = int(total_used / token_limit * 100) if token_limit > 0 else 0
     
-    # Build summary line
-    counts_str = ", ".join([f"{k}:{v}" for k, v in type_counts.items() if v > 0])
-    summary_line = f"📦 Context: {counts_str} | Budget: {total_used}/{token_limit} tokens ({budget_pct:.1f}%)"
+    # Build summary line in the required format
+    summary_parts = [
+        f"rules {rules_status}",
+        f"acceptance {acceptance_status}"
+    ]
     
+    # Add type counts
+    for abbrev, count in type_counts.items():
+        summary_parts.append(f"{abbrev} {count}")
+    
+    # Add budget percentage
+    summary_parts.append(f"budget {budget_pct}%")
+    
+    summary_line = f"Context: {', '.join(summary_parts)}"
     click.echo(summary_line)
 
 def _generate_cache_key(target_path, purpose, feature, stacks, token_limit):
