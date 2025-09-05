@@ -149,6 +149,7 @@ class ContextGraphBuilder:
         self._scan_rules()
         self._add_proximity_edges()
         self._add_test_edges()
+        self._add_feature_links()
         return self.graph
     
     def _scan_documentation(self) -> None:
@@ -348,8 +349,56 @@ class ContextGraphBuilder:
                     if test_path.exists():
                         test_id = f"code:{test_path.relative_to(self.root_path).as_posix()}"
                         if test_id in self.graph.nodes:
-                            self.graph.add_edge(
-                                test_id, code_id, 'tests',
-                                reason='test_mirror'
-                            )
+                                                    self.graph.add_edge(
+                            test_id, code_id, 'tests',
+                            reason='test_mirror'
+                        )
                         break
+    
+    def _add_feature_links(self) -> None:
+        """Add links between code files and documentation based on feature patterns"""
+        # Feature patterns for common features
+        feature_patterns = {
+            'auth': ['auth', 'login', 'password', 'token', 'jwt', 'session'],
+            'api': ['api', 'endpoint', 'route', 'controller'],
+            'ui': ['ui', 'component', 'page', 'view', 'form'],
+            'data': ['data', 'model', 'entity', 'database', 'db'],
+            'test': ['test', 'spec', 'mock', 'fixture']
+        }
+        
+        # Get all code and documentation nodes
+        code_nodes = {nid: node for nid, node in self.graph.nodes.items() 
+                     if node['type'] == 'code'}
+        doc_nodes = {nid: node for nid, node in self.graph.nodes.items() 
+                    if node['type'] in ['prd', 'arch', 'impl', 'exec', 'task', 'ux']}
+        
+        for code_id, code_node in code_nodes.items():
+            code_path = code_node.get('file_path', '')
+            if not code_path:
+                continue
+            
+            # Extract potential feature names from path
+            path_parts = Path(code_path).parts
+            potential_features = []
+            for part in path_parts:
+                potential_features.extend(part.lower().split('_'))
+                potential_features.extend(part.lower().split('-'))
+            
+            # Find matching documentation
+            for doc_id, doc_node in doc_nodes.items():
+                doc_title = doc_node.get('title', '').lower()
+                doc_path = doc_node.get('file_path', '').lower()
+                
+                # Check if any feature pattern matches
+                for feature, patterns in feature_patterns.items():
+                    if any(pattern in doc_title or pattern in doc_path for pattern in patterns):
+                        if any(pattern in ' '.join(potential_features) for pattern in patterns):
+                            # Add bidirectional link
+                            self.graph.add_edge(
+                                code_id, doc_id, 'implements',
+                                reason='feature_match', feature=feature
+                            )
+                            self.graph.add_edge(
+                                doc_id, code_id, 'informs',
+                                reason='feature_match', feature=feature
+                            )

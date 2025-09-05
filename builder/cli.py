@@ -2216,5 +2216,48 @@ def ctx_graph_stats():
         click.echo(f"❌ Error: {e}")
         raise SystemExit(1)
 
+# -------------------- CONTEXT SELECTION --------------------
+@cli.command("ctx:select")
+@click.argument("target_path")
+@click.option("--feature", default="", help="Feature name for feature-based scoring")
+@click.option("--top-k", default=5, help="Number of top items to return per type")
+@click.option("--output", default="builder/cache/context_selection.json", help="Output JSON file path")
+def ctx_select(target_path, feature, top_k, output):
+    """Select and rank context for a target path"""
+    try:
+        from context_select import ContextSelector
+        
+        click.echo(f"🔍 Selecting context for: {target_path}")
+        if feature:
+            click.echo(f"📋 Feature: {feature}")
+        
+        selector = ContextSelector(ROOT)
+        context = selector.select_context(target_path, feature, top_k)
+        
+        if not context:
+            click.echo("❌ No context found for target path")
+            return
+        
+        # Save context selection
+        output_dir = os.path.dirname(output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        with open(output, 'w', encoding='utf-8') as f:
+            json.dump(context, f, indent=2, ensure_ascii=False, default=str)
+        
+        # Show summary
+        summary = selector.get_context_summary(context)
+        click.echo(f"✅ Context selection saved to: {output}")
+        click.echo(summary)
+        
+        # Show statistics
+        total_items = sum(len(items) for items in context.values())
+        click.echo(f"\n📊 Selected {total_items} context items across {len(context)} types")
+        
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
 if __name__ == "__main__":
     cli()
