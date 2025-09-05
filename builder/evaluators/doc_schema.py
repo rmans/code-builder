@@ -8,7 +8,12 @@ CACHE = ROOT / "builder" / "cache"
 CACHE.mkdir(parents=True, exist_ok=True)
 
 REQUIRED_BASE = ["type","id","title","status","owner","created","links"]
-STATUS_ENUM = {"draft","review","approved","deprecated"}
+STATUS_ENUM = {
+    # Core statuses
+    "draft", "review", "approved", "deprecated",
+    # Execution/Implementation statuses
+    "planned", "proposed", "pending", "in_progress", "accepted"
+}
 
 TYPE_SECTIONS = {
 "prd": ["Problem", "Goals", "Requirements", "Metrics"],
