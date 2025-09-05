@@ -15,6 +15,7 @@ alwaysApply: true
 - **Focus on delivering working solutions** rather than perfect verification
 - **Never re-run successful commands** unless explicitly requested - if it worked once, it's done
 - **One verification run maximum** unless user asks for more - additional runs are waste
+- **Always commit after successful completion** - commit changes when task is done successfully
 
 ## Rule Creation Guidelines
 - **Global rules** (`00-global.md`) - Universal coding principles, task execution, rule system guidelines
