@@ -5,5 +5,13 @@ export default defineConfig({
     include: ['test/**/*.test.ts'],
     environment: 'node',
     globals: true,
+    reporters: ['json', 'verbose'],
+    outputFile: {
+      json: 'builder/cache/vitest.json',
+    },
+    coverage: {
+      reporter: ['json'],
+      reportsDirectory: 'builder/cache',
+    },
   },
 });

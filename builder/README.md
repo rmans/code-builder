@@ -1,12 +1,12 @@
 # Builder CLI
 
-Python CLI (builder/cli.py) manages ADRs, planning, iterations, and rules.
+Python CLI (builder/cli.py) manages ADRs, planning, iterations, rules, and code evaluation.
 
 ---
 
 ## Commands
 
-### ADR
+### ADR Management
 - `builder:adr:new`
 
       pnpm run builder:adr:new "Create hello module" --parent ADR-0000 --related src/hello.ts --tags demo
@@ -15,7 +15,7 @@ Python CLI (builder/cli.py) manages ADRs, planning, iterations, and rules.
 
 ---
 
-### Planning
+### Planning & Context
 - `builder:plan:sync`
 
       pnpm run builder:plan:sync --feature auth --stacks typescript,react
@@ -34,16 +34,49 @@ Outputs `builder/cache/context.json` with:
 
 ---
 
-### Iteration
-- `builder:iter:run`
+### Code Evaluation
+- `eval:objective <path>`
 
-      pnpm run builder:iter src/hello.ts
+      python builder/cli.py eval:objective src/hello.ts
 
-  Generates 3 ABC rounds, promotes a winner, logs to `builder/cache/iter_history.json`.
+  Runs objective evaluation using tests, coverage, lint, spell, and guardrails.
+
+- `eval:objective <path> --server`
+
+      python builder/cli.py eval:objective src/hello.ts --server
+
+  Starts Cursor Bridge Server for interactive evaluation.
+
+- `eval:prepare <path>`
+
+      python builder/cli.py eval:prepare src/hello.ts
+
+  Generates evaluation prompt for Cursor.
+
+- `eval:complete <path> --cursor-response <json>`
+
+      python builder/cli.py eval:complete src/hello.ts --cursor-response response.json
+
+  Blends objective and subjective scores.
 
 ---
 
-### Rules
+### ABC Iteration
+- `iter:cursor <path> [--rounds N]`
+
+      python builder/cli.py iter:cursor src/hello.ts
+
+  Generates A/B/C variants and prepares for Cursor evaluation.
+
+- `iter:finish <path> --winner A|B|C`
+
+      python builder/cli.py iter:finish src/hello.ts --winner B
+
+  Completes iteration with winner selection.
+
+---
+
+### Rules & Guardrails
 - `builder:rules:show`
 
       pnpm run rules:show --feature auth --stacks typescript,react
@@ -58,8 +91,33 @@ Outputs `builder/cache/context.json` with:
 
 ---
 
+## Evaluation System
+
+The builder includes a comprehensive evaluation system:
+
+### Objective Metrics
+- **Tests**: Pass rate and coverage analysis
+- **Lint**: Code quality and style violations
+- **Spell**: Spelling and terminology consistency
+- **Guardrails**: Adherence to project rules
+- **Coverage**: Line coverage from test reports
+
+### Cursor Integration
+- **Bridge Server**: HTTP endpoints for prompt serving and response collection
+- **Custom Commands**: Cursor integration for seamless evaluation
+- **Auto-completion**: Automatic score blending and result generation
+
+### Workflow
+1. **Run objective evaluation** → Get automated metrics
+2. **Generate Cursor prompt** → Get human assessment
+3. **Blend scores** → Final evaluation with confidence bounds
+4. **ABC iteration** → Compare multiple variants
+
+---
+
 ## Where it fits
 - Run **plan** → generate context
 - Use AI editor (Cursor) with `.cursorrules` to apply context to codegen
+- Run **evaluation** → measure code quality objectively and subjectively
 - Run **rules:check** + tests before commit
 - Record new **ADRs** when design decisions are made

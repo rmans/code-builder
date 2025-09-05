@@ -43,3 +43,100 @@ jobs:
 
       - name: Rules check
         run: pnpm run rules:check:ci
+
+  evaluation:
+    runs-on: ubuntu-latest
+    needs: build-test-lint-rules
+    if: always()  # Run even if previous job fails
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Run evaluation reports
+        run: pnpm run reports:all
+        continue-on-error: true  # Don't fail CI on report errors
+
+      - name: Evaluate TypeScript files
+        run: |
+          # Find all TypeScript files and evaluate them
+          find src -name "*.ts" -o -name "*.tsx" | while read file; do
+            echo "Evaluating $file..."
+            python builder/cli.py eval:objective "$file" || echo "Failed to evaluate $file"
+          done
+        continue-on-error: true  # Don't fail CI on evaluation errors
+
+      - name: Generate evaluation summary
+        run: |
+          echo "# Code Quality Evaluation Report" > evaluation_summary.md
+          echo "" >> evaluation_summary.md
+          echo "## Objective Scores" >> evaluation_summary.md
+          echo "" >> evaluation_summary.md
+          
+          if [ -f "builder/cache/last_objective.json" ]; then
+            echo "### Latest Evaluation" >> evaluation_summary.md
+            echo '```json' >> evaluation_summary.md
+            cat builder/cache/last_objective.json >> evaluation_summary.md
+            echo '```' >> evaluation_summary.md
+            echo "" >> evaluation_summary.md
+          fi
+          
+          echo "## Available Artifacts" >> evaluation_summary.md
+          echo "" >> evaluation_summary.md
+          echo "- \`vitest.json\` - Test results and coverage" >> evaluation_summary.md
+          echo "- \`eslint.json\` - Linting results" >> evaluation_summary.md
+          echo "- \`cspell.json\` - Spell checking results" >> evaluation_summary.md
+          echo "- \`markdownlint.json\` - Documentation linting" >> evaluation_summary.md
+          echo "- \`coverage-final.json\` - Detailed coverage analysis" >> evaluation_summary.md
+          echo "- \`last_objective.json\` - Latest objective evaluation" >> evaluation_summary.md
+          echo "" >> evaluation_summary.md
+          echo "## Score Interpretation" >> evaluation_summary.md
+          echo "" >> evaluation_summary.md
+          echo "- **90-100**: Excellent - Production ready" >> evaluation_summary.md
+          echo "- **80-89**: Good - Minor improvements needed" >> evaluation_summary.md
+          echo "- **70-79**: Fair - Several issues to address" >> evaluation_summary.md
+          echo "- **60-69**: Poor - Significant refactoring needed" >> evaluation_summary.md
+          echo "- **Below 60**: Critical - Major quality issues" >> evaluation_summary.md
+
+      - name: Upload evaluation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-results
+          path: |
+            builder/cache/*.json
+            evaluation_summary.md
+          retention-days: 30
+
+      - name: Comment PR with evaluation summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('evaluation_summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+        continue-on-error: true  # Don't fail CI if comment fails

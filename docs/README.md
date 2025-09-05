@@ -1,6 +1,6 @@
 # Documentation Layer
 
-This repo uses docs to drive codegen and decisions.
+This repo uses docs to drive codegen, decisions, and evaluation.
 
 ---
 
@@ -23,6 +23,23 @@ This repo uses docs to drive codegen and decisions.
 - `feature/` (auth, content-engine, etc.)
 - `guardrails.json` = forbidden patterns + hints
 
-Usage:
+---
+
+## Evaluation (docs/eval/)
+- `config.yaml` = evaluation weights and configuration
+- Defines objective vs subjective weight distribution
+- Configures tool paths and scoring weights
+
+---
+
+## Usage Guides
+- `USAGE-Cursor-Evaluation.md` = Complete evaluation workflow guide
+- `CURSOR-Custom-Commands.md` = Cursor integration setup
+
+---
+
+## Usage
 - When editing a file, run `plan:auto <file>` → context.json merges rules + ADRs  
 - Cursor/AI gets that context and generates compliant code
+- Run `eval:objective <file>` → measure code quality objectively
+- Use `--server` flag for interactive Cursor evaluation

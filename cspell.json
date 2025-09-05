@@ -1,0 +1,36 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [],
+  "ignoreWords": [],
+  "import": [],
+  "dictionaries": [
+    "typescript",
+    "node",
+    "npm",
+    "html",
+    "css",
+    "bash",
+    "docker",
+    "yaml",
+    "json"
+  ],
+  "dictionaryDefinitions": [],
+  "overrides": [
+    {
+      "filename": "**/*.md",
+      "language": "en"
+    },
+    {
+      "filename": "**/*.ts",
+      "language": "en,typescript"
+    },
+    {
+      "filename": "**/*.tsx",
+      "language": "en,typescript,react"
+    }
+  ],
+  "reporters": [
+    "json"
+  ]
+}
