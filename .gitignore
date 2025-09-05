@@ -57,7 +57,19 @@ test/**/*.d.mts
 *.map
 *.d.ts
 *.d.mts
-*.js
-*.mjs
-*.cjs
+
+# Compiled JavaScript files (but keep config files)
+src/**/*.js
+src/**/*.mjs
+src/**/*.cjs
+test/**/*.js
+test/**/*.mjs
+test/**/*.cjs
+dist/**/*.js
+dist/**/*.mjs
+dist/**/*.cjs
+
+# Keep important config files
+!eslint.config.js
 !vitest.config.ts
+!scripts/**/*.js
