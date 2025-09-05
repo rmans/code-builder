@@ -35,7 +35,7 @@ Run these commands after cloning:
     pnpm run build      # build TypeScript
     pnpm run test:all   # run all tests (TypeScript + Python)
     pnpm run docs:all   # validate documentation
-    pnpm run rules:check "src/**/*.ts" --feature auth --stacks typescript,react
+    pnpm run rules:check "test/**/*.ts" --feature auth --stacks typescript,react
 
 ---
 
@@ -43,7 +43,7 @@ Run these commands after cloning:
 
 1. **Generate Context**
 
-       python3 builder/cli.py plan:auto src/auth/login.ts
+       python3 builder/cli.py plan:auto test/example.ts
 
    Produces `builder/cache/pack_context.json` and `context.md` with intelligent context selection.
 
@@ -56,7 +56,7 @@ Run these commands after cloning:
 
        pnpm run docs:all          # validate documentation
        pnpm run test:all          # run all tests
-       pnpm run rules:check "src/**/*.ts" --feature auth --stacks typescript,react
+       pnpm run rules:check "test/**/*.ts" --feature auth --stacks typescript,react
 
 4. **Create Pull Request**
 
@@ -67,18 +67,18 @@ Run these commands after cloning:
 
 5. **Record a Decision**
 
-       python3 builder/cli.py adr:new "Auth login API shape" --parent ADR-0000 --related src/auth/login.ts --tags auth
+       python3 builder/cli.py adr:new "Auth login API shape" --parent ADR-0000 --related test/example.ts --tags auth
 
 6. **Evaluate Code Quality**
 
        # Objective evaluation (automated metrics)
-       python3 builder/cli.py eval:objective src/hello.ts
+       python3 builder/cli.py eval:objective test/example.ts
        
        # Interactive evaluation with Cursor
-       python3 builder/cli.py eval:objective src/hello.ts --server
+       python3 builder/cli.py eval:objective test/example.ts --server
        
        # ABC iteration (compare variants)
-       python3 builder/cli.py iter:cursor src/hello.ts
+       python3 builder/cli.py iter:cursor test/example.ts
 
 ---
 
@@ -95,10 +95,10 @@ Code Builder includes an intelligent context generation system that automaticall
 ### Context Commands
 ```bash
 # Generate context for a file
-python3 builder/cli.py plan:auto src/auth/login.ts
+python3 builder/cli.py plan:auto test/example.ts
 
 # Build enhanced context with specific parameters
-python3 builder/cli.py ctx:build-enhanced src/auth/login.ts --purpose implement --feature auth
+python3 builder/cli.py ctx:build-enhanced test/example.ts --purpose implement --feature auth
 
 # Explain why specific items were selected
 python3 builder/cli.py ctx:explain
@@ -151,7 +151,7 @@ python3 builder/cli.py ctx:graph:stats
       cache/        # Generated reports, evaluations, context packs
         packs/      # Cached context packs
         prompt/     # Generated prompt blocks
-    src/
+    test/
       auth/         # Authentication module
         login.ts    # Login functionality
       utils/http.ts # Shared HTTP client
@@ -186,7 +186,7 @@ python3 builder/cli.py doc:check
 pnpm run docs:all
 
 # Context building
-python3 builder/cli.py ctx:build-enhanced src/auth/login.ts --purpose implement
+python3 builder/cli.py ctx:build-enhanced test/example.ts --purpose implement
 
 # All tests
 pnpm run test:all
@@ -224,10 +224,10 @@ Code Builder includes a comprehensive evaluation system that measures code quali
 #### Quick Evaluation
 ```bash
 # Objective evaluation only (automated)
-python3 builder/cli.py eval:objective src/hello.ts
+python3 builder/cli.py eval:objective test/example.ts
 
 # Interactive evaluation with Cursor Bridge Server
-python3 builder/cli.py eval:objective src/hello.ts --server
+python3 builder/cli.py eval:objective test/example.ts --server
 ```
 
 #### Manual Evaluation
