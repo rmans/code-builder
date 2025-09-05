@@ -199,29 +199,22 @@ class ContextRulesMerger:
         
         # Split by lines and look for rule patterns
         lines = content.split('\n')
-        current_rule = []
         
         for line in lines:
             line = line.strip()
             if not line:
-                if current_rule:
-                    rules.append(' '.join(current_rule))
-                    current_rule = []
                 continue
             
             # Skip headers and metadata
             if line.startswith('#') or line.startswith('---'):
-                if current_rule:
-                    rules.append(' '.join(current_rule))
-                    current_rule = []
                 continue
             
-            # Add to current rule
-            current_rule.append(line)
-        
-        # Add final rule if exists
-        if current_rule:
-            rules.append(' '.join(current_rule))
+            # Look for bullet points or numbered items (individual rules)
+            if line.startswith('-') or line.startswith('*') or line.startswith('1.') or line.startswith('2.') or line.startswith('3.') or line.startswith('4.') or line.startswith('5.'):
+                # Clean up the rule text
+                rule_text = line.lstrip('-*123456789. ').strip()
+                if rule_text:
+                    rules.append(rule_text)
         
         return rules
     
@@ -229,11 +222,11 @@ class ContextRulesMerger:
         """Detect contradictions between rule groups."""
         # More specific contradiction detection
         contradiction_patterns = [
-            # Storage patterns
-            (r'never\s+use\s+localStorage', r'always\s+use\s+localStorage'),
-            (r'always\s+use\s+localStorage', r'never\s+use\s+localStorage'),
-            (r'never\s+use\s+sessionStorage', r'always\s+use\s+sessionStorage'),
-            (r'always\s+use\s+sessionStorage', r'never\s+use\s+sessionStorage'),
+            # Storage patterns - more flexible matching (lowercase)
+            (r'never.*localstorage', r'always.*localstorage'),
+            (r'always.*localstorage', r'never.*localstorage'),
+            (r'never.*sessionstorage', r'always.*sessionstorage'),
+            (r'always.*sessionstorage', r'never.*sessionstorage'),
             
             # Export patterns
             (r'never\s+use\s+default\s+exports', r'always\s+use\s+default\s+exports'),

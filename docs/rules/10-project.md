@@ -16,3 +16,4 @@ alwaysApply: true
 - **Never create test files in root** - use .testfiles/ for abc_cursor_response.json, sample_cursor_response.json, etc.
 - **Never create test results in root** - use .testresults/ for evaluation reports, test outputs, etc.
 - **Keep root directory clean** - only essential project files in root
+

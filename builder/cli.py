@@ -1269,7 +1269,9 @@ def _build_enhanced_context_package(target_path, purpose, feature, stacks, token
         'constraints': {
             'rules_md': rules.get('rules_markdown', ''),
             'token_limit': token_limit,
-            'budget_summary': budget_summary
+            'budget_summary': budget_summary,
+            'conflicts': rules.get('conflicts', []),
+            'sources': rules.get('sources', [])
         },
         'acceptance': acceptance,
         'decisions': decisions,
