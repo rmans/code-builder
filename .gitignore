@@ -9,12 +9,26 @@ coverage/
 # Editors / OS junk
 .DS_Store
 *.swp
+*.swo
+*~
 .idea/
 .vscode/
+*.sublime-*
+*.code-workspace
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.secret
 
 # Python
 .venv/
 .pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
 # Builder cache
 builder/cache/
