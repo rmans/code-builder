@@ -18,6 +18,12 @@ coverage/
 # Builder cache
 builder/cache/
 
+# Test files (temporary development files)
+.testfiles/
+
+# Test results (evaluation outputs and test artifacts)
+.testresults/
+
 # Don’t commit compiled outputs under src/test
 src/**/*.js
 src/**/*.mjs

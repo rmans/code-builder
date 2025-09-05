@@ -1,10 +1,15 @@
 {
 	"type": "module",
 	"devDependencies": {
+		"@eslint/js": "^9.34.0",
 		"@types/node": "^24.3.1",
 		"@typescript-eslint/eslint-plugin": "^8.42.0",
 		"@typescript-eslint/parser": "^8.42.0",
+		"@vitest/coverage-v8": "3.2.4",
+		"cspell": "^8.0.0",
 		"eslint": "^9.34.0",
+		"markdownlint-cli2": "^0.12.0",
+		"npm-run-all": "^4.1.5",
 		"typescript": "^5.9.2",
 		"vitest": "^3.2.4"
 	},
@@ -20,7 +25,12 @@
 		"rules:check": ".venv/bin/python builder/cli.py rules:check",
 		"lint": "eslint 'src/**/*.{ts,tsx}'",
 		"builder:plan:auto": ".venv/bin/python builder/cli.py plan:auto",
-		"rules:check:ci": "python builder/cli.py rules:check 'src/**/*.ts' --feature auth --stacks typescript,react"
+		"rules:check:ci": "python builder/cli.py rules:check 'src/**/*.ts' --feature auth --stacks typescript,react",
+		"reports:tests": "vitest run --reporter=json --outputFile=builder/cache/vitest.json --coverage",
+		"reports:lint": "eslint -f json -o builder/cache/eslint.json 'src/**/*.{ts,tsx}' || true",
+		"reports:docs": "markdownlint-cli2 'docs/**/*.md' > builder/cache/markdownlint.json 2>&1 || true",
+		"reports:spell": "cspell 'src/**/*.{ts,tsx}' 'docs/**/*.md' --reporter json > builder/cache/cspell.json || true",
+		"reports:all": "npm-run-all reports:tests reports:lint reports:docs reports:spell"
 	},
 	"dependencies": {
 		"axios": "^1.11.0"
