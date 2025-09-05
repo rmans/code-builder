@@ -683,7 +683,13 @@ def iter_finish(target_path, winner, scores_file):
 @click.option("--title", required=True, help="Document title")
 @click.option("--owner", default="", help="Document owner")
 @click.option("--links", multiple=True, help="Links to other documents (format: type:id)")
-def doc_new(dtype, title, owner, links):
+@click.option("--prd", default="", help="Link to PRD document")
+@click.option("--arch", default="", help="Link to Architecture document")
+@click.option("--adr", default="", help="Link to ADR document")
+@click.option("--impl", default="", help="Link to Implementation document")
+@click.option("--exec", "exec_", default="", help="Link to Execution document")
+@click.option("--ux", default="", help="Link to UX document")
+def doc_new(dtype, title, owner, links, prd, arch, adr, impl, exec_, ux):
     """Create a new document from template"""
     # Validate required title
     if not title or not title.strip():
@@ -699,7 +705,7 @@ def doc_new(dtype, title, owner, links):
     if not owner:
         owner = "TBD"
     
-    # Parse links
+    # Parse links from --links option
     parsed_links = {}
     for link in links:
         if ':' in link:
@@ -707,6 +713,21 @@ def doc_new(dtype, title, owner, links):
             if link_type not in parsed_links:
                 parsed_links[link_type] = []
             parsed_links[link_type].append(link_id)
+    
+    # Add individual link flags
+    individual_links = {
+        'prd': prd,
+        'arch': arch,
+        'adr': adr,
+        'impl': impl,
+        'exec': exec_,
+        'ux': ux
+    }
+    
+    for link_type, link_id in individual_links.items():
+        if link_id and link_id.strip():
+            # For individual flags, we want to set the link directly, not as an array
+            parsed_links[link_type] = link_id.strip()
     
     # Create context for template rendering
     ctx = {
