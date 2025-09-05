@@ -5,6 +5,8 @@
   ],
   "hints": [
     { "pattern": "axios\\.create\\(", "message": "Use shared http client instead of axios.create()" },
-    { "pattern": "fetch\\(", "message": "Prefer shared http client (src/utils/http.ts)" }
+    { "pattern": "fetch\\(", "message": "Prefer shared http client (src/utils/http.ts)" },
+    { "pattern": "\\nimport\\s+(requests|flask|click|yaml|jinja2|pydantic|python_dotenv)\\s*\\n", "message": "Python import detected - verify dependency is in requirements.txt and installed in .venv" },
+    { "pattern": "\\nimport\\s+\\w+", "message": "Python import: 1) Add to requirements.txt 2) Run 'source .venv/bin/activate && pip install -r requirements.txt' 3) Verify with 'python -c \"import <module>\"'" }
   ]
 }

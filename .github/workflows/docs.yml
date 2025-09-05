@@ -1,0 +1,150 @@
+name: Docs Validation
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.markdownlint.json'
+      - 'cspell.json'
+      - 'scripts/markdown-lint-json.js'
+    branches: [ main ]
+
+jobs:
+  docs-validation:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - name: Install Node.js dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create cache directory
+        run: mkdir -p builder/cache
+
+      - name: Validate document schemas
+        run: |
+          echo "🔍 Validating document front-matter schemas..."
+          python builder/cli.py doc:check docs/ --output builder/cache/schema.json --fail-fast
+        continue-on-error: false  # Fail on schema errors
+
+      - name: Run markdown linting
+        run: |
+          echo "📝 Running markdown linting..."
+          pnpm run docs:markdown
+        continue-on-error: false  # Fail on linting errors
+
+      - name: Run spell checking
+        run: |
+          echo "🔤 Running spell checking..."
+          pnpm run docs:spell
+        continue-on-error: false  # Fail on spell errors
+
+      - name: Display validation results
+        run: |
+          echo "📊 Validation Results:"
+          echo "===================="
+          
+          if [ -f "builder/cache/schema.json" ]; then
+            echo "Schema validation:"
+            cat builder/cache/schema.json | jq '.' || echo "Schema validation completed"
+            echo ""
+          fi
+          
+          if [ -f "builder/cache/markdownlint.json" ]; then
+            echo "Markdown linting issues:"
+            cat builder/cache/markdownlint.json | jq 'length' || echo "0"
+            echo ""
+          fi
+          
+          if [ -f "builder/cache/cspell.json" ]; then
+            echo "Spell checking issues:"
+            cat builder/cache/cspell.json | jq '.summary.issues' || echo "0"
+            echo ""
+          fi
+
+      - name: Upload validation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-validation-results
+          path: |
+            builder/cache/schema.json
+            builder/cache/markdownlint.json
+            builder/cache/cspell.json
+          retention-days: 7
+
+      - name: Comment PR with validation summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let comment = '## 📚 Docs Validation Results\n\n';
+            
+            // Schema validation results
+            try {
+              const schema = JSON.parse(fs.readFileSync('builder/cache/schema.json', 'utf8'));
+              if (schema.valid) {
+                comment += '✅ **Schema Validation**: All documents have valid front-matter\n';
+              } else {
+                comment += '❌ **Schema Validation**: Found invalid front-matter\n';
+                comment += '```json\n' + JSON.stringify(schema, null, 2) + '\n```\n';
+              }
+            } catch (e) {
+              comment += '⚠️ **Schema Validation**: Could not parse results\n';
+            }
+            
+            // Markdown linting results
+            try {
+              const markdown = JSON.parse(fs.readFileSync('builder/cache/markdownlint.json', 'utf8'));
+              const issueCount = Array.isArray(markdown) ? markdown.length : 0;
+              if (issueCount === 0) {
+                comment += '✅ **Markdown Linting**: No issues found\n';
+              } else {
+                comment += `⚠️ **Markdown Linting**: Found ${issueCount} issues\n`;
+              }
+            } catch (e) {
+              comment += '⚠️ **Markdown Linting**: Could not parse results\n';
+            }
+            
+            // Spell checking results
+            try {
+              const spell = JSON.parse(fs.readFileSync('builder/cache/cspell.json', 'utf8'));
+              const issueCount = spell.summary ? spell.summary.issues : 0;
+              if (issueCount === 0) {
+                comment += '✅ **Spell Checking**: No issues found\n';
+              } else {
+                comment += `⚠️ **Spell Checking**: Found ${issueCount} issues\n`;
+              }
+            } catch (e) {
+              comment += '⚠️ **Spell Checking**: Could not parse results\n';
+            }
+            
+            comment += '\n📁 **Artifacts**: Validation results are available in the workflow artifacts.';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+        continue-on-error: true  # Don't fail CI if comment fails

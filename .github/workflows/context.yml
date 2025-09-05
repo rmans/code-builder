@@ -1,0 +1,253 @@
+name: Context Smoke Test
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'docs/**'
+      - 'builder/**'
+    branches: [ main ]
+
+jobs:
+  context-smoke-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - name: Install Node.js dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create cache directory
+        run: mkdir -p builder/cache
+
+      - name: Find test paths
+        id: find-paths
+        run: |
+          echo "🔍 Finding test paths for context building..."
+          
+          # Find TypeScript files in src/ for testing
+          TS_FILES=$(find src -name "*.ts" -o -name "*.tsx" | head -2)
+          if [ -z "$TS_FILES" ]; then
+            # Fallback to any files in src/
+            TS_FILES=$(find src -type f | head -2)
+          fi
+          
+          # If no src files, use docs files
+          if [ -z "$TS_FILES" ]; then
+            DOC_FILES=$(find docs -name "*.md" | head -2)
+            if [ -n "$DOC_FILES" ]; then
+              echo "Using docs files: $DOC_FILES"
+              echo "test_paths<<EOF" >> $GITHUB_OUTPUT
+              echo "$DOC_FILES" >> $GITHUB_OUTPUT
+              echo "EOF"
+            else
+              echo "No suitable test paths found"
+              echo "test_paths<<EOF" >> $GITHUB_OUTPUT
+              echo "src/hello.ts" >> $GITHUB_OUTPUT
+              echo "EOF"
+            fi
+          else
+            echo "Using TypeScript files: $TS_FILES"
+            echo "test_paths<<EOF" >> $GITHUB_OUTPUT
+            echo "$TS_FILES" >> $GITHUB_OUTPUT
+            echo "EOF"
+          fi
+
+      - name: Run context smoke tests
+        id: context-test
+        run: |
+          echo "🧪 Running context smoke tests..."
+          
+          # Read test paths from previous step
+          TEST_PATHS=$(echo "${{ steps.find-paths.outputs.test_paths }}")
+          
+          # Initialize results
+          echo "test_results=[]" >> $GITHUB_OUTPUT
+          echo "failed_tests=0" >> $GITHUB_OUTPUT
+          
+          # Test each path
+          for path in $TEST_PATHS; do
+            echo "Testing path: $path"
+            
+            # Run ctx:build for this path
+            if python -m builder.cli plan:auto "$path" --stacks "typescript,react"; then
+              echo "✅ Context build successful for $path"
+              
+              # Validate the generated pack_context.json
+              if [ -f "builder/cache/pack_context.json" ]; then
+                # Check if rules are present
+                RULES_PRESENT=$(python -c "
+                  import json
+                  try:
+                    with open('builder/cache/pack_context.json', 'r') as f:
+                      data = json.load(f)
+                    rules = data.get('rules', {})
+                    rules_md = rules.get('rules_markdown', '')
+                    print('true' if len(rules_md) > 100 else 'false')
+                  except:
+                    print('false')
+                ")
+                
+                # Check if acceptance criteria are present
+                ACCEPTANCE_PRESENT=$(python -c "
+                  import json
+                  try:
+                    with open('builder/cache/pack_context.json', 'r') as f:
+                      data = json.load(f)
+                    acceptance = data.get('acceptance_criteria', [])
+                    print('true' if len(acceptance) > 0 else 'false')
+                  except:
+                    print('false')
+                ")
+                
+                # Check if guardrails are present
+                GUARDRAILS_PRESENT=$(python -c "
+                  import json
+                  try:
+                    with open('builder/cache/pack_context.json', 'r') as f:
+                      data = json.load(f)
+                    rules = data.get('rules', {})
+                    guardrails = rules.get('guardrails', {})
+                    print('true' if guardrails else 'false')
+                  except:
+                    print('false')
+                ")
+                
+                # Record test result
+                if [ "$RULES_PRESENT" = "true" ] && [ "$ACCEPTANCE_PRESENT" = "true" ] && [ "$GUARDRAILS_PRESENT" = "true" ]; then
+                  echo "✅ Validation passed for $path"
+                  echo "test_results+=(\"✅ $path: All validations passed\")" >> $GITHUB_OUTPUT
+                else
+                  echo "❌ Validation failed for $path"
+                  echo "test_results+=(\"❌ $path: Missing rules=$RULES_PRESENT, acceptance=$ACCEPTANCE_PRESENT, guardrails=$GUARDRAILS_PRESENT\")" >> $GITHUB_OUTPUT
+                  echo "failed_tests=$((failed_tests + 1))" >> $GITHUB_OUTPUT
+                fi
+              else
+                echo "❌ pack_context.json not generated for $path"
+                echo "test_results+=(\"❌ $path: pack_context.json not generated\")" >> $GITHUB_OUTPUT
+                echo "failed_tests=$((failed_tests + 1))" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "❌ Context build failed for $path"
+              echo "test_results+=(\"❌ $path: Context build failed\")" >> $GITHUB_OUTPUT
+              echo "failed_tests=$((failed_tests + 1))" >> $GITHUB_OUTPUT
+            fi
+            
+            echo "---"
+          done
+
+      - name: Display test results
+        run: |
+          echo "📊 Context Smoke Test Results:"
+          echo "=============================="
+          
+          # Display individual test results
+          for result in "${{ steps.context-test.outputs.test_results }}"; do
+            echo "$result"
+          done
+          
+          echo ""
+          echo "Failed tests: ${{ steps.context-test.outputs.failed_tests }}"
+          
+          # Fail if any tests failed
+          if [ "${{ steps.context-test.outputs.failed_tests }}" -gt 0 ]; then
+            echo "❌ Context smoke test failed!"
+            exit 1
+          else
+            echo "✅ All context smoke tests passed!"
+          fi
+
+      - name: Upload context artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: context-smoke-test-results
+          path: |
+            builder/cache/pack_context.json
+            builder/cache/context.json
+          retention-days: 7
+
+      - name: Comment PR with context test summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let comment = '## 🧪 Context Smoke Test Results\n\n';
+            
+            // Test results
+            const testResults = `${{ steps.context-test.outputs.test_results }}`.split('\n').filter(r => r.trim());
+            const failedTests = parseInt(`${{ steps.context-test.outputs.failed_tests }}`);
+            
+            if (failedTests === 0) {
+              comment += '✅ **All context smoke tests passed!**\n\n';
+            } else {
+              comment += `❌ **${failedTests} context smoke test(s) failed!**\n\n`;
+            }
+            
+            comment += '### Test Results:\n';
+            testResults.forEach(result => {
+              comment += `- ${result}\n`;
+            });
+            
+            comment += '\n### Validation Checks:\n';
+            comment += '- ✅ **Rules**: Must be present and substantial (>100 chars)\n';
+            comment += '- ✅ **Acceptance Criteria**: Must be present (non-empty array)\n';
+            comment += '- ✅ **Guardrails**: Must be present (non-empty object)\n';
+            comment += '- ✅ **Context Build**: Must complete successfully\n';
+            
+            comment += '\n📁 **Artifacts**: Context files are available in the workflow artifacts.';
+            
+            // Check if pack_context.json exists and add details
+            try {
+              if (fs.existsSync('builder/cache/pack_context.json')) {
+                const contextData = JSON.parse(fs.readFileSync('builder/cache/pack_context.json', 'utf8'));
+                
+                comment += '\n\n### Context Package Details:\n';
+                comment += `- **Target Path**: ${contextData.target_path || 'N/A'}\n`;
+                comment += `- **Feature**: ${contextData.feature || 'none'}\n`;
+                comment += `- **Purpose**: ${contextData.purpose || 'N/A'}\n`;
+                comment += `- **Stacks**: ${(contextData.stacks || []).join(', ')}\n`;
+                comment += `- **PRD**: ${contextData.prd?.content ? 'Found' : 'Not found'}\n`;
+                comment += `- **ADRs**: ${(contextData.adrs || []).length}\n`;
+                comment += `- **Code Files**: ${(contextData.code_excerpts || []).length}\n`;
+                comment += `- **Test Files**: ${(contextData.test_excerpts || []).length}\n`;
+                comment += `- **Acceptance Criteria**: ${(contextData.acceptance_criteria || []).length}\n`;
+                
+                // Rules details
+                const rules = contextData.rules || {};
+                comment += `- **Rules Length**: ${(rules.rules_markdown || '').length} characters\n`;
+                comment += `- **Guardrails**: ${Object.keys(rules.guardrails || {}).length} categories\n`;
+                comment += `- **Conflicts**: ${(rules.conflicts || []).length}\n`;
+                comment += `- **Sources**: ${(rules.sources || []).length}\n`;
+              }
+            } catch (e) {
+              comment += '\n\n⚠️ Could not parse context package details.';
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+        continue-on-error: true  # Don't fail CI if comment fails

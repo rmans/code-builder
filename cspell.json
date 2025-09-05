@@ -29,8 +29,5 @@
       "filename": "**/*.tsx",
       "language": "en,typescript,react"
     }
-  ],
-  "reporters": [
-    "json"
   ]
 }

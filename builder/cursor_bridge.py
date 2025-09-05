@@ -11,6 +11,13 @@ import time
 from typing import Dict, Any, Optional, Union
 from pathlib import Path
 
+# Optional dependency for clipboard monitoring
+try:
+    import pyperclip  # type: ignore
+    HAS_PYPERCLIP = True
+except ImportError:
+    HAS_PYPERCLIP = False
+
 ROOT = os.path.dirname(os.path.dirname(__file__))
 CONFIG_PATH = os.path.join(ROOT, "docs", "eval", "config.yaml")
 
@@ -114,9 +121,7 @@ def watch_for_cursor(poll_interval: float = 1.0, timeout: float = 60.0) -> Optio
     Returns:
         Parsed evaluation data or None if timeout
     """
-    try:
-        import pyperclip
-    except ImportError:
+    if not HAS_PYPERCLIP:
         print("Warning: pyperclip not available. Install with: pip install pyperclip")
         return None
     

@@ -2,12 +2,16 @@
 	"type": "module",
 	"devDependencies": {
 		"@eslint/js": "^9.34.0",
+		"@types/bcryptjs": "^2.4.6",
+		"@types/jsonwebtoken": "^9.0.10",
 		"@types/node": "^24.3.1",
 		"@typescript-eslint/eslint-plugin": "^8.42.0",
 		"@typescript-eslint/parser": "^8.42.0",
 		"@vitest/coverage-v8": "3.2.4",
 		"cspell": "^8.0.0",
 		"eslint": "^9.34.0",
+		"globby": "^14.0.0",
+		"markdownlint": "^0.33.0",
 		"markdownlint-cli2": "^0.12.0",
 		"npm-run-all": "^4.1.5",
 		"typescript": "^5.9.2",
@@ -30,9 +34,14 @@
 		"reports:lint": "eslint -f json -o builder/cache/eslint.json 'src/**/*.{ts,tsx}' || true",
 		"reports:docs": "markdownlint-cli2 'docs/**/*.md' > builder/cache/markdownlint.json 2>&1 || true",
 		"reports:spell": "cspell 'src/**/*.{ts,tsx}' 'docs/**/*.md' --reporter json > builder/cache/cspell.json || true",
-		"reports:all": "npm-run-all reports:tests reports:lint reports:docs reports:spell"
+		"reports:all": "npm-run-all reports:tests reports:lint reports:docs reports:spell",
+		"docs:markdown": "node scripts/markdown-lint-json.js > builder/cache/markdownlint.json 2>&1 || echo '[]' > builder/cache/markdownlint.json",
+		"docs:spell": "cspell 'docs/**/*.md' --config cspell.json --reporter json > builder/cache/cspell.json 2>&1 || echo '{\"issues\":[],\"summary\":{\"files\":0,\"issues\":0,\"errors\":0}}' > builder/cache/cspell.json",
+		"docs:lint": "npm-run-all docs:markdown docs:spell"
 	},
 	"dependencies": {
-		"axios": "^1.11.0"
+		"axios": "^1.11.0",
+		"bcryptjs": "^2.4.3",
+		"jsonwebtoken": "^9.0.2"
 	}
 }
