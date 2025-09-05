@@ -2300,7 +2300,9 @@ def _get_item_changes(old_item, new_item):
 
 @cli.command("ctx:pack")
 @click.option("--output", default="", help="Output file path (prints to stdout if not specified)")
-def ctx_pack(output):
+@click.option("--split", is_flag=True, help="Emit four separate files: system.txt, instructions.txt, user.txt, references.md")
+@click.option("--stdout", is_flag=True, help="Print in sequence with clear separators for copy/paste")
+def ctx_pack(output, split, stdout):
     """Emit four blocks from pack_context.json: system, instructions, user, references"""
     try:
         import json
@@ -2496,16 +2498,78 @@ def ctx_pack(output):
         
         blocks.append("\n".join(references_block))
         
-        # Combine all blocks
-        full_output = "\n\n".join(blocks)
-        
-        # Output to file or stdout
-        if output:
-            with open(output, 'w', encoding='utf-8') as f:
-                f.write(full_output)
-            click.echo(f"✅ Context pack saved to: {output}")
+        # Handle different output modes
+        if split:
+            # Create prompt directory
+            prompt_dir = os.path.join(CACHE, "prompt")
+            os.makedirs(prompt_dir, exist_ok=True)
+            
+            # Write four separate files
+            files_written = []
+            
+            # System block
+            system_file = os.path.join(prompt_dir, "system.txt")
+            with open(system_file, 'w', encoding='utf-8') as f:
+                f.write(blocks[0])
+            files_written.append("system.txt")
+            
+            # Instructions block
+            instructions_file = os.path.join(prompt_dir, "instructions.txt")
+            with open(instructions_file, 'w', encoding='utf-8') as f:
+                f.write(blocks[1])
+            files_written.append("instructions.txt")
+            
+            # User block
+            user_file = os.path.join(prompt_dir, "user.txt")
+            with open(user_file, 'w', encoding='utf-8') as f:
+                f.write(blocks[2])
+            files_written.append("user.txt")
+            
+            # References block
+            references_file = os.path.join(prompt_dir, "references.md")
+            with open(references_file, 'w', encoding='utf-8') as f:
+                f.write(blocks[3])
+            files_written.append("references.md")
+            
+            click.echo(f"✅ Split context pack written to {prompt_dir}/")
+            for filename in files_written:
+                click.echo(f"  - {filename}")
+                
+        elif stdout:
+            # Print with clear separators for copy/paste
+            click.echo("=" * 80)
+            click.echo("SYSTEM BLOCK")
+            click.echo("=" * 80)
+            click.echo(blocks[0])
+            click.echo()
+            click.echo("=" * 80)
+            click.echo("INSTRUCTIONS BLOCK")
+            click.echo("=" * 80)
+            click.echo(blocks[1])
+            click.echo()
+            click.echo("=" * 80)
+            click.echo("USER BLOCK")
+            click.echo("=" * 80)
+            click.echo(blocks[2])
+            click.echo()
+            click.echo("=" * 80)
+            click.echo("REFERENCES BLOCK")
+            click.echo("=" * 80)
+            click.echo(blocks[3])
+            click.echo()
+            click.echo("=" * 80)
+            
         else:
-            click.echo(full_output)
+            # Original behavior: combine all blocks
+            full_output = "\n\n".join(blocks)
+            
+            # Output to file or stdout
+            if output:
+                with open(output, 'w', encoding='utf-8') as f:
+                    f.write(full_output)
+                click.echo(f"✅ Context pack saved to: {output}")
+            else:
+                click.echo(full_output)
         
     except Exception as e:
         click.echo(f"❌ Error: {e}")
