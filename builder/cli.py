@@ -1800,6 +1800,38 @@ def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit, force
         click.echo(f"❌ Error: {e}")
         raise SystemExit(1)
 
+# -------------------- CONTEXT DIFF --------------------
+@cli.command("ctx:diff")
+@click.argument("old_pack")
+@click.argument("new_pack")
+@click.option("--output", default="", help="Output file path (prints to stdout if not specified)")
+def ctx_diff(old_pack, new_pack, output):
+    """Show differences between two context packs (added/removed items, weight changes, budget changes)"""
+    try:
+        import json
+        from collections import defaultdict
+        
+        # Load both packs
+        with open(old_pack, 'r', encoding='utf-8') as f:
+            old_data = json.load(f)
+        with open(new_pack, 'r', encoding='utf-8') as f:
+            new_data = json.load(f)
+        
+        # Generate diff report
+        diff_report = _generate_context_diff(old_data, new_data)
+        
+        # Output diff
+        if output:
+            with open(output, 'w', encoding='utf-8') as f:
+                f.write(diff_report)
+            click.echo(f"✅ Diff report written to {output}")
+        else:
+            click.echo(diff_report)
+            
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
 # -------------------- CONTEXT EXPLAIN --------------------
 @cli.command("ctx:explain")
 @click.option("--input", default="builder/cache/pack_context.json", help="Input pack_context.json file")
@@ -2073,6 +2105,194 @@ def _save_to_cache(cache_path, context_package):
         return True
     except Exception:
         return False
+
+def _generate_context_diff(old_data, new_data):
+    """Generate a comprehensive diff report between two context packs"""
+    from collections import defaultdict
+    
+    diff_lines = []
+    diff_lines.append("# Context Pack Diff Report")
+    diff_lines.append("")
+    from datetime import datetime
+    diff_lines.append(f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    diff_lines.append("")
+    
+    # Task comparison
+    old_task = old_data.get('task', {})
+    new_task = new_data.get('task', {})
+    diff_lines.append("## Task Changes")
+    diff_lines.append("")
+    
+    task_changes = []
+    for key in ['purpose', 'target_path', 'feature']:
+        old_val = old_task.get(key, '')
+        new_val = new_task.get(key, '')
+        if old_val != new_val:
+            task_changes.append(f"- **{key}**: `{old_val}` → `{new_val}`")
+    
+    if task_changes:
+        diff_lines.extend(task_changes)
+    else:
+        diff_lines.append("No task changes")
+    diff_lines.append("")
+    
+    # Budget comparison
+    old_budget = old_data.get('constraints', {}).get('budget_summary', {})
+    new_budget = new_data.get('constraints', {}).get('budget_summary', {})
+    
+    diff_lines.append("## Budget Changes")
+    diff_lines.append("")
+    
+    # Calculate total tokens
+    old_total = sum(cat.get('used_tokens', 0) for cat in old_budget.values())
+    new_total = sum(cat.get('used_tokens', 0) for cat in new_budget.values())
+    old_limit = old_data.get('constraints', {}).get('token_limit', 0)
+    new_limit = new_data.get('constraints', {}).get('token_limit', 0)
+    
+    diff_lines.append(f"**Total Tokens**: {old_total} → {new_total} ({new_total - old_total:+d})")
+    diff_lines.append(f"**Token Limit**: {old_limit} → {new_limit} ({new_limit - old_limit:+d})")
+    diff_lines.append(f"**Utilization**: {old_total/old_limit*100:.1f}% → {new_total/new_limit*100:.1f}%")
+    diff_lines.append("")
+    
+    # Category-level budget changes
+    all_categories = set(old_budget.keys()) | set(new_budget.keys())
+    for category in sorted(all_categories):
+        old_cat = old_budget.get(category, {})
+        new_cat = new_budget.get(category, {})
+        
+        old_tokens = old_cat.get('used_tokens', 0)
+        new_tokens = new_cat.get('used_tokens', 0)
+        old_items = old_cat.get('selected_items', 0)
+        new_items = new_cat.get('selected_items', 0)
+        
+        if old_tokens != new_tokens or old_items != new_items:
+            diff_lines.append(f"### {category.title()}")
+            diff_lines.append(f"- **Items**: {old_items} → {new_items} ({new_items - old_items:+d})")
+            diff_lines.append(f"- **Tokens**: {old_tokens} → {new_tokens} ({new_tokens - old_tokens:+d})")
+            diff_lines.append("")
+    
+    # Content section comparisons
+    content_sections = ['acceptance', 'decisions', 'integrations', 'architecture', 'ux', 'code']
+    
+    for section in content_sections:
+        old_items = old_data.get(section, [])
+        new_items = new_data.get(section, [])
+        
+        # Create item maps for comparison
+        old_map = {_get_item_key(item): item for item in old_items}
+        new_map = {_get_item_key(item): item for item in new_items}
+        
+        added_items = []
+        removed_items = []
+        changed_items = []
+        
+        # Find added items
+        for key, item in new_map.items():
+            if key not in old_map:
+                added_items.append(item)
+        
+        # Find removed items
+        for key, item in old_map.items():
+            if key not in new_map:
+                removed_items.append(item)
+        
+        # Find changed items (same key, different content)
+        for key in old_map.keys() & new_map.keys():
+            old_item = old_map[key]
+            new_item = new_map[key]
+            if _items_different(old_item, new_item):
+                changed_items.append((old_item, new_item))
+        
+        # Generate section diff
+        if added_items or removed_items or changed_items:
+            diff_lines.append(f"## {section.title()} Changes")
+            diff_lines.append("")
+            
+            if added_items:
+                diff_lines.append(f"### Added ({len(added_items)} items)")
+                for item in added_items[:5]:  # Limit to first 5
+                    title = item.get('title', 'Untitled')[:60]
+                    file_path = item.get('file_path', 'Unknown')
+                    diff_lines.append(f"- **{title}**")
+                    diff_lines.append(f"  - Source: `{file_path}`")
+                if len(added_items) > 5:
+                    diff_lines.append(f"- ... and {len(added_items) - 5} more")
+                diff_lines.append("")
+            
+            if removed_items:
+                diff_lines.append(f"### Removed ({len(removed_items)} items)")
+                for item in removed_items[:5]:  # Limit to first 5
+                    title = item.get('title', 'Untitled')[:60]
+                    file_path = item.get('file_path', 'Unknown')
+                    diff_lines.append(f"- **{title}**")
+                    diff_lines.append(f"  - Source: `{file_path}`")
+                if len(removed_items) > 5:
+                    diff_lines.append(f"- ... and {len(removed_items) - 5} more")
+                diff_lines.append("")
+            
+            if changed_items:
+                diff_lines.append(f"### Changed ({len(changed_items)} items)")
+                for old_item, new_item in changed_items[:3]:  # Limit to first 3
+                    title = old_item.get('title', 'Untitled')[:60]
+                    diff_lines.append(f"- **{title}**")
+                    # Show what changed
+                    changes = _get_item_changes(old_item, new_item)
+                    for change in changes:
+                        diff_lines.append(f"  - {change}")
+                if len(changed_items) > 3:
+                    diff_lines.append(f"- ... and {len(changed_items) - 3} more")
+                diff_lines.append("")
+    
+    # Summary
+    total_added = sum(len([item for item in new_data.get(section, []) 
+                          if _get_item_key(item) not in {_get_item_key(item) for item in old_data.get(section, [])}])
+                     for section in content_sections)
+    total_removed = sum(len([item for item in old_data.get(section, []) 
+                            if _get_item_key(item) not in {_get_item_key(item) for item in new_data.get(section, [])}])
+                       for section in content_sections)
+    
+    diff_lines.append("## Summary")
+    diff_lines.append("")
+    diff_lines.append(f"- **Items Added**: {total_added}")
+    diff_lines.append(f"- **Items Removed**: {total_removed}")
+    diff_lines.append(f"- **Token Change**: {new_total - old_total:+d}")
+    diff_lines.append(f"- **Utilization Change**: {new_total/new_limit*100 - old_total/old_limit*100:+.1f}%")
+    
+    return "\n".join(diff_lines)
+
+def _get_item_key(item):
+    """Get a unique key for an item based on title and file_path"""
+    title = item.get('title', '')
+    file_path = item.get('file_path', '')
+    return f"{title}|{file_path}"
+
+def _items_different(old_item, new_item):
+    """Check if two items are different (ignoring metadata)"""
+    # Compare key fields that matter for content
+    key_fields = ['title', 'content', 'file_path']
+    for field in key_fields:
+        if old_item.get(field) != new_item.get(field):
+            return True
+    return False
+
+def _get_item_changes(old_item, new_item):
+    """Get a list of changes between two items"""
+    changes = []
+    
+    if old_item.get('title') != new_item.get('title'):
+        changes.append(f"Title: '{old_item.get('title', '')}' → '{new_item.get('title', '')}'")
+    
+    if old_item.get('file_path') != new_item.get('file_path'):
+        changes.append(f"Source: '{old_item.get('file_path', '')}' → '{new_item.get('file_path', '')}'")
+    
+    old_content = old_item.get('content', '')
+    new_content = new_item.get('content', '')
+    if old_content != new_content:
+        old_len = len(old_content)
+        new_len = len(new_content)
+        changes.append(f"Content: {old_len} → {new_len} chars ({new_len - old_len:+d})")
+    
+    return changes
 
 # -------------------- CONTEXT BUDGET --------------------
 
