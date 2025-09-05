@@ -2259,5 +2259,66 @@ def ctx_select(target_path, feature, top_k, output):
         click.echo(f"❌ Error: {e}")
         raise SystemExit(1)
 
+# -------------------- CONTEXT BUDGET --------------------
+@cli.command("ctx:budget")
+@click.argument("target_path")
+@click.option("--feature", default="", help="Feature name for feature-based scoring")
+@click.option("--budget", default=8000, help="Total token budget")
+@click.option("--output", default="builder/cache/context_budget.json", help="Output JSON file path")
+@click.option("--report", default="builder/cache/budget_report.md", help="Budget report markdown file path")
+def ctx_budget(target_path, feature, budget, output, report):
+    """Apply token budget to context selection"""
+    try:
+        from context_select import ContextSelector
+        from context_budget import ContextBudgetManager
+        
+        click.echo(f"💰 Applying token budget to: {target_path}")
+        click.echo(f"📊 Total budget: {budget} tokens")
+        if feature:
+            click.echo(f"📋 Feature: {feature}")
+        
+        # Get context selection
+        selector = ContextSelector(ROOT)
+        context = selector.select_context(target_path, feature, top_k=10)  # Get more items for budgeting
+        
+        if not context:
+            click.echo("❌ No context found for target path")
+            return
+        
+        # Apply budget
+        budget_manager = ContextBudgetManager(total_budget=budget)
+        budget_items = budget_manager.create_budget_items(context)
+        selected_items, overflow_items, budget_summary = budget_manager.apply_budget(budget_items)
+        
+        # Save results
+        output_dir = os.path.dirname(output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        budget_manager.save_budget_results(selected_items, overflow_items, budget_summary, output)
+        
+        # Generate and save report
+        report_content = budget_manager.create_budget_report(selected_items, overflow_items, budget_summary)
+        with open(report, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+        
+        # Show summary
+        total_tokens = sum(item.token_estimate for item in selected_items)
+        click.echo(f"✅ Budget applied successfully!")
+        click.echo(f"📄 Selected: {len(selected_items)} items ({total_tokens} tokens)")
+        click.echo(f"📄 Overflow: {len(overflow_items)} items")
+        click.echo(f"📊 Budget utilization: {total_tokens / budget * 100:.1f}%")
+        click.echo(f"💾 Results saved to: {output}")
+        click.echo(f"📋 Report saved to: {report}")
+        
+        # Show per-type breakdown
+        click.echo(f"\n📊 Budget Allocation:")
+        for budget_type, summary in budget_summary.items():
+            click.echo(f"  {budget_type.upper()}: {summary['selected_items']}/{summary['total_items']} items ({summary['used_tokens']}/{summary['budget_limit']} tokens)")
+        
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
 if __name__ == "__main__":
     cli()
