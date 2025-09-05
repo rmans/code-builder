@@ -1,6 +1,6 @@
 # Documentation Layer
 
-This repo uses docs to drive codegen, decisions, and evaluation.
+This repo uses documentation to drive code generation, decisions, evaluation, and context building. The documentation system provides a comprehensive knowledge base that powers AI-assisted development.
 
 ---
 
@@ -138,9 +138,26 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 ---
 
 ## Usage
-- When editing a file, run `plan:auto <file>` → context.json merges rules + ADRs  
-- Cursor/AI gets that context and generates compliant code
-- Run `eval:objective <file>` → measure code quality objectively
-- Use `--server` flag for interactive Cursor evaluation
-- Use `doc:new <type> --title "Title"` → create new documents
-- Use `doc:index` → update this index
+
+### Context Generation
+- **Generate context**: `python3 builder/cli.py plan:auto <file>` → creates `pack_context.json` and `context.md`
+- **Enhanced context**: `python3 builder/cli.py ctx:build-enhanced <file> --purpose implement`
+- **Explain selection**: `python3 builder/cli.py ctx:explain` → shows why items were selected
+- **Generate prompts**: `python3 builder/cli.py ctx:pack` → creates prompt blocks for AI
+
+### Documentation Management
+- **Create documents**: `python3 builder/cli.py doc:new <type> --title "Title"`
+- **Set links**: `python3 builder/cli.py doc:set-links <file> --prd PRD-001 --arch ARCH-001`
+- **Validate docs**: `python3 builder/cli.py doc:check` → validates front-matter and structure
+- **Update index**: `python3 builder/cli.py doc:index` → regenerates this index
+
+### Quality Assurance
+- **Documentation quality**: `pnpm run docs:all` → markdown linting and spell checking
+- **Code evaluation**: `python3 builder/cli.py eval:objective <file>` → measure code quality
+- **Interactive evaluation**: `python3 builder/cli.py eval:objective <file> --server`
+- **Rules checking**: `python3 builder/cli.py rules:check "src/**/*.ts" --feature auth`
+
+### Context System
+- **Graph statistics**: `python3 builder/cli.py ctx:graph:stats` → shows node/edge counts
+- **Context diffing**: `python3 builder/cli.py ctx:diff <old.json> <new.json>` → compare contexts
+- **Budget management**: `python3 builder/cli.py ctx:budget` → manage token allocations
