@@ -2055,147 +2055,197 @@ def _get_last_modified(file_path):
 @cli.command("ctx:pack")
 @click.option("--output", default="", help="Output file path (prints to stdout if not specified)")
 def ctx_pack(output):
-    """Emit 4 blocks (system, instructions, user, references) from pack_context.json; respect budgets."""
+    """Emit four blocks from pack_context.json: system, instructions, user, references"""
     try:
         import json
         
         # Load pack_context.json
         pack_context_path = os.path.join(CACHE, "pack_context.json")
         if not os.path.exists(pack_context_path):
-            click.echo("❌ No pack_context.json found. Run 'ctx:build' first.")
+            click.echo("❌ No pack_context.json found. Run 'ctx:build-enhanced' first.")
             raise SystemExit(1)
             
-        with open(pack_context_path, 'r') as f:
+        with open(pack_context_path, 'r', encoding='utf-8') as f:
             context_package = json.load(f)
         
         # Build the 4 blocks
         blocks = []
         
-        # Block 1: System (Rules and Guardrails - should lead)
+        # Block 1: SYSTEM - merged rules_md + "obey acceptance criteria" line
         system_block = []
         system_block.append("## SYSTEM")
         system_block.append("")
         
-        # Add rules (highest priority)
-        if context_package.get('rules', {}).get('rules_markdown'):
-            system_block.append("### Rules")
-            system_block.append("")
-            system_block.append(context_package['rules']['rules_markdown'])
+        # Add rules_md (highest priority)
+        rules_md = context_package.get('constraints', {}).get('rules_md', '')
+        if rules_md:
+            system_block.append(rules_md)
             system_block.append("")
         
-        # Add guardrails
-        if context_package.get('rules', {}).get('guardrails'):
-            guardrails = context_package['rules']['guardrails']
-            system_block.append("### Guardrails")
-            system_block.append("")
-            
-            if guardrails.get('forbiddenPatterns'):
-                system_block.append("#### Forbidden Patterns")
-                for pattern in guardrails['forbiddenPatterns']:
-                    system_block.append(f"- **Pattern**: `{pattern['pattern']}`")
-                    system_block.append(f"  **Message**: {pattern['message']}")
-                system_block.append("")
-            
-            if guardrails.get('hints'):
-                system_block.append("#### Hints")
-                for hint in guardrails['hints']:
-                    system_block.append(f"- **Pattern**: `{hint['pattern']}`")
-                    system_block.append(f"  **Message**: {hint['message']}")
-                system_block.append("")
+        # Add acceptance criteria directive
+        system_block.append("**OBEY ACCEPTANCE CRITERIA** - All implementation must satisfy the acceptance criteria listed in the instructions block.")
+        system_block.append("")
         
         blocks.append("\n".join(system_block))
         
-        # Block 2: Instructions (Purpose, Feature, Stacks)
+        # Block 2: INSTRUCTIONS - goal, acceptance bullets, constraints (budgets/limits)
         instructions_block = []
         instructions_block.append("## INSTRUCTIONS")
         instructions_block.append("")
         
-        # Purpose
-        purpose = context_package.get('purpose', 'unknown')
-        instructions_block.append(f"**Purpose**: {purpose}")
-        instructions_block.append("")
+        # Task information
+        task = context_package.get('task', {})
+        purpose = task.get('purpose', 'unknown')
+        target_path = task.get('target_path', '')
+        feature = task.get('feature', '')
         
-        # Feature
-        feature = context_package.get('feature', '')
+        # Goal
+        instructions_block.append(f"**Goal**: {purpose} {target_path}")
         if feature:
             instructions_block.append(f"**Feature**: {feature}")
+        instructions_block.append("")
+        
+        # Acceptance criteria (bulleted list)
+        acceptance_items = context_package.get('acceptance', [])
+        if acceptance_items:
+            instructions_block.append("**Acceptance Criteria**:")
+            instructions_block.append("")
+            for item in acceptance_items:
+                # Extract acceptance criteria from content
+                content = item.get('content', '')
+                if 'Acceptance Criteria' in content:
+                    # Find the acceptance criteria section
+                    lines = content.split('\n')
+                    in_criteria = False
+                    for line in lines:
+                        if 'Acceptance Criteria' in line:
+                            in_criteria = True
+                            continue
+                        elif in_criteria and line.strip() and not line.startswith('#'):
+                            if line.strip().startswith('-'):
+                                instructions_block.append(f"  {line.strip()}")
+                            elif line.strip():
+                                instructions_block.append(f"  - {line.strip()}")
+                        elif in_criteria and line.startswith('#'):
+                            break
             instructions_block.append("")
         
-        # Stacks
-        stacks = context_package.get('stacks', [])
-        if stacks:
-            instructions_block.append(f"**Technology Stack**: {', '.join(stacks)}")
+        # Constraints (budgets/limits)
+        constraints = context_package.get('constraints', {})
+        budget_summary = constraints.get('budget_summary', {})
+        if budget_summary:
+            instructions_block.append("**Constraints**:")
             instructions_block.append("")
-        
-        # PRD content if available
-        if context_package.get('prd', {}).get('content'):
-            instructions_block.append("### Product Requirements")
-            instructions_block.append("")
-            instructions_block.append(context_package['prd']['content'])
+            total_budget = sum(summary.get('budget_limit', 0) for summary in budget_summary.values())
+            used_budget = sum(summary.get('used_tokens', 0) for summary in budget_summary.values())
+            instructions_block.append(f"- Token budget: {used_budget}/{total_budget} tokens")
+            for budget_type, summary in budget_summary.items():
+                items_selected = summary.get('selected_items', 0)
+                items_total = summary.get('total_items', 0)
+                instructions_block.append(f"- {budget_type.title()}: {items_selected}/{items_total} items")
             instructions_block.append("")
         
         blocks.append("\n".join(instructions_block))
         
-        # Block 3: User (Target Path and User Context)
+        # Block 3: USER - succinct restatement (derived from target path + feature)
         user_block = []
         user_block.append("## USER")
         user_block.append("")
         
-        # Target path
-        target_path = context_package.get('target_path', '')
-        if target_path:
-            user_block.append(f"**Target Path**: `{target_path}`")
-            user_block.append("")
+        # Succinct restatement
+        if target_path and feature:
+            user_block.append(f"Implement {feature} functionality in {target_path}")
+        elif target_path:
+            user_block.append(f"Implement functionality in {target_path}")
+        else:
+            user_block.append("Implement the requested functionality")
+        user_block.append("")
         
-        # Code excerpts
-        code_excerpts = context_package.get('code_excerpts', [])
-        if code_excerpts:
-            user_block.append("### Current Code")
+        # Add relevant code excerpts if available
+        code_items = context_package.get('code', [])
+        if code_items:
+            user_block.append("**Current Code**:")
             user_block.append("")
-            for excerpt in code_excerpts:
-                user_block.append(f"**File**: `{excerpt['path']}`")
-                user_block.append("```typescript")
-                user_block.append(excerpt['excerpt'])
-                user_block.append("```")
-                user_block.append("")
-        
-        # Test excerpts
-        test_excerpts = context_package.get('test_excerpts', [])
-        if test_excerpts:
-            user_block.append("### Current Tests")
-            user_block.append("")
-            for excerpt in test_excerpts:
-                user_block.append(f"**File**: `{excerpt['path']}`")
-                user_block.append("```typescript")
-                user_block.append(excerpt['excerpt'])
-                user_block.append("```")
-                user_block.append("")
+            for item in code_items[:3]:  # Limit to 3 code items
+                title = item.get('title', 'Unknown')
+                content = item.get('content', '')
+                file_path = item.get('file_path', '')
+                if file_path:
+                    user_block.append(f"```typescript")
+                    user_block.append(f"// {file_path}")
+                    # Show first 20 lines of content
+                    lines = content.split('\n')[:20]
+                    user_block.append('\n'.join(lines))
+                    if len(content.split('\n')) > 20:
+                        user_block.append("// ... (truncated)")
+                    user_block.append("```")
+                    user_block.append("")
         
         blocks.append("\n".join(user_block))
         
-        # Block 4: References (ADRs, Acceptance Criteria)
+        # Block 4: REFERENCES - bulleted list of included sources with anchors
         references_block = []
         references_block.append("## REFERENCES")
         references_block.append("")
         
-        # Acceptance Criteria (should be present)
-        acceptance_criteria = context_package.get('acceptance_criteria', [])
-        if acceptance_criteria:
-            references_block.append("### Acceptance Criteria")
-            references_block.append("")
-            for criterion in acceptance_criteria:
-                references_block.append(f"- {criterion}")
+        # Acceptance items
+        if acceptance_items:
+            references_block.append("**Acceptance Sources**:")
+            for item in acceptance_items:
+                title = item.get('title', 'Unknown')
+                source_anchor = item.get('source_anchor', '')
+                if source_anchor:
+                    references_block.append(f"- {source_anchor}")
+                else:
+                    file_path = item.get('file_path', '')
+                    if file_path:
+                        references_block.append(f"- [{title}]({file_path})")
             references_block.append("")
         
-        # ADRs
-        adrs = context_package.get('adrs', [])
-        if adrs:
-            references_block.append("### Architecture Decision Records")
+        # Architecture items
+        arch_items = context_package.get('architecture', [])
+        if arch_items:
+            references_block.append("**Architecture Sources**:")
+            for item in arch_items:
+                title = item.get('title', 'Unknown')
+                source_anchor = item.get('source_anchor', '')
+                if source_anchor:
+                    references_block.append(f"- {source_anchor}")
+                else:
+                    file_path = item.get('file_path', '')
+                    if file_path:
+                        references_block.append(f"- [{title}]({file_path})")
             references_block.append("")
-            for i, adr in enumerate(adrs, 1):
-                references_block.append(f"#### ADR {i}")
-                references_block.append("")
-                references_block.append(adr)
+        
+        # Code items
+        if code_items:
+            references_block.append("**Code Sources**:")
+            for item in code_items:
+                title = item.get('title', 'Unknown')
+                source_anchor = item.get('source_anchor', '')
+                if source_anchor:
+                    references_block.append(f"- {source_anchor}")
+                else:
+                    file_path = item.get('file_path', '')
+                    if file_path:
+                        references_block.append(f"- [{title}]({file_path})")
+            references_block.append("")
+        
+        # Other sources
+        other_sections = ['decisions', 'integrations', 'ux']
+        for section in other_sections:
+            items = context_package.get(section, [])
+            if items:
+                references_block.append(f"**{section.title()} Sources**:")
+                for item in items:
+                    title = item.get('title', 'Unknown')
+                    source_anchor = item.get('source_anchor', '')
+                    if source_anchor:
+                        references_block.append(f"- {source_anchor}")
+                    else:
+                        file_path = item.get('file_path', '')
+                        if file_path:
+                            references_block.append(f"- [{title}]({file_path})")
                 references_block.append("")
         
         blocks.append("\n".join(references_block))
