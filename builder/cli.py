@@ -1320,6 +1320,367 @@ def ctx_build(target_path, purpose, feature, stacks, token_limit):
     else:
         click.echo(f"✅ Token usage within budget")
 
+# -------------------- CONTEXT BUILD HELPERS --------------------
+def _build_enhanced_context_package(target_path, purpose, feature, stacks, token_limit, 
+                                   selected_items, overflow_items, budget_summary, rules):
+    """Build enhanced context package with all required fields"""
+    
+    # Group selected items by type
+    items_by_type = {}
+    for item in selected_items:
+        item_type = item.type
+        if item_type not in items_by_type:
+            items_by_type[item_type] = []
+        items_by_type[item_type].append(item)
+    
+    # Extract acceptance criteria from PRD items
+    acceptance = []
+    for item in items_by_type.get('acceptance', []):
+        acceptance.append({
+            'title': item.title,
+            'content': item.content,
+            'file_path': item.file_path,
+            'source_anchor': item.source_anchor
+        })
+    
+    # Extract decisions from ADR items
+    decisions = []
+    for item in items_by_type.get('adr', []):
+        decisions.append({
+            'title': item.title,
+            'content': item.content,
+            'file_path': item.file_path,
+            'source_anchor': item.source_anchor
+        })
+    
+    # Extract integrations
+    integrations = []
+    for item in items_by_type.get('integration', []):
+        integrations.append({
+            'title': item.title,
+            'content': item.content,
+            'file_path': item.file_path,
+            'source_anchor': item.source_anchor
+        })
+    
+    # Extract architecture items
+    architecture = []
+    for item in items_by_type.get('arch', []):
+        architecture.append({
+            'title': item.title,
+            'content': item.content,
+            'file_path': item.file_path,
+            'source_anchor': item.source_anchor
+        })
+    
+    # Extract UX items
+    ux = []
+    for item in items_by_type.get('ux', []):
+        ux.append({
+            'title': item.title,
+            'content': item.content,
+            'file_path': item.file_path,
+            'source_anchor': item.source_anchor
+        })
+    
+    # Extract code items
+    code = []
+    for item in items_by_type.get('code', []):
+        code.append({
+            'title': item.title,
+            'content': item.content,
+            'file_path': item.file_path,
+            'source_anchor': item.source_anchor
+        })
+    
+    # Build objective signals from existing reports
+    objective_signals = _build_objective_signals()
+    
+    # Build provenance information
+    provenance = _build_provenance(selected_items, overflow_items, budget_summary)
+    
+    # Build render information
+    render = _build_render_info(target_path, purpose, feature, selected_items)
+    
+    return {
+        'task': {
+            'purpose': purpose,
+            'target_path': target_path,
+            'feature': feature
+        },
+        'constraints': {
+            'rules_md': rules.get('rules_markdown', ''),
+            'token_limit': token_limit,
+            'budget_summary': budget_summary
+        },
+        'acceptance': acceptance,
+        'decisions': decisions,
+        'integrations': integrations,
+        'architecture': architecture,
+        'ux': ux,
+        'code': code,
+        'objective_signals': objective_signals,
+        'provenance': provenance,
+        'render': render,
+        'generated_at': _today()
+    }
+
+def _build_objective_signals():
+    """Build objective signals from existing reports"""
+    signals = {}
+    
+    # Check for existing reports
+    reports = [
+        'builder/cache/schema.json',
+        'builder/cache/markdownlint.json',
+        'builder/cache/cspell.json'
+    ]
+    
+    for report_path in reports:
+        if os.path.exists(report_path):
+            try:
+                with open(report_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    report_name = os.path.basename(report_path).replace('.json', '')
+                    signals[report_name] = data
+            except Exception:
+                continue
+    
+    return signals
+
+def _build_provenance(selected_items, overflow_items, budget_summary):
+    """Build provenance information"""
+    return {
+        'selected_count': len(selected_items),
+        'overflow_count': len(overflow_items),
+        'budget_utilization': sum(item.token_estimate for item in selected_items),
+        'budget_summary': budget_summary,
+        'selection_method': 'graph_based',
+        'budget_method': 'token_aware'
+    }
+
+def _build_render_info(target_path, purpose, feature, selected_items):
+    """Build render information for context generation"""
+    return {
+        'system': f"Context builder for {target_path}",
+        'instructions': f"Generate {purpose} for {target_path}",
+        'user': f"Feature: {feature or 'general'}",
+        'references': [item.source_anchor for item in selected_items]
+    }
+
+def _generate_enhanced_context_md(context_package):
+    """Generate enhanced context.md with pretty formatting"""
+    
+    task = context_package['task']
+    constraints = context_package['constraints']
+    
+    md_parts = [
+        "# Context Package",
+        "",
+        f"**Target**: `{task['target_path']}`",
+        f"**Purpose**: {task['purpose']}",
+        f"**Feature**: {task['feature'] or 'None'}",
+        f"**Generated**: {context_package['generated_at']}",
+        "",
+        "---",
+        "",
+        "## Task",
+        "",
+        f"- **Purpose**: {task['purpose']}",
+        f"- **Target Path**: `{task['target_path']}`",
+        f"- **Feature**: {task['feature'] or 'None'}",
+        "",
+        "---",
+        "",
+        "## Constraints",
+        "",
+        "### Rules",
+        "",
+        constraints['rules_md'] or "No rules found",
+        "",
+        f"**Token Budget**: {constraints['token_limit']} tokens",
+        ""
+    ]
+    
+    # Add acceptance criteria
+    if context_package['acceptance']:
+        md_parts.extend([
+            "---",
+            "",
+            "## Acceptance Criteria",
+            ""
+        ])
+        for item in context_package['acceptance']:
+            md_parts.extend([
+                f"### {item['title']}",
+                "",
+                f"*Source: {item['source_anchor']}*",
+                "",
+                item['content'],
+                ""
+            ])
+    
+    # Add decisions (ADRs)
+    if context_package['decisions']:
+        md_parts.extend([
+            "---",
+            "",
+            "## Decisions (ADRs)",
+            ""
+        ])
+        for item in context_package['decisions']:
+            md_parts.extend([
+                f"### {item['title']}",
+                "",
+                f"*Source: {item['source_anchor']}*",
+                "",
+                item['content'],
+                ""
+            ])
+    
+    # Add integrations
+    if context_package['integrations']:
+        md_parts.extend([
+            "---",
+            "",
+            "## Integrations",
+            ""
+        ])
+        for item in context_package['integrations']:
+            md_parts.extend([
+                f"### {item['title']}",
+                "",
+                f"*Source: {item['source_anchor']}*",
+                "",
+                item['content'],
+                ""
+            ])
+    
+    # Add architecture
+    if context_package['architecture']:
+        md_parts.extend([
+            "---",
+            "",
+            "## Architecture",
+            ""
+        ])
+        for item in context_package['architecture']:
+            md_parts.extend([
+                f"### {item['title']}",
+                "",
+                f"*Source: {item['source_anchor']}*",
+                "",
+                item['content'],
+                ""
+            ])
+    
+    # Add UX
+    if context_package['ux']:
+        md_parts.extend([
+            "---",
+            "",
+            "## UX",
+            ""
+        ])
+        for item in context_package['ux']:
+            md_parts.extend([
+                f"### {item['title']}",
+                "",
+                f"*Source: {item['source_anchor']}*",
+                "",
+                item['content'],
+                ""
+            ])
+    
+    # Add code
+    if context_package['code']:
+        md_parts.extend([
+            "---",
+            "",
+            "## Code",
+            ""
+        ])
+        for item in context_package['code']:
+            md_parts.extend([
+                f"### {item['title']}",
+                "",
+                f"*Source: {item['source_anchor']}*",
+                "",
+                "```typescript",
+                item['content'],
+                "```",
+                ""
+            ])
+    
+    # Add objective signals
+    if context_package['objective_signals']:
+        md_parts.extend([
+            "---",
+            "",
+            "## Objective Signals",
+            ""
+        ])
+        for signal_name, signal_data in context_package['objective_signals'].items():
+            md_parts.extend([
+                f"### {signal_name.title()}",
+                "",
+                f"```json",
+                json.dumps(signal_data, indent=2),
+                "```",
+                ""
+            ])
+    
+    # Add provenance
+    provenance = context_package['provenance']
+    md_parts.extend([
+        "---",
+        "",
+        "## Provenance",
+        "",
+        f"- **Selected Items**: {provenance['selected_count']}",
+        f"- **Overflow Items**: {provenance['overflow_count']}",
+        f"- **Budget Utilization**: {provenance['budget_utilization']} tokens",
+        f"- **Selection Method**: {provenance['selection_method']}",
+        f"- **Budget Method**: {provenance['budget_method']}",
+        ""
+    ])
+    
+    return '\n'.join(md_parts)
+
+def _show_context_summary(context_package, budget_summary, token_limit):
+    """Show enhanced context summary"""
+    task = context_package['task']
+    provenance = context_package['provenance']
+    
+    click.echo(f"\n📦 Enhanced Context Package Summary:")
+    click.echo(f"  Target: {task['target_path']}")
+    click.echo(f"  Purpose: {task['purpose']}")
+    click.echo(f"  Feature: {task['feature'] or 'None'}")
+    click.echo(f"  Selected items: {provenance['selected_count']}")
+    click.echo(f"  Overflow items: {provenance['overflow_count']}")
+    click.echo(f"  Token usage: {provenance['budget_utilization']}/{token_limit}")
+    
+    # Show per-type breakdown
+    click.echo(f"\n📊 Content by Type:")
+    for content_type in ['acceptance', 'decisions', 'integrations', 'architecture', 'ux', 'code']:
+        count = len(context_package.get(content_type, []))
+        if count > 0:
+            click.echo(f"  {content_type.title()}: {count} items")
+    
+    # Show budget utilization
+    total_budget = sum(summary['budget_limit'] for summary in budget_summary.values())
+    used_budget = sum(summary['used_tokens'] for summary in budget_summary.values())
+    utilization = (used_budget / total_budget * 100) if total_budget > 0 else 0
+    
+    click.echo(f"\n💰 Budget Utilization: {utilization:.1f}%")
+    
+    if utilization > 100:
+        click.echo(f"⚠️  Budget exceeded!")
+    elif utilization > 80:
+        click.echo(f"⚠️  Approaching budget limit")
+    else:
+        click.echo(f"✅ Budget usage within limits")
+
 # -------------------- DOCUMENT LINKS --------------------
 @cli.command("doc:set-links")
 @click.argument("file")
@@ -1553,6 +1914,76 @@ def context_select(start_path, feature, max_items, max_distance, summary_only):
         click.echo(f"❌ Import error: {e}")
         click.echo("Make sure context_select.py exists in the builder directory")
         raise SystemExit(1)
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
+# -------------------- ENHANCED CONTEXT BUILD --------------------
+@cli.command("ctx:build-enhanced")
+@click.argument("target_path")
+@click.option("--purpose", required=True, help="Purpose: implement, review, test, etc.")
+@click.option("--feature", default="", help="Feature name for rules")
+@click.option("--stacks", default="typescript,react", help="Comma-separated stack names")
+@click.option("--token-limit", default=8000, help="Token budget limit")
+def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit):
+    """Build enhanced context package using graph + selection + budget"""
+    try:
+        from context_graph import ContextGraphBuilder
+        from context_select import ContextSelector
+        from context_budget import ContextBudgetManager
+        
+        # Ensure cache directory exists
+        os.makedirs(CACHE, exist_ok=True)
+        
+        click.echo(f"🔍 Building enhanced context for: {target_path}")
+        click.echo(f"📋 Purpose: {purpose}, Feature: {feature or 'None'}")
+        click.echo(f"💰 Token budget: {token_limit}")
+        
+        # Step 1: Build context graph
+        click.echo("📊 Building context graph...")
+        graph_builder = ContextGraphBuilder(ROOT)
+        graph = graph_builder.build()
+        
+        # Step 2: Select context using graph
+        click.echo("🎯 Selecting relevant context...")
+        selector = ContextSelector(ROOT)
+        context_selection = selector.select_context(target_path, feature, top_k=10)
+        
+        if not context_selection:
+            click.echo("❌ No context found for target path")
+            return
+        
+        # Step 3: Apply budget constraints
+        click.echo("💰 Applying token budget...")
+        budget_manager = ContextBudgetManager(total_budget=token_limit)
+        budget_items = budget_manager.create_budget_items(context_selection)
+        selected_items, overflow_items, budget_summary = budget_manager.apply_budget(budget_items)
+        
+        # Step 4: Load rules
+        rules = _load_rules(feature, stacks)
+        
+        # Step 5: Build enhanced context package
+        context_package = _build_enhanced_context_package(
+            target_path, purpose, feature, stacks, token_limit,
+            selected_items, overflow_items, budget_summary, rules
+        )
+        
+        # Step 6: Write pack_context.json
+        pack_context_path = os.path.join(CACHE, "pack_context.json")
+        with open(pack_context_path, "w", encoding="utf-8") as f:
+            json.dump(context_package, f, indent=2, ensure_ascii=False)
+        click.echo(f"✅ Created {pack_context_path}")
+        
+        # Step 7: Generate enhanced context.md
+        context_md = _generate_enhanced_context_md(context_package)
+        context_md_path = os.path.join(CACHE, "context.md")
+        with open(context_md_path, "w", encoding="utf-8") as f:
+            f.write(context_md)
+        click.echo(f"✅ Created {context_md_path}")
+        
+        # Step 8: Show summary
+        _show_context_summary(context_package, budget_summary, token_limit)
+        
     except Exception as e:
         click.echo(f"❌ Error: {e}")
         raise SystemExit(1)
