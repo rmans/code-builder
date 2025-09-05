@@ -110,202 +110,60 @@ def plan_auto(path, stacks):
     
     click.echo(f"🔍 Detected feature: '{feature or 'none'}' for path: {path}")
     
-    # Call ctx:build after feature detection
+    # Call ctx:build-enhanced after feature detection
     try:
-        click.echo("🔧 Building context package...")
+        click.echo("🔧 Building enhanced context package...")
         
-        # Import ctx_build function logic
-        import yaml
-        import re
-        from pathlib import Path
+        # Import the enhanced context building modules
+        from context_graph import ContextGraphBuilder
+        from context_select import ContextSelector
+        from context_budget import ContextBudgetManager
         
-        # Ensure cache directory exists
-        os.makedirs(CACHE, exist_ok=True)
+        # 1. Build context graph
+        graph_builder = ContextGraphBuilder(ROOT)
+        graph = graph_builder.build()
         
-        # Load rules
+        # 2. Select context using graph
+        selector = ContextSelector(ROOT)
+        context_selection = selector.select_context(path, feature, top_k=10)
+        
+        if not context_selection:
+            click.echo("❌ No context found for target path")
+            return
+        
+        # 3. Apply budget constraints
+        budget_manager = ContextBudgetManager(total_budget=8000)
+        budget_items = budget_manager.create_budget_items(context_selection)
+        selected_items, overflow_items, budget_summary = budget_manager.apply_budget(budget_items)
+        
+        # 4. Load rules
         rules = _load_rules(feature, stacks)
         
-        # Find nearest PRD
-        prd_content = ""
-        prd_metadata = {}
-        adr_contents = []
+        # 5. Build enhanced context package
+        context_package = _build_enhanced_context_package(
+            path, 'implement', feature, stacks, 8000,
+            selected_items, overflow_items, budget_summary, rules
+        )
         
-        # Look for PRD in same directory or parent directories
-        target_dir = os.path.dirname(path)
-        prd_found = False
-        
-        # Search for PRD files
-        for root, dirs, files in os.walk(DOCS):
-            for file in files:
-                if file.endswith('.md') and 'prd' in file.lower():
-                    prd_path = os.path.join(root, file)
-                    try:
-                        with open(prd_path, 'r', encoding='utf-8') as f:
-                            content = f.read()
-                            # Try to parse front-matter for metadata
-                            metadata = {}
-                            try:
-                                with open(prd_path, 'r', encoding='utf-8') as f:
-                                    content = f.read()
-                                    if content.startswith('---'):
-                                        parts = content.split('---', 2)
-                                        if len(parts) >= 3:
-                                            front_matter = parts[1]
-                                            metadata = yaml.safe_load(front_matter) or {}
-                                            prd_content = parts[2]
-                                    else:
-                                        prd_content = content
-                                
-                                prd_metadata = {
-                                    'type': metadata.get('type', 'prd'),
-                                    'id': metadata.get('id', file.replace('.md', '')),
-                                    'title': metadata.get('title', file.replace('.md', '')),
-                                    'status': metadata.get('status', 'draft'),
-                                    'owner': metadata.get('owner', 'TBD'),
-                                    'created': metadata.get('created', _today()),
-                                    'links': metadata.get('links', [])
-                                }
-                                prd_found = True
-                                break
-                            except Exception:
-                                pass
-                    except Exception:
-                        pass
-            if prd_found:
-                break
-        
-        # Find ADRs
-        for root, dirs, files in os.walk(ADRS):
-            for file in files:
-                if file.endswith('.md') and file.startswith('ADR-'):
-                    adr_path = os.path.join(root, file)
-                    try:
-                        with open(adr_path, 'r', encoding='utf-8') as f:
-                            adr_contents.append(f.read())
-                    except Exception:
-                        pass
-        
-        # Get code excerpts
-        code_excerpts = []
-        if os.path.exists(path):
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    lines = content.split('\n')
-                    excerpt = '\n'.join(lines[:30])
-                    if len(lines) > 30:
-                        excerpt += '\n... (truncated)'
-                    code_excerpts.append({
-                        'path': path,
-                        'excerpt': excerpt,
-                        'line_count': len(lines)
-                    })
-            except Exception:
-                pass
-        
-        # Get test excerpts
-        test_excerpts = []
-        test_path = path.replace('.ts', '.test.ts').replace('.js', '.test.js')
-        if os.path.exists(test_path):
-            try:
-                with open(test_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    lines = content.split('\n')
-                    excerpt = '\n'.join(lines[:30])
-                    if len(lines) > 30:
-                        excerpt += '\n... (truncated)'
-                    test_excerpts.append({
-                        'path': test_path,
-                        'excerpt': excerpt,
-                        'line_count': len(lines)
-                    })
-            except Exception:
-                pass
-        
-        # Extract acceptance criteria from PRD
-        acceptance_criteria = []
-        if prd_content:
-            # Look for acceptance criteria section
-            lines = prd_content.split('\n')
-            in_acceptance = False
-            for line in lines:
-                if 'acceptance criteria' in line.lower() or 'acceptance' in line.lower():
-                    in_acceptance = True
-                    continue
-                if in_acceptance and line.strip().startswith('#'):
-                    break
-                if in_acceptance and line.strip().startswith('-'):
-                    acceptance_criteria.append(line.strip())
-        
-        # Build context package
-        context_package = {
-            'target_path': path,
-            'purpose': 'implement',
-            'feature': feature,
-            'stacks': stacks.split(',') if stacks else [],
-            'rules': rules,
-            'prd': {
-                'content': prd_content,
-                'metadata': prd_metadata
-            },
-            'adrs': adr_contents,
-            'code_excerpts': code_excerpts,
-            'test_excerpts': test_excerpts,
-            'acceptance_criteria': acceptance_criteria,
-            'generated_at': _today()
-        }
-        
-        # Ensure all values are JSON serializable
-        def make_serializable(obj):
-            if isinstance(obj, dict):
-                return {k: make_serializable(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [make_serializable(item) for item in obj]
-            elif hasattr(obj, 'isoformat'):  # datetime objects
-                return obj.isoformat()
-            else:
-                return obj
-        
-        context_package = make_serializable(context_package)
-        
-        # Write pack_context.json
+        # 6. Write pack_context.json
         pack_context_path = os.path.join(CACHE, "pack_context.json")
-        try:
-            with open(pack_context_path, "w", encoding="utf-8") as f:
-                json.dump(context_package, f, indent=2, ensure_ascii=False)
-            click.echo(f"✅ Created {pack_context_path}")
-        except Exception as e:
-            click.echo(f"Error writing pack_context.json: {e}")
-            raise SystemExit(1)
+        with open(pack_context_path, "w", encoding="utf-8") as f:
+            json.dump(context_package, f, indent=2, ensure_ascii=False)
+        click.echo(f"✅ Created {pack_context_path}")
         
-        # Generate summary
-        click.echo(f"\n📊 Context Summary:")
-        click.echo(f"  Target: {path}")
-        click.echo(f"  Feature: {feature or 'none'}")
-        click.echo(f"  Purpose: implement")
-        click.echo(f"  Stacks: {', '.join(stacks.split(','))}")
-        click.echo(f"  PRD: {'Found' if prd_content else 'Not found'}")
-        click.echo(f"  ADRs: {len(adr_contents)}")
-        click.echo(f"  Code files: {len(code_excerpts)}")
-        click.echo(f"  Test files: {len(test_excerpts)}")
-        click.echo(f"  Acceptance criteria: {len(acceptance_criteria)}")
+        # 7. Generate enhanced context.md
+        context_md = _generate_enhanced_context_md(context_package)
+        context_md_path = os.path.join(CACHE, "context.md")
+        with open(context_md_path, "w", encoding="utf-8") as f:
+            f.write(context_md)
+        click.echo(f"✅ Created {context_md_path}")
         
-        # Legacy context.json for backward compatibility
-        ctx = {
-            "trace": {"prd":"PRD#TBD","arch":"ARCH#TBD","ux":"UX#TBD","integration":"INT#TBD","adrs":[]},
-            "acceptance": ["compiles","tests pass"],
-            "goal": "Scaffolded by plan:auto",
-            "name": "Scaffold",
-            "feature": feature,
-            "rules": rules
-        }
-        with open(os.path.join(CACHE,"context.json"),"w",encoding="utf-8") as f:
-            json.dump(ctx, f, indent=2)
-        click.echo(f"✅ Also wrote builder/cache/context.json")
+        # 8. Generate 1-line summary with counts per type and budget
+        _show_plan_auto_summary(context_package, budget_summary, 8000)
         
     except Exception as e:
-        click.echo(f"❌ Error building context: {e}")
-        # Fallback to original behavior
+        click.echo(f"❌ Error building enhanced context: {e}")
+        # Fallback to basic context.json for backward compatibility
         os.makedirs(CACHE, exist_ok=True)
         rules = _load_rules(feature, stacks)
         ctx = {
@@ -2047,6 +1905,24 @@ def _get_last_modified(file_path):
     except Exception:
         pass
     return "Unknown"
+
+def _show_plan_auto_summary(context_package, budget_summary, token_limit):
+    """Show 1-line summary with counts per type and budget used"""
+    # Count items by type
+    type_counts = {}
+    for section in ['acceptance', 'decisions', 'integrations', 'architecture', 'ux', 'code']:
+        items = context_package.get(section, [])
+        type_counts[section] = len(items)
+    
+    # Calculate total budget used
+    total_used = sum(summary.get('used_tokens', 0) for summary in budget_summary.values())
+    budget_pct = (total_used / token_limit * 100) if token_limit > 0 else 0
+    
+    # Build summary line
+    counts_str = ", ".join([f"{k}:{v}" for k, v in type_counts.items() if v > 0])
+    summary_line = f"📦 Context: {counts_str} | Budget: {total_used}/{token_limit} tokens ({budget_pct:.1f}%)"
+    
+    click.echo(summary_line)
 
 # -------------------- CONTEXT BUDGET --------------------
 
