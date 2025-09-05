@@ -2128,5 +2128,93 @@ def ctx_trace(output, format):
         click.echo(f"❌ Error: {e}")
         raise SystemExit(1)
 
+# -------------------- CONTEXT GRAPH --------------------
+@cli.command("ctx:graph:build")
+@click.option("--output", default="builder/cache/context_graph.json", help="Output JSON file path")
+def ctx_graph_build(output):
+    """Build context graph from docs and source code"""
+    try:
+        from context_graph import ContextGraphBuilder
+        
+        click.echo("🔍 Building context graph...")
+        builder = ContextGraphBuilder(ROOT)
+        graph = builder.build()
+        
+        # Ensure output directory exists
+        output_dir = os.path.dirname(output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # Save graph
+        graph.save(output)
+        
+        # Show stats
+        stats = graph.get_stats()
+        click.echo(f"✅ Context graph saved to: {output}")
+        click.echo(f"📊 Graph Statistics:")
+        click.echo(f"  Total nodes: {stats['total_nodes']}")
+        click.echo(f"  Total edges: {stats['total_edges']}")
+        click.echo(f"  Node types: {stats['node_counts']}")
+        click.echo(f"  Edge types: {stats['edge_counts']}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
+@cli.command("ctx:graph:stats")
+def ctx_graph_stats():
+    """Show context graph statistics"""
+    try:
+        from context_graph import ContextGraphBuilder
+        
+        # Build or load graph
+        graph_file = os.path.join(ROOT, "builder", "cache", "context_graph.json")
+        if os.path.exists(graph_file):
+            from context_graph import ContextGraph
+            graph = ContextGraph.load(graph_file)
+            click.echo("📊 Context Graph Statistics (from cache):")
+        else:
+            click.echo("🔍 Building context graph...")
+            builder = ContextGraphBuilder(ROOT)
+            graph = builder.build()
+            click.echo("📊 Context Graph Statistics (fresh build):")
+        
+        stats = graph.get_stats()
+        
+        # Display stats
+        click.echo(f"  Total nodes: {stats['total_nodes']}")
+        click.echo(f"  Total edges: {stats['total_edges']}")
+        click.echo("")
+        
+        click.echo("  Node counts by type:")
+        for node_type, count in sorted(stats['node_counts'].items()):
+            click.echo(f"    {node_type}: {count}")
+        
+        click.echo("")
+        click.echo("  Edge counts by type:")
+        for edge_type, count in sorted(stats['edge_counts'].items()):
+            click.echo(f"    {edge_type}: {count}")
+        
+        # Show some sample relationships
+        if stats['total_edges'] > 0:
+            click.echo("")
+            click.echo("  Sample relationships:")
+            sample_count = 0
+            for from_node, edges in graph.edges.items():
+                if sample_count >= 5:
+                    break
+                for edge in edges[:2]:  # Show first 2 edges from each node
+                    if sample_count >= 5:
+                        break
+                    from_info = graph.get_node(from_node)
+                    to_info = graph.get_node(edge['to'])
+                    if from_info and to_info:
+                        click.echo(f"    {from_info['type']}:{from_node} --{edge['type']}--> {to_info['type']}:{edge['to']}")
+                        sample_count += 1
+        
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
 if __name__ == "__main__":
     cli()

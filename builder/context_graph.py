@@ -1,522 +1,355 @@
-#!/usr/bin/env python3
 """
-Context Graph - In-memory representation of project artifacts and relationships.
-
-Builds a graph of nodes (documents, code, rules) and edges (relationships) to understand
-how everything feeds into everything else in the project.
+Context Graph - Dict-based graph for tracking relationships between documentation and code
 """
 
-import os
 import json
-import yaml
-from typing import Dict, List, Set, Optional, Any, Tuple
-from dataclasses import dataclass, field
-from pathlib import Path
-from collections import defaultdict
+import os
 import re
+from pathlib import Path
+from typing import Dict, List, Set, Tuple, Any, Optional
+import yaml
 
-# Node types
-NODE_TYPES = {
-    'PRD': 'prd',
-    'ARCH': 'arch', 
-    'INTEGRATION': 'integrations',
-    'UX': 'ux',
-    'IMPL': 'impl',
-    'EXEC': 'exec',
-    'TASK': 'tasks',
-    'ADR': 'adr',
-    'RULES': 'rules',
-    'CODE': 'code'
-}
-
-# Edge types
-EDGE_TYPES = {
-    'INFORMS': 'informs',
-    'IMPLEMENTS': 'implements', 
-    'CONSTRAINS': 'constrains',
-    'DEPENDS_ON': 'depends_on',
-    'TESTS': 'tests',
-    'SUPERSEDES': 'supersedes'
-}
-
-@dataclass
-class GraphNode:
-    """Represents a node in the context graph."""
-    id: str
-    node_type: str
-    title: str
-    file_path: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    properties: Dict[str, Any] = field(default_factory=dict)
-    
-    def __str__(self) -> str:
-        return f"{self.node_type}:{self.id}"
-
-@dataclass 
-class GraphEdge:
-    """Represents an edge/relationship in the context graph."""
-    source_id: str
-    target_id: str
-    edge_type: str
-    weight: float = 1.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    def __str__(self) -> str:
-        return f"{self.source_id} --[{self.edge_type}]--> {self.target_id}"
 
 class ContextGraph:
-    """In-memory graph representation of project context and relationships."""
+    """Dict-based context graph for tracking relationships between docs and code"""
     
     def __init__(self):
-        self.nodes: Dict[str, GraphNode] = {}
-        self.edges: List[GraphEdge] = []
-        self.adjacency: Dict[str, Set[str]] = defaultdict(set)
-        self.feature_map: Dict[str, str] = {}
+        self.nodes: Dict[str, Dict[str, Any]] = {}
+        self.edges: Dict[str, List[Dict[str, Any]]] = {}
+        self.node_types = {
+            'prd', 'arch', 'integration', 'ux', 'impl', 'exec', 'task', 'adr', 'rules', 'code'
+        }
+        self.edge_types = {
+            'informs', 'implements', 'constrains', 'depends_on', 'tests', 'supersedes'
+        }
+    
+    def add_node(self, node_id: str, node_type: str, **kwargs) -> None:
+        """Add a node to the graph"""
+        if node_type not in self.node_types:
+            raise ValueError(f"Invalid node type: {node_type}")
         
-    def add_node(self, node: GraphNode) -> None:
-        """Add a node to the graph."""
-        self.nodes[node.id] = node
+        self.nodes[node_id] = {
+            'id': node_id,
+            'type': node_type,
+            **kwargs
+        }
+    
+    def add_edge(self, from_node: str, to_node: str, edge_type: str, **kwargs) -> None:
+        """Add an edge to the graph"""
+        if edge_type not in self.edge_types:
+            raise ValueError(f"Invalid edge type: {edge_type}")
         
-    def add_edge(self, edge: GraphEdge) -> None:
-        """Add an edge to the graph."""
-        self.edges.append(edge)
-        self.adjacency[edge.source_id].add(edge.target_id)
+        if from_node not in self.edges:
+            self.edges[from_node] = []
         
-    def get_node(self, node_id: str) -> Optional[GraphNode]:
-        """Get a node by ID."""
+        self.edges[from_node].append({
+            'to': to_node,
+            'type': edge_type,
+            **kwargs
+        })
+    
+    def get_node(self, node_id: str) -> Optional[Dict[str, Any]]:
+        """Get a node by ID"""
         return self.nodes.get(node_id)
-        
-    def get_edges_from(self, node_id: str) -> List[GraphEdge]:
-        """Get all edges originating from a node."""
-        return [edge for edge in self.edges if edge.source_id == node_id]
-        
-    def get_edges_to(self, node_id: str) -> List[GraphEdge]:
-        """Get all edges pointing to a node."""
-        return [edge for edge in self.edges if edge.target_id == node_id]
-        
-    def get_adjacent_nodes(self, node_id: str) -> Set[str]:
-        """Get all nodes directly connected to a node."""
-        return self.adjacency.get(node_id, set())
-        
-    def scan_project(self, project_root: str) -> None:
-        """Scan the entire project and build the context graph."""
-        project_path = Path(project_root)
-        
-        # Load feature map
-        self._load_feature_map(project_path)
-        
-        # Scan documents
-        self._scan_documents(project_path)
-        
-        # Scan code files
-        self._scan_code_files(project_path)
-        
-        # Scan rules
-        self._scan_rules(project_path)
-        
-        # Build relationships
-        self._build_relationships()
-        
-    def _load_feature_map(self, project_path: Path) -> None:
-        """Load the feature map from builder/feature_map.json."""
-        feature_map_path = project_path / "builder" / "feature_map.json"
-        if feature_map_path.exists():
-            try:
-                with open(feature_map_path, 'r') as f:
-                    self.feature_map = json.load(f)
-            except Exception as e:
-                print(f"Warning: Could not load feature map: {e}")
-                
-    def _scan_documents(self, project_path: Path) -> None:
-        """Scan all document types and create nodes."""
-        docs_path = project_path / "docs"
-        if not docs_path.exists():
-            return
-            
-        # Scan each document type directory
-        for doc_type, node_type in NODE_TYPES.items():
-            if doc_type == 'CODE' or doc_type == 'RULES':
-                continue  # Handle these separately
-                
-            doc_dir = docs_path / node_type
-            if doc_dir.exists():
-                self._scan_document_directory(doc_dir, node_type)
-                
-        # Scan ADRs separately (they're in docs/adrs/)
-        adr_dir = docs_path / "adrs"
-        if adr_dir.exists():
-            self._scan_document_directory(adr_dir, 'adr')
-            
-    def _scan_document_directory(self, doc_dir: Path, node_type: str) -> None:
-        """Scan a directory of documents and create nodes."""
-        for file_path in doc_dir.glob("*.md"):
-            try:
-                node = self._create_document_node(file_path, node_type)
-                if node:
-                    self.add_node(node)
-            except Exception as e:
-                print(f"Warning: Could not process {file_path}: {e}")
-                
-    def _create_document_node(self, file_path: Path, node_type: str) -> Optional[GraphNode]:
-        """Create a node from a document file."""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                
-            # Parse front-matter
-            front_matter, _ = self._parse_front_matter(content)
-            
-            if not front_matter:
-                # Create node without front-matter
-                node_id = file_path.stem
-                title = self._extract_title_from_content(content)
-            else:
-                node_id = front_matter.get('id', file_path.stem)
-                title = front_matter.get('title', self._extract_title_from_content(content))
-                
-            # Determine feature from file path
-            feature = self._determine_feature(file_path)
-            
-            node = GraphNode(
-                id=node_id,
-                node_type=node_type,
-                title=title,
-                file_path=str(file_path),
-                metadata=front_matter or {},
-                properties={'feature': feature}
-            )
-            
-            return node
-            
-        except Exception as e:
-            print(f"Warning: Could not create node from {file_path}: {e}")
-            return None
-            
-    def _scan_code_files(self, project_path: Path) -> None:
-        """Scan code files and create nodes."""
-        src_path = project_path / "src"
-        if not src_path.exists():
-            return
-            
-        for file_path in src_path.rglob("*.ts"):
-            try:
-                node = self._create_code_node(file_path)
-                if node:
-                    self.add_node(node)
-            except Exception as e:
-                print(f"Warning: Could not process code file {file_path}: {e}")
-                
-    def _create_code_node(self, file_path: Path) -> Optional[GraphNode]:
-        """Create a node from a code file."""
-        try:
-            # Determine feature from path
-            feature = self._determine_feature(file_path)
-            
-            # Extract class/function names as potential identifiers
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                
-            # Simple extraction of exported items
-            exports = self._extract_exports(content)
-            
-            node_id = f"code:{file_path.relative_to(file_path.parents[1])}"
-            
-            node = GraphNode(
-                id=node_id,
-                node_type='code',
-                title=f"Code: {file_path.name}",
-                file_path=str(file_path),
-                metadata={'exports': exports},
-                properties={'feature': feature, 'file_type': 'typescript'}
-            )
-            
-            return node
-            
-        except Exception as e:
-            print(f"Warning: Could not create code node from {file_path}: {e}")
-            return None
-            
-    def _scan_rules(self, project_path: Path) -> None:
-        """Scan rules files and create nodes."""
-        rules_path = project_path / "docs" / "rules"
-        if not rules_path.exists():
-            return
-            
-        for file_path in rules_path.rglob("*.md"):
-            try:
-                node = self._create_rule_node(file_path)
-                if node:
-                    self.add_node(node)
-            except Exception as e:
-                print(f"Warning: Could not process rule file {file_path}: {e}")
-                
-    def _create_rule_node(self, file_path: Path) -> Optional[GraphNode]:
-        """Create a node from a rule file."""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                
-            # Parse front-matter
-            front_matter, _ = self._parse_front_matter(content)
-            
-            # Determine rule type from path
-            rule_type = 'global'
-            if 'stack/' in str(file_path):
-                rule_type = 'stack'
-            elif 'feature/' in str(file_path):
-                rule_type = 'feature'
-            elif 'project' in file_path.name:
-                rule_type = 'project'
-                
-            node_id = f"rule:{file_path.stem}"
-            title = self._extract_title_from_content(content)
-            
-            node = GraphNode(
-                id=node_id,
-                node_type='rules',
-                title=title,
-                file_path=str(file_path),
-                metadata=front_matter or {},
-                properties={'rule_type': rule_type}
-            )
-            
-            return node
-            
-        except Exception as e:
-            print(f"Warning: Could not create rule node from {file_path}: {e}")
-            return None
-            
-    def _build_relationships(self) -> None:
-        """Build relationships between nodes based on links and dependencies."""
-        for node in self.nodes.values():
-            self._build_node_relationships(node)
-            
-    def _build_node_relationships(self, node: GraphNode) -> None:
-        """Build relationships for a specific node."""
-        if node.node_type == 'code':
-            self._build_code_relationships(node)
-        elif node.metadata:
-            self._build_document_relationships(node)
-            
-    def _build_document_relationships(self, node: GraphNode) -> None:
-        """Build relationships from document metadata."""
-        links = node.metadata.get('links', [])
-        
-        if isinstance(links, list):
-            for link_group in links:
-                if isinstance(link_group, dict):
-                    for link_type, link_ids in link_group.items():
-                        if isinstance(link_ids, list):
-                            for link_id in link_ids:
-                                self._create_relationship(node.id, link_id, 'informs')
-        elif isinstance(links, dict):
-            for link_type, link_ids in links.items():
-                if isinstance(link_ids, list):
-                    for link_id in link_ids:
-                        self._create_relationship(node.id, link_id, 'informs')
-                        
-    def _build_code_relationships(self, node: GraphNode) -> None:
-        """Build relationships for code nodes."""
-        # Code implements features
-        feature = node.properties.get('feature')
-        if feature:
-            # Find related documents for this feature
-            for other_node in self.nodes.values():
-                if other_node.properties.get('feature') == feature:
-                    if other_node.node_type in ['prd', 'arch', 'ux']:
-                        self._create_relationship(node.id, other_node.id, 'implements')
-                        
-    def _create_relationship(self, source_id: str, target_id: str, edge_type: str) -> None:
-        """Create a relationship between two nodes."""
-        # Check if target exists
-        if target_id in self.nodes:
-            edge = GraphEdge(
-                source_id=source_id,
-                target_id=target_id,
-                edge_type=edge_type
-            )
-            self.add_edge(edge)
-        else:
-            # Try to find by partial match
-            matching_nodes = [nid for nid in self.nodes.keys() if target_id in nid or nid in target_id]
-            if matching_nodes:
-                for match_id in matching_nodes:
-                    edge = GraphEdge(
-                        source_id=source_id,
-                        target_id=match_id,
-                        edge_type=edge_type
-                    )
-                    self.add_edge(edge)
-                    
-    def _parse_front_matter(self, content: str) -> Tuple[Optional[Dict], Optional[str]]:
-        """Parse YAML front-matter from document content."""
-        if not content.startswith('---'):
-            return None, None
-            
-        try:
-            parts = content.split('---', 2)
-            if len(parts) < 3:
-                return None, None
-                
-            front_matter_text = parts[1].strip()
-            if not front_matter_text:
-                return None, None
-                
-            front_matter = yaml.safe_load(front_matter_text)
-            return front_matter, None
-            
-        except Exception:
-            return None, None
-            
-    def _extract_title_from_content(self, content: str) -> str:
-        """Extract title from markdown content."""
-        lines = content.split('\n')
-        for line in lines:
-            if line.startswith('# '):
-                return line[2:].strip()
-        return "Untitled"
-        
-    def _extract_exports(self, content: str) -> List[str]:
-        """Extract exported items from TypeScript code."""
-        exports = []
-        lines = content.split('\n')
-        for line in lines:
-            line = line.strip()
-            if line.startswith('export '):
-                # Extract function/class names
-                match = re.search(r'export\s+(?:function|class|const|let|var)\s+(\w+)', line)
-                if match:
-                    exports.append(match.group(1))
-        return exports
-        
-    def _determine_feature(self, file_path: Path) -> str:
-        """Determine which feature a file belongs to based on path and feature map."""
-        path_str = str(file_path)
-        
-        # Check feature map
-        for pattern, feature in self.feature_map.items():
-            if self._matches_pattern(path_str, pattern):
-                return feature
-                
-        # Default feature based on path
-        if 'auth' in path_str.lower():
-            return 'auth'
-        elif 'content' in path_str.lower():
-            return 'content-engine'
-        elif 'utils' in path_str.lower():
-            return 'platform'
-        else:
-            return 'unknown'
-            
-    def _matches_pattern(self, path: str, pattern: str) -> bool:
-        """Check if a path matches a glob pattern."""
-        # Simple glob matching
-        pattern = pattern.replace('**', '*')
-        pattern = pattern.replace('*', '.*')
-        pattern = '^' + pattern + '$'
-        return bool(re.match(pattern, path))
-        
+    
+    def get_edges_from(self, node_id: str) -> List[Dict[str, Any]]:
+        """Get all edges from a node"""
+        return self.edges.get(node_id, [])
+    
+    def get_edges_to(self, node_id: str) -> List[Dict[str, Any]]:
+        """Get all edges to a node"""
+        edges_to = []
+        for from_node, edges in self.edges.items():
+            for edge in edges:
+                if edge['to'] == node_id:
+                    edges_to.append({
+                        'from': from_node,
+                        **edge
+                    })
+        return edges_to
+    
     def get_stats(self) -> Dict[str, Any]:
-        """Get statistics about the graph."""
-        node_counts = defaultdict(int)
-        edge_counts = defaultdict(int)
+        """Get graph statistics"""
+        node_counts = {}
+        edge_counts = {}
         
+        # Count nodes by type
         for node in self.nodes.values():
-            node_counts[node.node_type] += 1
-            
-        for edge in self.edges:
-            edge_counts[edge.edge_type] += 1
-            
+            node_type = node['type']
+            node_counts[node_type] = node_counts.get(node_type, 0) + 1
+        
+        # Count edges by type
+        for edges in self.edges.values():
+            for edge in edges:
+                edge_type = edge['type']
+                edge_counts[edge_type] = edge_counts.get(edge_type, 0) + 1
+        
         return {
             'total_nodes': len(self.nodes),
-            'total_edges': len(self.edges),
-            'node_counts': dict(node_counts),
-            'edge_counts': dict(edge_counts),
-            'features': list(set(node.properties.get('feature', 'unknown') for node in self.nodes.values()))
+            'total_edges': sum(len(edges) for edges in self.edges.values()),
+            'node_counts': node_counts,
+            'edge_counts': edge_counts
         }
-        
-    def print_stats(self) -> None:
-        """Print graph statistics."""
-        stats = self.get_stats()
-        
-        print("📊 Context Graph Statistics")
-        print("=" * 40)
-        print(f"Total Nodes: {stats['total_nodes']}")
-        print(f"Total Edges: {stats['total_edges']}")
-        print()
-        
-        print("Node Types:")
-        for node_type, count in stats['node_counts'].items():
-            print(f"  {node_type}: {count}")
-        print()
-        
-        print("Edge Types:")
-        for edge_type, count in stats['edge_counts'].items():
-            print(f"  {edge_type}: {count}")
-        print()
-        
-        print("Features:")
-        for feature in stats['features']:
-            print(f"  {feature}")
-        print()
-        
-    def export_json(self, file_path: str) -> None:
-        """Export the graph to JSON format."""
-        def json_serializer(obj):
-            """Custom JSON serializer for non-serializable objects."""
-            if hasattr(obj, 'isoformat'):  # datetime/date objects
-                return obj.isoformat()
-            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-        
-        data = {
-            'nodes': [
-                {
-                    'id': node.id,
-                    'type': node.node_type,
-                    'title': node.title,
-                    'file_path': node.file_path,
-                    'metadata': node.metadata,
-                    'properties': node.properties
-                }
-                for node in self.nodes.values()
-            ],
-            'edges': [
-                {
-                    'source': edge.source_id,
-                    'target': edge.target_id,
-                    'type': edge.edge_type,
-                    'weight': edge.weight,
-                    'metadata': edge.metadata
-                }
-                for edge in self.edges
-            ],
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert graph to dictionary for serialization"""
+        return {
+            'nodes': self.nodes,
+            'edges': self.edges,
             'stats': self.get_stats()
         }
+    
+    def save(self, filepath: str) -> None:
+        """Save graph to JSON file"""
+        def json_serializer(obj):
+            """Custom JSON serializer for non-serializable objects"""
+            if hasattr(obj, 'isoformat'):  # datetime objects
+                return obj.isoformat()
+            elif hasattr(obj, '__dict__'):  # custom objects
+                return str(obj)
+            else:
+                return str(obj)
         
-        with open(file_path, 'w') as f:
-            json.dump(data, f, indent=2, default=json_serializer)
-
-def main():
-    """Main function for testing the context graph."""
-    import sys
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(self.to_dict(), f, indent=2, ensure_ascii=False, default=json_serializer)
     
-    if len(sys.argv) < 2:
-        print("Usage: python context_graph.py <project_root>")
-        sys.exit(1)
+    @classmethod
+    def load(cls, filepath: str) -> 'ContextGraph':
+        """Load graph from JSON file"""
+        graph = cls()
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
         
-    project_root = sys.argv[1]
-    
-    print(f"Building context graph for: {project_root}")
-    graph = ContextGraph()
-    graph.scan_project(project_root)
-    
-    # Print statistics
-    graph.print_stats()
-    
-    # Export to JSON
-    output_file = os.path.join(project_root, "builder", "cache", "context_graph.json")
-    graph.export_json(output_file)
-    print(f"Graph exported to: {output_file}")
+        # Handle both old format (with stats) and new format
+        if 'nodes' in data:
+            graph.nodes = data.get('nodes', {})
+            graph.edges = data.get('edges', {})
+        else:
+            # Fallback for old format
+            graph.nodes = data
+            graph.edges = {}
+        
+        return graph
 
-if __name__ == "__main__":
-    main()
+
+class ContextGraphBuilder:
+    """Builder for creating context graphs from repository files"""
+    
+    def __init__(self, root_path: str):
+        self.root_path = Path(root_path)
+        self.docs_path = self.root_path / "docs"
+        self.src_path = self.root_path / "src"
+        self.builder_path = self.root_path / "builder"
+        self.graph = ContextGraph()
+    
+    def build(self) -> ContextGraph:
+        """Build the complete context graph"""
+        self._scan_documentation()
+        self._scan_source_code()
+        self._scan_rules()
+        self._add_proximity_edges()
+        self._add_test_edges()
+        return self.graph
+    
+    def _scan_documentation(self) -> None:
+        """Scan documentation files for nodes and links"""
+        doc_type_mapping = {
+            'prd': 'prd',
+            'arch': 'arch', 
+            'integrations': 'integration',
+            'ux': 'ux',
+            'impl': 'impl',
+            'exec': 'exec',
+            'tasks': 'task',
+            'adrs': 'adr'
+        }
+        
+        for doc_type, node_type in doc_type_mapping.items():
+            doc_dir = self.docs_path / doc_type
+            if not doc_dir.exists():
+                continue
+                
+            for doc_file in doc_dir.glob("*.md"):
+                self._process_doc_file(doc_file, node_type)
+    
+    def _process_doc_file(self, file_path: Path, node_type: str) -> None:
+        """Process a single documentation file"""
+        try:
+            content = file_path.read_text(encoding='utf-8')
+            front_matter, body = self._extract_front_matter(content)
+            
+            if not front_matter:
+                return
+            
+            doc_id = front_matter.get('id', file_path.stem)
+            title = front_matter.get('title', file_path.stem)
+            status = front_matter.get('status', 'draft')
+            
+            # Add document node
+            self.graph.add_node(
+                doc_id,
+                node_type,
+                file_path=str(file_path.relative_to(self.root_path)),
+                title=title,
+                status=status,
+                created=front_matter.get('created', ''),
+                owner=front_matter.get('owner', '')
+            )
+            
+            # Process links from front-matter
+            links = front_matter.get('links', {})
+            if isinstance(links, dict):
+                for link_type, link_targets in links.items():
+                    if isinstance(link_targets, list):
+                        for target in link_targets:
+                            if target:  # Skip empty targets
+                                self._add_doc_link(doc_id, target, link_type)
+                    elif isinstance(link_targets, str) and link_targets:
+                        self._add_doc_link(doc_id, link_targets, link_type)
+            
+        except Exception as e:
+            print(f"Warning: Could not process {file_path}: {e}")
+    
+    def _extract_front_matter(self, content: str) -> Tuple[Optional[Dict], str]:
+        """Extract YAML front-matter from markdown content"""
+        match = re.search(r'^---\n(.*?)\n---\n', content, flags=re.S | re.M)
+        if not match:
+            return None, content
+        
+        try:
+            front_matter = yaml.safe_load(match.group(1)) or {}
+            body = content[match.end():]
+            return front_matter, body
+        except Exception:
+            return None, content
+    
+    def _add_doc_link(self, from_doc: str, to_doc: str, link_type: str) -> None:
+        """Add a link between documents"""
+        # Map link types to edge types
+        link_mapping = {
+            'prd': 'informs',
+            'arch': 'informs', 
+            'impl': 'implements',
+            'exec': 'implements',
+            'ux': 'informs',
+            'adr': 'constrains'
+        }
+        
+        edge_type = link_mapping.get(link_type, 'informs')
+        self.graph.add_edge(from_doc, to_doc, edge_type, link_type=link_type)
+    
+    def _scan_source_code(self) -> None:
+        """Scan source code files for nodes"""
+        if not self.src_path.exists():
+            return
+        
+        for code_file in self.src_path.rglob("*.ts"):
+            if code_file.is_file():
+                self._process_code_file(code_file)
+    
+    def _process_code_file(self, file_path: Path) -> None:
+        """Process a single source code file"""
+        try:
+            content = file_path.read_text(encoding='utf-8')
+            relative_path = file_path.relative_to(self.root_path)
+            
+            # Extract class/function names as potential identifiers
+            class_matches = re.findall(r'class\s+(\w+)', content)
+            function_matches = re.findall(r'function\s+(\w+)', content)
+            interface_matches = re.findall(r'interface\s+(\w+)', content)
+            
+            # Create a code node for the file
+            file_id = f"code:{relative_path.as_posix()}"
+            self.graph.add_node(
+                file_id,
+                'code',
+                file_path=str(relative_path),
+                classes=class_matches,
+                functions=function_matches,
+                interfaces=interface_matches,
+                lines=len(content.splitlines())
+            )
+            
+        except Exception as e:
+            print(f"Warning: Could not process {file_path}: {e}")
+    
+    def _scan_rules(self) -> None:
+        """Scan rules files for nodes"""
+        rules_dir = self.docs_path / "rules"
+        if not rules_dir.exists():
+            return
+        
+        for rule_file in rules_dir.rglob("*.md"):
+            if rule_file.is_file():
+                self._process_rule_file(rule_file)
+    
+    def _process_rule_file(self, file_path: Path) -> None:
+        """Process a single rules file"""
+        try:
+            content = file_path.read_text(encoding='utf-8')
+            relative_path = file_path.relative_to(self.root_path)
+            
+            # Extract rule patterns and descriptions
+            rule_patterns = re.findall(r'-\s*\*\*Pattern\*\*:\s*`([^`]+)`', content)
+            rule_messages = re.findall(r'-\s*\*\*Message\*\*:\s*([^\n]+)', content)
+            
+            rule_id = f"rules:{relative_path.as_posix()}"
+            self.graph.add_node(
+                rule_id,
+                'rules',
+                file_path=str(relative_path),
+                patterns=rule_patterns,
+                messages=rule_messages
+            )
+            
+        except Exception as e:
+            print(f"Warning: Could not process {file_path}: {e}")
+    
+    def _add_proximity_edges(self) -> None:
+        """Add edges based on file path proximity"""
+        # Group nodes by directory
+        dir_groups = {}
+        for node_id, node in self.graph.nodes.items():
+            if 'file_path' in node:
+                file_path = Path(node['file_path'])
+                parent_dir = str(file_path.parent)
+                if parent_dir not in dir_groups:
+                    dir_groups[parent_dir] = []
+                dir_groups[parent_dir].append(node_id)
+        
+        # Add proximity edges within same directories
+        for dir_path, node_ids in dir_groups.items():
+            if len(node_ids) > 1:
+                for i, node_id1 in enumerate(node_ids):
+                    for node_id2 in node_ids[i+1:]:
+                        self.graph.add_edge(
+                            node_id1, node_id2, 'depends_on', 
+                            reason='path_proximity', directory=dir_path
+                        )
+    
+    def _add_test_edges(self) -> None:
+        """Add edges between code and test files"""
+        code_nodes = {nid: node for nid, node in self.graph.nodes.items() 
+                     if node['type'] == 'code'}
+        
+        for code_id, code_node in code_nodes.items():
+            if 'file_path' in code_node:
+                code_path = Path(code_node['file_path'])
+                # Look for corresponding test files
+                test_patterns = [
+                    code_path.with_suffix('.test.ts'),
+                    code_path.with_suffix('.spec.ts'),
+                    code_path.parent / f"{code_path.stem}.test.ts",
+                    code_path.parent / f"{code_path.stem}.spec.ts"
+                ]
+                
+                for test_pattern in test_patterns:
+                    test_path = self.root_path / test_pattern
+                    if test_path.exists():
+                        test_id = f"code:{test_path.relative_to(self.root_path).as_posix()}"
+                        if test_id in self.graph.nodes:
+                            self.graph.add_edge(
+                                test_id, code_id, 'tests',
+                                reason='test_mirror'
+                            )
+                        break
