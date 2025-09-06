@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Dict
 import requests
 import yaml
+import time
+import uuid
 
 ROOT  = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DOCS  = os.path.join(ROOT, "docs")
@@ -4873,6 +4875,269 @@ def agent_cleanup(max_age_hours, timeout_minutes):
         
     except Exception as e:
         click.echo(f"❌ Error during cleanup: {e}")
+        raise click.Abort()
+
+
+@cli.command("orchestrator:add-task")
+@click.option("--name", required=True, help="Task name")
+@click.option("--description", required=True, help="Task description")
+@click.option("--command", required=True, help="Command to execute")
+@click.option("--working-dir", default=".", help="Working directory")
+@click.option("--dependencies", multiple=True, help="Task dependencies (task IDs)")
+@click.option("--estimated-duration", default=10, help="Estimated duration in minutes")
+@click.option("--priority", default=1, help="Task priority (higher = more important)")
+@click.option("--agent-type", required=True, help="Type of agent needed")
+def orchestrator_add_task(name, description, command, working_dir, dependencies, estimated_duration, priority, agent_type):
+    """Add a new task to the orchestrator."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.task_orchestrator import TaskOrchestrator, Task
+        
+        orchestrator = TaskOrchestrator()
+        
+        # Generate unique task ID
+        task_id = f"task-{int(time.time())}-{uuid.uuid4().hex[:8]}"
+        
+        task = Task(
+            task_id=task_id,
+            name=name,
+            description=description,
+            command=command,
+            working_directory=os.path.abspath(working_dir),
+            dependencies=list(dependencies),
+            estimated_duration=estimated_duration,
+            priority=priority,
+            agent_type=agent_type
+        )
+        
+        orchestrator.add_task(task)
+        
+        click.echo(f"✅ Added task: {task_id}")
+        click.echo(f"   Name: {name}")
+        click.echo(f"   Agent Type: {agent_type}")
+        click.echo(f"   Dependencies: {', '.join(dependencies) if dependencies else 'None'}")
+        click.echo(f"   Priority: {priority}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error adding task: {e}")
+        raise click.Abort()
+
+
+@cli.command("orchestrator:add-agent")
+@click.option("--agent-id", required=True, help="Agent identifier")
+@click.option("--agent-type", required=True, help="Type of agent")
+@click.option("--capabilities", multiple=True, help="Agent capabilities")
+@click.option("--max-concurrent", default=1, help="Maximum concurrent tasks")
+def orchestrator_add_agent(agent_id, agent_type, capabilities, max_concurrent):
+    """Add a new agent to the orchestrator."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.task_orchestrator import TaskOrchestrator, Agent
+        
+        orchestrator = TaskOrchestrator()
+        
+        agent = Agent(
+            agent_id=agent_id,
+            agent_type=agent_type,
+            capabilities=list(capabilities),
+            max_concurrent_tasks=max_concurrent
+        )
+        
+        orchestrator.add_agent(agent)
+        
+        click.echo(f"✅ Added agent: {agent_id}")
+        click.echo(f"   Type: {agent_type}")
+        click.echo(f"   Capabilities: {', '.join(capabilities) if capabilities else 'None'}")
+        click.echo(f"   Max Concurrent: {max_concurrent}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error adding agent: {e}")
+        raise click.Abort()
+
+
+@cli.command("orchestrator:status")
+def orchestrator_status():
+    """Show orchestrator status and task information."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.task_orchestrator import TaskOrchestrator
+        
+        orchestrator = TaskOrchestrator()
+        summary = orchestrator.get_status_summary()
+        
+        click.echo("🎯 Orchestrator Status")
+        click.echo("=" * 50)
+        
+        # Task summary
+        click.echo(f"📋 Tasks: {summary['tasks']['total']}")
+        for status, count in summary['tasks']['by_status'].items():
+            if count > 0:
+                emoji = {
+                    'pending': '⏳',
+                    'ready': '🟢',
+                    'running': '🏃',
+                    'completed': '✅',
+                    'failed': '❌',
+                    'blocked': '🚫',
+                    'cancelled': '🚫'
+                }.get(status, '❓')
+                click.echo(f"   {emoji} {status.title()}: {count}")
+        
+        # Agent summary
+        click.echo(f"\n🤖 Agents: {summary['agents']['total']}")
+        for status, count in summary['agents']['by_status'].items():
+            if count > 0:
+                emoji = {
+                    'idle': '🟢',
+                    'busy': '🏃',
+                    'offline': '🔴'
+                }.get(status, '❓')
+                click.echo(f"   {emoji} {status.title()}: {count}")
+        
+        # Additional info
+        click.echo(f"\n📊 Ready Tasks: {summary['ready_tasks']}")
+        click.echo(f"📊 Available Agents: {summary['available_agents']}")
+        click.echo(f"📊 Circular Dependencies: {summary['cycles_detected']}")
+        
+        # Show task details
+        if orchestrator.tasks:
+            click.echo(f"\n📋 Task Details:")
+            for task in sorted(orchestrator.tasks.values(), key=lambda t: t.priority, reverse=True):
+                status_emoji = {
+                    'pending': '⏳',
+                    'ready': '🟢',
+                    'running': '🏃',
+                    'completed': '✅',
+                    'failed': '❌',
+                    'blocked': '🚫',
+                    'cancelled': '🚫'
+                }.get(task.status.value, '❓')
+                
+                click.echo(f"   {status_emoji} {task.task_id}")
+                click.echo(f"      Name: {task.name}")
+                click.echo(f"      Agent: {task.assigned_agent or 'Unassigned'}")
+                click.echo(f"      Priority: {task.priority}")
+                if task.dependencies:
+                    click.echo(f"      Dependencies: {', '.join(task.dependencies)}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error getting status: {e}")
+        raise click.Abort()
+
+
+@cli.command("orchestrator:run")
+@click.option("--max-cycles", type=int, help="Maximum number of orchestration cycles")
+@click.option("--cycle-delay", default=5.0, help="Delay between cycles in seconds")
+@click.option("--single-cycle", is_flag=True, help="Run only one orchestration cycle")
+def orchestrator_run(max_cycles, cycle_delay, single_cycle):
+    """Run the orchestrator to execute tasks."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.task_orchestrator import TaskOrchestrator
+        
+        orchestrator = TaskOrchestrator()
+        
+        # Check for circular dependencies
+        cycles = orchestrator.detect_cycles()
+        if cycles:
+            click.echo(f"❌ Circular dependencies detected: {cycles}")
+            raise click.Abort()
+        
+        if single_cycle:
+            click.echo("🔄 Running single orchestration cycle...")
+            cycle_info = orchestrator.run_orchestration_cycle()
+            click.echo(f"✅ Cycle complete: {cycle_info['tasks_assigned']} assigned, {cycle_info['tasks_completed']} completed")
+        else:
+            click.echo("🚀 Starting continuous orchestration...")
+            cycles_run = orchestrator.run_continuous(max_cycles, cycle_delay)
+            click.echo(f"✅ Orchestration complete after {cycles_run} cycles")
+        
+    except Exception as e:
+        click.echo(f"❌ Error running orchestrator: {e}")
+        raise click.Abort()
+
+
+@cli.command("orchestrator:execution-order")
+def orchestrator_execution_order():
+    """Show the optimal execution order for tasks."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.task_orchestrator import TaskOrchestrator
+        
+        orchestrator = TaskOrchestrator()
+        
+        execution_order = orchestrator.get_execution_order()
+        
+        if not execution_order:
+            click.echo("❌ No valid execution order found (circular dependencies)")
+            return
+        
+        click.echo("📋 Optimal Execution Order:")
+        click.echo("=" * 50)
+        
+        for level, task_ids in enumerate(execution_order, 1):
+            click.echo(f"\nLevel {level} (can run in parallel):")
+            for task_id in task_ids:
+                if task_id in orchestrator.tasks:
+                    task = orchestrator.tasks[task_id]
+                    click.echo(f"   • {task_id}: {task.name} ({task.agent_type})")
+        
+    except Exception as e:
+        click.echo(f"❌ Error getting execution order: {e}")
+        raise click.Abort()
+
+
+@cli.command("orchestrator:reset")
+@click.option("--confirm", is_flag=True, help="Confirm reset")
+def orchestrator_reset(confirm):
+    """Reset the orchestrator state."""
+    if not confirm:
+        click.echo("❌ Use --confirm to reset orchestrator state")
+        raise click.Abort()
+    
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.task_orchestrator import TaskOrchestrator
+        
+        orchestrator = TaskOrchestrator()
+        
+        # Clear all data
+        orchestrator.tasks.clear()
+        orchestrator.agents.clear()
+        orchestrator.execution_history.clear()
+        orchestrator.dependency_graph.clear()
+        
+        # Save empty state
+        orchestrator.save_state()
+        
+        click.echo("✅ Orchestrator state reset")
+        
+    except Exception as e:
+        click.echo(f"❌ Error resetting orchestrator: {e}")
         raise click.Abort()
 
 
