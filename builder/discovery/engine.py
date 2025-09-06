@@ -82,7 +82,7 @@ class DiscoveryEngine:
             synthesis_data = self.synthesizer.synthesize(analysis_data, interview_data)
             
             # Phase 4: Generation - create outputs and reports
-            generation_data = self.generators.generate(synthesis_data, target)
+            generation_data, generation_warnings, prd_id = self.generators.generate(synthesis_data, target)
             
             # Phase 5: Validation - verify results
             validation_data = self.validator.validate(generation_data, synthesis_data)
@@ -97,6 +97,8 @@ class DiscoveryEngine:
                 'synthesis': synthesis_data,
                 'generation': generation_data,
                 'validation': validation_data,
+                'prd_id': prd_id,
+                'warnings': generation_warnings,
                 'timestamp': self._get_timestamp()
             }
             

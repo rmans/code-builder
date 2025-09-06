@@ -19,7 +19,7 @@ class DiscoveryGenerators:
         """Initialize the discovery generators."""
         self.output_formats = ['json', 'markdown', 'html', 'txt']
     
-    def generate(self, synthesis_data: Dict[str, Any], target: Path) -> Dict[str, Any]:
+    def generate(self, synthesis_data: Dict[str, Any], target: Path) -> tuple[Dict[str, Any], List[str], str]:
         """Generate outputs from synthesis data.
         
         Args:
@@ -27,17 +27,39 @@ class DiscoveryGenerators:
             target: Target path that was analyzed
             
         Returns:
-            Generation results dictionary
+            Tuple of (artifacts, warnings, prd_id)
         """
-        generation_data = {
-            'reports': self._generate_reports(synthesis_data, target),
-            'documentation': self._generate_documentation(synthesis_data, target),
-            'diagrams': self._generate_diagrams(synthesis_data, target),
-            'recommendations': self._generate_recommendation_files(synthesis_data, target),
-            'metadata': self._generate_metadata(synthesis_data, target)
-        }
+        warnings = []
+        prd_id = None
         
-        return generation_data
+        try:
+            # Generate PRD with proper ID
+            prd_id = self._generate_prd_id(synthesis_data)
+            prd_artifacts = self._generate_prd_documentation(synthesis_data, target, prd_id)
+            
+            # Generate other outputs
+            generation_data = {
+                'reports': self._generate_reports(synthesis_data, target),
+                'documentation': self._generate_documentation(synthesis_data, target),
+                'diagrams': self._generate_diagrams(synthesis_data, target),
+                'recommendations': self._generate_recommendation_files(synthesis_data, target),
+                'metadata': self._generate_metadata(synthesis_data, target),
+                'prd': prd_artifacts
+            }
+            
+            return generation_data, warnings, prd_id
+            
+        except OSError as e:
+            warnings.append(f"File operation error: {e}")
+            # Return partial results on file errors
+            return {
+                'reports': {},
+                'documentation': {},
+                'diagrams': {},
+                'recommendations': {},
+                'metadata': {},
+                'prd': {}
+            }, warnings, prd_id or "PRD-ERROR"
     
     def _generate_reports(self, synthesis_data: Dict[str, Any], target: Path) -> Dict[str, str]:
         """Generate various report formats."""
@@ -424,3 +446,320 @@ class DiscoveryGenerators:
             'formats_generated': list(self.output_formats),
             'synthesis_keys': list(synthesis_data.keys())
         }
+    
+    def _generate_prd_id(self, synthesis_data: Dict[str, Any]) -> str:
+        """Generate PRD ID in format PRD-YYYY-MM-DD-slug.
+        
+        Args:
+            synthesis_data: Data from synthesis phase
+            
+        Returns:
+            PRD ID string
+        """
+        # Get product name from synthesis data
+        questions = synthesis_data.get('questions', {})
+        product_name = questions.get('product_name', 'Unknown Product')
+        
+        # Create slug from product name
+        slug = self._create_slug(product_name)
+        
+        # Get current date
+        today = datetime.now()
+        date_str = today.strftime('%Y-%m-%d')
+        
+        return f"PRD-{date_str}-{slug}"
+    
+    def _create_slug(self, text: str) -> str:
+        """Create URL-safe slug from text.
+        
+        Args:
+            text: Input text
+            
+        Returns:
+            URL-safe slug
+        """
+        import re
+        
+        # Convert to lowercase and replace spaces with hyphens
+        slug = text.lower()
+        # Remove special characters except hyphens
+        slug = re.sub(r'[^a-z0-9-]', '', slug)
+        # Replace multiple hyphens with single hyphen
+        slug = re.sub(r'-+', '-', slug)
+        # Remove leading/trailing hyphens
+        slug = slug.strip('-')
+        
+        return slug or 'product'
+    
+    def _generate_prd_documentation(self, synthesis_data: Dict[str, Any], target: Path, prd_id: str) -> Dict[str, str]:
+        """Generate PRD documentation with proper ID and ADR linking.
+        
+        Args:
+            synthesis_data: Data from synthesis phase
+            target: Target path that was analyzed
+            prd_id: Generated PRD ID
+            
+        Returns:
+            Dictionary of PRD artifacts
+        """
+        prd_artifacts = {}
+        
+        try:
+            # Ensure docs/prd directory exists
+            prd_dir = Path('docs/prd')
+            prd_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Generate main PRD file
+            prd_content = self._generate_prd_content(synthesis_data, prd_id)
+            prd_file = prd_dir / f"{prd_id}.md"
+            
+            with open(prd_file, 'w', encoding='utf-8') as f:
+                f.write(prd_content)
+            
+            prd_artifacts[f"{prd_id}.md"] = prd_content
+            
+            # Link existing ADRs
+            adr_links = self._find_existing_adrs()
+            if adr_links:
+                prd_artifacts['adr_links.md'] = self._generate_adr_links_content(adr_links, prd_id)
+                
+                # Create ADR links file
+                adr_links_file = prd_dir / f"{prd_id}-adr-links.md"
+                with open(adr_links_file, 'w', encoding='utf-8') as f:
+                    f.write(prd_artifacts['adr_links.md'])
+            
+        except OSError as e:
+            # Handle file operation errors gracefully
+            prd_artifacts['error'] = f"Failed to generate PRD documentation: {e}"
+        
+        return prd_artifacts
+    
+    def _generate_prd_content(self, synthesis_data: Dict[str, Any], prd_id: str) -> str:
+        """Generate PRD content.
+        
+        Args:
+            synthesis_data: Data from synthesis phase
+            prd_id: Generated PRD ID
+            
+        Returns:
+            PRD content as string
+        """
+        questions = synthesis_data.get('questions', {})
+        detected = synthesis_data.get('detected', {})
+        
+        # Extract key information
+        product_name = questions.get('product_name', 'Unknown Product')
+        main_idea = questions.get('main_idea', 'No description provided')
+        problem_solved = questions.get('problem_solved', 'Not specified')
+        target_users = questions.get('target_users', 'Not specified')
+        key_features = questions.get('key_features', [])
+        success_metrics = questions.get('success_metrics', 'Not specified')
+        
+        # Get detected technologies
+        languages = detected.get('languages', [])
+        frameworks = detected.get('frameworks', [])
+        test_runners = detected.get('test_runners', [])
+        
+        # Generate PRD content
+        content = f"""# Product Requirements Document: {product_name}
+
+**PRD ID:** {prd_id}  
+**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
+**Status:** Draft
+
+## Executive Summary
+
+{main_idea}
+
+## Problem Statement
+
+{problem_solved}
+
+## Target Users
+
+{target_users}
+
+## Key Features
+
+"""
+        
+        if isinstance(key_features, list):
+            for i, feature in enumerate(key_features, 1):
+                content += f"{i}. {feature}\n"
+        else:
+            content += f"- {key_features}\n"
+        
+        content += f"""
+## Success Metrics
+
+{success_metrics}
+
+## Technical Stack
+
+"""
+        
+        if languages:
+            content += f"**Languages:** {', '.join(languages)}\n"
+        if frameworks:
+            content += f"**Frameworks:** {', '.join(frameworks)}\n"
+        if test_runners:
+            content += f"**Test Runners:** {', '.join(test_runners)}\n"
+        
+        content += f"""
+## Architecture Decisions
+
+This PRD references the following Architecture Decision Records (ADRs):
+
+- [ADR-001: Technology Stack Selection](./adr-001-technology-stack.md)
+- [ADR-002: System Architecture](./adr-002-system-architecture.md)
+- [ADR-003: Data Model Design](./adr-003-data-model.md)
+
+## Implementation Plan
+
+1. **Phase 1:** Core functionality implementation
+2. **Phase 2:** User interface development
+3. **Phase 3:** Testing and validation
+4. **Phase 4:** Deployment and monitoring
+
+## Acceptance Criteria
+
+- [ ] All key features implemented and tested
+- [ ] Performance requirements met
+- [ ] Security requirements satisfied
+- [ ] User acceptance testing completed
+
+## Risks and Mitigation
+
+- **Technical Risk:** Technology stack complexity
+  - *Mitigation:* Prototype early, validate assumptions
+- **Timeline Risk:** Feature scope creep
+  - *Mitigation:* Strict scope management, regular reviews
+
+## Appendices
+
+### A. User Stories
+
+"""
+        
+        # Add user stories if available
+        if isinstance(key_features, list):
+            for feature in key_features:
+                content += f"- As a user, I want {feature.lower()}, so that I can achieve my goals\n"
+        
+        content += f"""
+### B. Technical Requirements
+
+- **Performance:** Response time < 2 seconds
+- **Availability:** 99.9% uptime
+- **Security:** OWASP compliance
+- **Scalability:** Support 1000+ concurrent users
+
+### C. Dependencies
+
+- External API integrations
+- Third-party libraries
+- Infrastructure requirements
+
+---
+
+*This PRD is a living document and will be updated as requirements evolve.*
+"""
+        
+        return content
+    
+    def _find_existing_adrs(self) -> List[Dict[str, str]]:
+        """Find existing ADR files and extract their information.
+        
+        Returns:
+            List of ADR information dictionaries
+        """
+        adr_links = []
+        
+        try:
+            # Look for ADR files in docs/adr directory
+            adr_dir = Path('docs/adr')
+            if adr_dir.exists():
+                for adr_file in adr_dir.glob('*.md'):
+                    if adr_file.name.startswith('adr-'):
+                        # Extract ADR number and title
+                        adr_number = adr_file.stem
+                        title = self._extract_adr_title(adr_file)
+                        adr_links.append({
+                            'file': adr_file.name,
+                            'number': adr_number,
+                            'title': title,
+                            'path': str(adr_file.relative_to(Path('docs')))
+                        })
+            
+            # Sort by ADR number
+            adr_links.sort(key=lambda x: x['number'])
+            
+        except OSError:
+            # Handle file operation errors gracefully
+            pass
+        
+        return adr_links
+    
+    def _extract_adr_title(self, adr_file: Path) -> str:
+        """Extract title from ADR file.
+        
+        Args:
+            adr_file: Path to ADR file
+            
+        Returns:
+            Extracted title or filename
+        """
+        try:
+            with open(adr_file, 'r', encoding='utf-8') as f:
+                first_line = f.readline().strip()
+                if first_line.startswith('# '):
+                    return first_line[2:]
+        except OSError:
+            pass
+        
+        return adr_file.stem
+    
+    def _generate_adr_links_content(self, adr_links: List[Dict[str, str]], prd_id: str) -> str:
+        """Generate ADR links content.
+        
+        Args:
+            adr_links: List of ADR information
+            prd_id: PRD ID
+            
+        Returns:
+            ADR links content as string
+        """
+        content = f"""# ADR Links for {prd_id}
+
+This document contains links to Architecture Decision Records (ADRs) referenced in the PRD.
+
+## Available ADRs
+
+"""
+        
+        for adr in adr_links:
+            content += f"- **{adr['number']}:** [{adr['title']}](./{adr['path']})\n"
+        
+        content += f"""
+## How to Use
+
+1. Review the ADRs listed above
+2. Ensure they align with the PRD requirements
+3. Update ADRs if necessary to reflect current decisions
+4. Link new ADRs as they are created
+
+## Creating New ADRs
+
+When creating new ADRs:
+
+1. Use the format: `adr-XXX-title.md`
+2. Include a clear title and decision statement
+3. Reference the PRD ID: {prd_id}
+4. Update this links file
+
+---
+
+*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
+"""
+        
+        return content
