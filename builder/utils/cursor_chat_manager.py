@@ -37,10 +37,11 @@ class CursorChatSession:
 class CursorChatManager:
     """Manages Cursor chat sessions for task execution."""
     
-    def __init__(self, cache_dir: str = "builder/cache"):
+    def __init__(self, cache_dir: str = "builder/cache", cursor_executable: str = "cursor"):
         self.cache_dir = Path(cache_dir)
         self.sessions_dir = self.cache_dir / "cursor_chats"
         self.sessions_dir.mkdir(parents=True, exist_ok=True)
+        self.cursor_executable = cursor_executable
         
         self.active_sessions: Dict[str, CursorChatSession] = {}
         self.session_lock = threading.Lock()
@@ -174,8 +175,8 @@ echo ""
 echo "🚀 Starting Cursor..."
 echo ""
 
-# Open Cursor (this will open a new Cursor window)
-cursor . --new-chat
+            # Open Cursor (this will open a new Cursor window)
+            cursor .
 """
             
             with open(script_file, 'w') as f:
@@ -184,11 +185,23 @@ cursor . --new-chat
             # Make script executable
             script_file.chmod(0o755)
             
-            # Open Cursor in a new terminal window
-            if os.name == 'nt':  # Windows
-                subprocess.Popen(['start', 'cmd', '/k', str(script_file)], shell=True)
-            else:  # Linux/Mac
-                subprocess.Popen(['gnome-terminal', '--', 'bash', str(script_file)])
+            # Open Cursor directly (simpler approach)
+            try:
+                # Try to open Cursor directly
+                subprocess.Popen([self.cursor_executable, session.working_directory])
+                print(f"🚀 Opened Cursor for task: {session.task_id}")
+                return True
+            except Exception as e:
+                print(f"Error opening Cursor directly: {e}")
+                # Fallback to terminal approach
+                if os.name == 'nt':  # Windows
+                    subprocess.Popen(['start', 'cmd', '/k', str(script_file)], shell=True)
+                else:  # Linux/Mac
+                    try:
+                        subprocess.Popen(['gnome-terminal', '--', 'bash', str(script_file)])
+                    except FileNotFoundError:
+                        # Fallback to xterm or just run the script
+                        subprocess.Popen(['xterm', '-e', 'bash', str(script_file)])
             
             print(f"🚀 Opened Cursor chat for task: {session.task_id}")
             print(f"   Script: {script_file}")
