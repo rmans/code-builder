@@ -20,18 +20,20 @@ from .validator import DiscoveryValidator
 class DiscoveryEngine:
     """Main engine for orchestrating code discovery processes."""
     
-    def __init__(self, root_path: str = "."):
+    def __init__(self, root_path: str = ".", question_set: str = "comprehensive"):
         """Initialize the discovery engine.
         
         Args:
             root_path: Root directory of the project to analyze
+            question_set: Question set to use (new_product, existing_product, comprehensive)
         """
         self.root_path = Path(root_path).resolve()
         self.cache_dir = self.root_path / "builder" / "cache" / "discovery"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.question_set = question_set
         
         # Initialize components
-        self.interview = DiscoveryInterview()
+        self.interview = DiscoveryInterview(question_set=question_set)
         self.analyzer = CodeAnalyzer()
         self.synthesizer = DiscoverySynthesizer()
         self.generators = DiscoveryGenerators()
@@ -56,7 +58,9 @@ class DiscoveryEngine:
             raise FileNotFoundError(f"Target path does not exist: {target_path}")
         
         # Generate cache key
-        self.cache_key = self._generate_cache_key(target, options or {})
+        options = options or {}
+        options['question_set'] = self.question_set
+        self.cache_key = self._generate_cache_key(target, options)
         
         # Check cache first
         cached_result = self._load_from_cache()

@@ -1,6 +1,20 @@
 # Discovery Questions Configuration
 # This file defines the questions used during the interview phase of discovery
 
+# Question sets for different product types
+question_sets:
+  new_product:
+    file: "docs/templates/discovery/questions/new_product.yml"
+    description: "Minimal questions for new product development"
+    
+  existing_product:
+    file: "docs/templates/discovery/questions/existing_product.yml"
+    description: "Questions for analyzing existing products"
+    
+  comprehensive:
+    description: "Full comprehensive question set (default)"
+
+# Default comprehensive questions
 questions:
   # Basic Technical Questions
   - id: purpose

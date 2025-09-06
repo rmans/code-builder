@@ -14,9 +14,14 @@ from pathlib import Path
 class DiscoveryInterview:
     """Conducts initial interview phase of code discovery."""
     
-    def __init__(self):
-        """Initialize the discovery interview."""
-        self.questions = self._load_questions()
+    def __init__(self, question_set: str = "comprehensive"):
+        """Initialize the discovery interview.
+        
+        Args:
+            question_set: Question set to use (new_product, existing_product, comprehensive)
+        """
+        self.question_set = question_set
+        self.questions = self._load_questions(question_set)
         self.patterns = self._load_patterns()
     
     def conduct(self, target: Path, options: Optional[Dict] = None) -> Dict[str, Any]:
@@ -545,7 +550,7 @@ class DiscoveryInterview:
         """Get deployment status from discovery context."""
         return "unknown"
     
-    def _load_questions(self) -> List[Dict[str, str]]:
+    def _load_questions(self, question_set: str = "comprehensive") -> List[Dict[str, str]]:
         """Load discovery questions from configuration."""
         try:
             import yaml
@@ -553,9 +558,24 @@ class DiscoveryInterview:
             if questions_file.exists():
                 with open(questions_file, 'r') as f:
                     config = yaml.safe_load(f)
+                
+                # Check if specific question set is requested
+                if question_set != "comprehensive" and "question_sets" in config:
+                    question_sets = config.get("question_sets", {})
+                    if question_set in question_sets:
+                        set_config = question_sets[question_set]
+                        if "file" in set_config:
+                            # Load from external file
+                            set_file = Path(__file__).parent.parent.parent / set_config["file"]
+                            if set_file.exists():
+                                with open(set_file, 'r') as f:
+                                    set_data = yaml.safe_load(f)
+                                return set_data.get('questions', [])
+                
+                # Return comprehensive questions as default
                 return config.get('questions', [])
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Warning: Could not load questions: {e}")
         
         # Fallback to default questions
         return [

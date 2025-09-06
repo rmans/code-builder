@@ -2951,9 +2951,17 @@ def ctx_budget(target_path, feature, budget, output, report):
 @cli.command("discover:new")
 @click.option("--product", required=True, help="Product name for discovery context")
 @click.option("--idea", required=True, help="Short idea description")
+@click.option("--problem", help="Problem this product solves")
+@click.option("--users", help="Target users")
+@click.option("--features", help="Key features (comma-separated)")
+@click.option("--metrics", help="Success metrics")
+@click.option("--tech", help="Technology stack preferences")
+@click.option("--timeline", help="Project timeline")
+@click.option("--team-size", help="Development team size")
+@click.option("--question-set", default="new_product", help="Question set to use (new_product, existing_product, comprehensive)")
 @click.option("--auto-generate", is_flag=True, help="Auto-generate discovery context")
 @click.option("--output", default="builder/cache/discovery_context.yml", help="Output context file path")
-def discover_new(product, idea, auto_generate, output):
+def discover_new(product, idea, problem, users, features, metrics, tech, timeline, team_size, question_set, auto_generate, output):
     """Create a new discovery context for product development"""
     try:
         from discovery.engine import DiscoveryEngine
@@ -2962,18 +2970,20 @@ def discover_new(product, idea, auto_generate, output):
         
         click.echo(f"🔍 Creating discovery context for: {product}")
         click.echo(f"💡 Idea: {idea}")
+        click.echo(f"📋 Question Set: {question_set}")
         
         # Ensure output directory exists
         output_dir = os.path.dirname(output)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
         
-        # Create discovery context
+        # Create discovery context with batch inputs
         discovery_context = {
             'product': product,
             'idea': idea,
             'created': datetime.now().isoformat(),
             'status': 'draft',
+            'question_set': question_set,
             'auto_generated': auto_generate,
             'discovery_phases': {
                 'interview': {'completed': False, 'data': {}},
@@ -2988,12 +2998,44 @@ def discover_new(product, idea, auto_generate, output):
             'next_steps': []
         }
         
+        # Add batch inputs if provided
+        if problem:
+            discovery_context['problem_solved'] = problem
+        if users:
+            discovery_context['target_users'] = users
+        if features:
+            # Split comma-separated features
+            feature_list = [f.strip() for f in features.split(",") if f.strip()]
+            discovery_context['key_features'] = feature_list
+        if metrics:
+            discovery_context['success_metrics'] = metrics
+        if tech:
+            discovery_context['tech_stack_preferences'] = tech
+        if timeline:
+            discovery_context['timeline'] = timeline
+        if team_size:
+            discovery_context['team_size'] = team_size
+        
         # Auto-generate if requested
         if auto_generate:
             click.echo("🤖 Auto-generating discovery context...")
             
             # Initialize discovery engine
-            engine = DiscoveryEngine()
+            engine = DiscoveryEngine(question_set=question_set)
+            
+            # Fill in missing required fields for new products
+            if 'problem_solved' not in discovery_context:
+                discovery_context['problem_solved'] = f"Problem to be defined for {product}"
+            if 'target_users' not in discovery_context:
+                discovery_context['target_users'] = "Target users to be defined"
+            if 'key_features' not in discovery_context:
+                discovery_context['key_features'] = ["Feature 1", "Feature 2", "Feature 3"]
+            if 'success_metrics' not in discovery_context:
+                discovery_context['success_metrics'] = "Success metrics to be defined"
+            if 'tech_stack_preferences' not in discovery_context:
+                discovery_context['tech_stack_preferences'] = "Technology stack to be defined"
+            if 'timeline' not in discovery_context:
+                discovery_context['timeline'] = "Timeline to be defined"
             
             # Add some basic next steps
             discovery_context['next_steps'] = [
@@ -3026,6 +3068,11 @@ def discover_new(product, idea, auto_generate, output):
         click.echo(f"📄 Saved to: {output}")
         click.echo(f"📊 Status: {discovery_context['status']}")
         
+        # Show what was filled in
+        filled_fields = [k for k, v in discovery_context.items() if k not in ["created", "status", "question_set", "auto_generated", "discovery_phases", "targets", "insights", "recommendations", "next_steps"] and v not in ["To be defined", "Target users to be defined", "Success metrics to be defined", "Technology stack to be defined", "Timeline to be defined"]]
+        if filled_fields:
+            click.echo(f"📝 Filled fields: {', '.join(filled_fields)}")
+        
         if auto_generate:
             click.echo(f"🤖 Auto-generated with {len(discovery_context['next_steps'])} next steps")
             click.echo(f"💡 Generated {len(discovery_context['insights'])} initial insights")
@@ -3046,9 +3093,10 @@ def discover_new(product, idea, auto_generate, output):
 @click.option("--repo-root", is_flag=True, help="Analyze entire repository root")
 @click.option("--target", help="Specific target path to analyze")
 @click.option("--feature", default="", help="Feature name for analysis")
+@click.option("--question-set", default="comprehensive", help="Question set to use (new_product, existing_product, comprehensive)")
 @click.option("--output", default="builder/cache/discovery_analysis.json", help="Output analysis file path")
 @click.option("--batch", is_flag=True, help="Run in batch mode (non-interactive)")
-def discover_analyze(repo_root, target, feature, output, batch):
+def discover_analyze(repo_root, target, feature, question_set, output, batch):
     """Analyze codebase using discovery engine"""
     try:
         from discovery.engine import DiscoveryEngine
@@ -3058,8 +3106,8 @@ def discover_analyze(repo_root, target, feature, output, batch):
             click.echo("❌ Error: Must specify either --repo-root or --target")
             raise SystemExit(1)
         
-        # Initialize discovery engine
-        engine = DiscoveryEngine()
+        # Initialize discovery engine with question set
+        engine = DiscoveryEngine(question_set=question_set)
         
         if repo_root:
             click.echo("🔍 Analyzing entire repository...")
