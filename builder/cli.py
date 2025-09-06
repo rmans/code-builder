@@ -4684,6 +4684,32 @@ def discover_analyze(repo_root, target, feature, question_set, output, batch):
         raise SystemExit(1)
 
 
+@cli.command("cleanup:artifacts")
+@click.option("--dry-run", is_flag=True, default=True, help="Show what would be cleaned up without actually deleting")
+@click.option("--clean", is_flag=True, help="Actually perform the cleanup")
+@click.option("--root", default=".", help="Root directory to scan")
+def cleanup_artifacts(dry_run, clean, root):
+    """Clean up test/example artifacts outside of designated directories."""
+    try:
+        from cleanup_rules import ArtifactCleaner
+        
+        cleaner = ArtifactCleaner(root)
+        
+        if clean:
+            click.echo("🧹 Cleaning up artifacts...")
+            cleaned = cleaner.cleanup_artifacts(dry_run=False)
+            cleaner.print_cleanup_report(cleaned)
+        else:
+            click.echo("🔍 Scanning for artifacts (dry run)...")
+            artifacts = cleaner.find_artifacts(dry_run=True)
+            cleaner.print_cleanup_report(artifacts)
+            click.echo("💡 Use --clean to actually perform the cleanup")
+            
+    except Exception as e:
+        click.echo(f"❌ Error during cleanup: {e}")
+        raise click.Abort()
+
+
 @cli.command("discover:validate")
 @click.argument("context_file")
 @click.option("--strict", is_flag=True, help="Use strict validation mode")

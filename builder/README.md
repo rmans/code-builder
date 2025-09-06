@@ -56,6 +56,13 @@ Python CLI (builder/cli.py) manages ADRs, context generation, planning, iteratio
 
   Validates discovery context files with PII detection and security checks.
 
+- `cleanup:artifacts`
+
+      python3 builder/cli.py cleanup:artifacts --dry-run
+      python3 builder/cli.py cleanup:artifacts --clean
+
+  Scans for and cleans up test/example artifacts outside of designated directories.
+
 ---
 
 ### Planning & Context

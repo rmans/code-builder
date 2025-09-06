@@ -53,7 +53,9 @@
 		"discover:new": ".venv/bin/python builder/cli.py discover:new --interactive",
 		"discover:analyze": ".venv/bin/python builder/cli.py discover:analyze --repo-root",
 		"discover:scan": ".venv/bin/python builder/cli.py discover:scan --auto-generate",
-		"discover:validate": ".venv/bin/python builder/cli.py discover:validate discovery_context.yml"
+		"discover:validate": ".venv/bin/python builder/cli.py discover:validate discovery_context.yml",
+		"cleanup:scan": ".venv/bin/python builder/cli.py cleanup:artifacts --dry-run",
+		"cleanup:clean": ".venv/bin/python builder/cli.py cleanup:artifacts --clean"
 	},
 	"dependencies": {
 		"axios": "^1.11.0",

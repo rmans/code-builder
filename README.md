@@ -322,6 +322,7 @@ python3 builder/cli.py iter:finish src/hello.ts --winner B --scores-file cursor_
 - **Auto-generation**: `--auto-generate` flag for enhanced content generation
 - **Discovery scanning**: `python3 builder/cli.py discover:scan --auto-generate`
 - **Context regeneration**: `python3 builder/cli.py discover:regenerate --all`
+- **Artifact cleanup**: `python3 builder/cli.py cleanup:artifacts --clean`
 
 #### Context System
 - **Graph building**: `python3 builder/cli.py ctx:graph:build`
