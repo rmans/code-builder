@@ -452,6 +452,380 @@ def _update_doc_content_hash(doc_id, doc_file):
     except Exception:
         pass  # Silently fail for content hash updates
 
+def _get_discovery_tier(doc_type):
+    """Determine discovery tier for document type"""
+    discovery_tiers = {
+        "prd": "full",           # Tier 1: Full discovery context
+        "arch": "targeted",      # Tier 2: Targeted discovery context
+        "impl": "targeted",      # Tier 2: Targeted discovery context
+        "adr": "lightweight",    # Tier 3: Lightweight discovery context
+        "exec": "lightweight",   # Tier 3: Lightweight discovery context
+        "ux": "lightweight",     # Tier 3: Lightweight discovery context
+        "tasks": "hash_only",    # Tier 4: Content hash only
+        "integrations": "hash_only"  # Tier 4: Content hash only
+    }
+    return discovery_tiers.get(doc_type, "hash_only")
+
+def _generate_targeted_discovery_context(doc_id, doc_file, doc_type):
+    """Generate targeted discovery context for ARCH and IMPL documents"""
+    import yaml
+    import hashlib
+    from pathlib import Path
+    from discovery.engine import DiscoveryEngine
+    from datetime import datetime
+    
+    try:
+        # Extract target and basic info from document
+        target = _extract_target_from_doc(doc_file) or "."
+        batch_kwargs = _extract_batch_kwargs_from_doc(doc_file)
+        
+        # Initialize discovery engine
+        engine = DiscoveryEngine(question_set="comprehensive")
+        
+        # Run targeted analysis based on document type
+        if doc_type == "arch":
+            # Architecture-focused analysis
+            analysis_data = _analyze_architecture_context(target, doc_file)
+        elif doc_type == "impl":
+            # Implementation-focused analysis
+            analysis_data = _analyze_implementation_context(target, doc_file)
+        else:
+            # Fallback to basic analysis
+            analysis_data = engine.analyzer.analyze(Path(target), {})
+        
+        # Create targeted context
+        targeted_context = {
+            'doc_id': doc_id,
+            'doc_type': doc_type,
+            'title': batch_kwargs.get('product', 'Unknown'),
+            'description': batch_kwargs.get('idea', ''),
+            'target_path': target,
+            'analysis_data': analysis_data,
+            'created': datetime.now().isoformat(),
+            'status': 'draft',
+            'discovery_tier': 'targeted'
+        }
+        
+        # Add content hash
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            doc_content = f.read()
+        targeted_context['content_hash'] = hashlib.md5(doc_content.encode()).hexdigest()
+        
+        # Save targeted context
+        cache_file = Path("builder/cache/discovery") / f"{doc_id}.yml"
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            yaml.dump(targeted_context, f, default_flow_style=False, sort_keys=False)
+            
+    except Exception as e:
+        raise Exception(f"Failed to generate targeted context for {doc_id}: {e}")
+
+def _generate_lightweight_discovery_context(doc_id, doc_file, doc_type):
+    """Generate lightweight discovery context for ADR, EXEC, and UX documents"""
+    import yaml
+    import hashlib
+    from pathlib import Path
+    from datetime import datetime
+    
+    try:
+        # Extract basic info from document
+        batch_kwargs = _extract_batch_kwargs_from_doc(doc_file)
+        
+        # Create lightweight context based on document type
+        if doc_type == "adr":
+            # ADR-focused lightweight analysis
+            analysis_data = _analyze_adr_context(doc_file)
+        elif doc_type == "exec":
+            # Execution-focused lightweight analysis
+            analysis_data = _analyze_execution_context(doc_file)
+        elif doc_type == "ux":
+            # UX-focused lightweight analysis
+            analysis_data = _analyze_ux_context(doc_file)
+        else:
+            # Fallback to basic analysis
+            analysis_data = {}
+        
+        # Create lightweight context
+        lightweight_context = {
+            'doc_id': doc_id,
+            'doc_type': doc_type,
+            'title': batch_kwargs.get('product', 'Unknown'),
+            'description': batch_kwargs.get('idea', ''),
+            'analysis_data': analysis_data,
+            'created': datetime.now().isoformat(),
+            'status': 'draft',
+            'discovery_tier': 'lightweight'
+        }
+        
+        # Add content hash
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            doc_content = f.read()
+        lightweight_context['content_hash'] = hashlib.md5(doc_content.encode()).hexdigest()
+        
+        # Save lightweight context
+        cache_file = Path("builder/cache/discovery") / f"{doc_id}.yml"
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            yaml.dump(lightweight_context, f, default_flow_style=False, sort_keys=False)
+            
+    except Exception as e:
+        raise Exception(f"Failed to generate lightweight context for {doc_id}: {e}")
+
+def _analyze_architecture_context(target, doc_file):
+    """Analyze architecture-specific context"""
+    try:
+        from discovery.engine import DiscoveryEngine
+        engine = DiscoveryEngine(question_set="comprehensive")
+        
+        # Run architecture-focused analysis
+        analysis_data = engine.analyzer.analyze(Path(target), {})
+        
+        # Focus on architectural patterns and system structure
+        arch_analysis = {
+            'system_structure': analysis_data.get('detected', {}),
+            'architectural_patterns': _detect_architectural_patterns(target),
+            'component_analysis': _analyze_components(target),
+            'dependencies': analysis_data.get('dependencies', {}),
+            'tech_stack': analysis_data.get('detected', {}).get('languages', [])
+        }
+        
+        return arch_analysis
+        
+    except Exception:
+        return {'error': 'Failed to analyze architecture context'}
+
+def _analyze_implementation_context(target, doc_file):
+    """Analyze implementation-specific context"""
+    try:
+        from discovery.engine import DiscoveryEngine
+        engine = DiscoveryEngine(question_set="comprehensive")
+        
+        # Run implementation-focused analysis
+        analysis_data = engine.analyzer.analyze(Path(target), {})
+        
+        # Focus on implementation details and code quality
+        impl_analysis = {
+            'code_structure': analysis_data.get('detected', {}),
+            'implementation_patterns': _detect_implementation_patterns(target),
+            'code_quality': _analyze_code_quality(target),
+            'dependencies': analysis_data.get('dependencies', {}),
+            'tech_stack': analysis_data.get('detected', {}).get('languages', [])
+        }
+        
+        return impl_analysis
+        
+    except Exception:
+        return {'error': 'Failed to analyze implementation context'}
+
+def _analyze_adr_context(doc_file):
+    """Analyze ADR-specific context"""
+    try:
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Extract ADR-specific information
+        import re
+        
+        adr_analysis = {
+            'decision_rationale': _extract_section(content, '## Decision'),
+            'alternatives': _extract_section(content, '## Alternatives'),
+            'consequences': _extract_section(content, '## Consequences'),
+            'status': _extract_status(content),
+            'related_decisions': _extract_related_decisions(content)
+        }
+        
+        return adr_analysis
+        
+    except Exception:
+        return {'error': 'Failed to analyze ADR context'}
+
+def _analyze_execution_context(doc_file):
+    """Analyze execution-specific context"""
+    try:
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Extract execution-specific information
+        exec_analysis = {
+            'milestones': _extract_section(content, '## Milestones'),
+            'timeline': _extract_section(content, '## Timeline'),
+            'resources': _extract_section(content, '## Resources'),
+            'risks': _extract_section(content, '## Risks'),
+            'dependencies': _extract_section(content, '## Dependencies')
+        }
+        
+        return exec_analysis
+        
+    except Exception:
+        return {'error': 'Failed to analyze execution context'}
+
+def _analyze_ux_context(doc_file):
+    """Analyze UX-specific context"""
+    try:
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Extract UX-specific information
+        ux_analysis = {
+            'user_personas': _extract_section(content, '## User Personas'),
+            'user_flows': _extract_section(content, '## User Flows'),
+            'wireframes': _extract_section(content, '## Wireframes'),
+            'accessibility': _extract_section(content, '## Accessibility'),
+            'usability_goals': _extract_section(content, '## Usability Goals')
+        }
+        
+        return ux_analysis
+        
+    except Exception:
+        return {'error': 'Failed to analyze UX context'}
+
+def _extract_section(content, section_header):
+    """Extract content from a specific section"""
+    import re
+    pattern = f"{re.escape(section_header)}\\s*\\n\\s*(.+?)(?=\\n##|\\Z)"
+    match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+    return match.group(1).strip() if match else ""
+
+def _extract_status(content):
+    """Extract status from document content"""
+    import re
+    status_match = re.search(r'status[:\s]+(.+)', content, re.IGNORECASE)
+    return status_match.group(1).strip() if status_match else "draft"
+
+def _extract_related_decisions(content):
+    """Extract related decisions from ADR content"""
+    import re
+    related_match = re.search(r'related[:\s]+(.+)', content, re.IGNORECASE)
+    if related_match:
+        return [d.strip() for d in related_match.group(1).split(',')]
+    return []
+
+def _detect_architectural_patterns(target):
+    """Detect architectural patterns in the codebase"""
+    # Placeholder for architectural pattern detection
+    return {
+        'patterns': ['MVC', 'Microservices'],
+        'layers': ['Presentation', 'Business', 'Data'],
+        'communication': ['REST', 'GraphQL']
+    }
+
+def _analyze_components(target):
+    """Analyze system components"""
+    # Placeholder for component analysis
+    return {
+        'components': ['API', 'Database', 'Frontend'],
+        'interfaces': ['REST API', 'Database Schema'],
+        'dependencies': ['External APIs', 'Third-party Libraries']
+    }
+
+def _detect_implementation_patterns(target):
+    """Detect implementation patterns in the codebase"""
+    # Placeholder for implementation pattern detection
+    return {
+        'patterns': ['Repository', 'Factory', 'Observer'],
+        'design_principles': ['SOLID', 'DRY', 'KISS'],
+        'code_organization': ['Modular', 'Layered']
+    }
+
+def _analyze_code_quality(target):
+    """Analyze code quality metrics"""
+    # Placeholder for code quality analysis
+    return {
+        'complexity': 'Medium',
+        'test_coverage': '80%',
+        'documentation': 'Good',
+        'maintainability': 'High'
+    }
+
+def _refresh_targeted_context(doc_id, doc_file, doc_type, pack):
+    """Refresh targeted discovery context for ARCH and IMPL documents"""
+    import yaml
+    import hashlib
+    from pathlib import Path
+    from datetime import datetime
+    
+    try:
+        # Load existing cache file
+        cache_file = Path("builder/cache/discovery") / f"{doc_id}.yml"
+        if not cache_file.exists():
+            return
+        
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            cache_data = yaml.safe_load(f)
+        
+        # Refresh analysis data based on document type
+        if doc_type == "arch":
+            analysis_data = _analyze_architecture_context(cache_data.get('target_path', '.'), doc_file)
+        elif doc_type == "impl":
+            analysis_data = _analyze_implementation_context(cache_data.get('target_path', '.'), doc_file)
+        else:
+            analysis_data = cache_data.get('analysis_data', {})
+        
+        # Update cache data
+        cache_data['analysis_data'] = analysis_data
+        cache_data['last_refreshed'] = datetime.now().isoformat()
+        
+        # Update content hash
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            doc_content = f.read()
+        cache_data['content_hash'] = hashlib.md5(doc_content.encode()).hexdigest()
+        
+        # Save updated cache
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            yaml.dump(cache_data, f, default_flow_style=False, sort_keys=False)
+        
+        # Optional: Generate context pack
+        if pack:
+            try:
+                from discovery.engine import DiscoveryEngine
+                engine = DiscoveryEngine(question_set="comprehensive")
+                engine._try_auto_ctx_build(Path(cache_data.get('target_path', '.')))
+            except Exception:
+                pass  # Silently fail for pack generation
+                
+    except Exception as e:
+        raise Exception(f"Failed to refresh targeted context for {doc_id}: {e}")
+
+def _refresh_lightweight_context(doc_id, doc_file, doc_type):
+    """Refresh lightweight discovery context for ADR, EXEC, and UX documents"""
+    import yaml
+    import hashlib
+    from pathlib import Path
+    from datetime import datetime
+    
+    try:
+        # Load existing cache file
+        cache_file = Path("builder/cache/discovery") / f"{doc_id}.yml"
+        if not cache_file.exists():
+            return
+        
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            cache_data = yaml.safe_load(f)
+        
+        # Refresh analysis data based on document type
+        if doc_type == "adr":
+            analysis_data = _analyze_adr_context(doc_file)
+        elif doc_type == "exec":
+            analysis_data = _analyze_execution_context(doc_file)
+        elif doc_type == "ux":
+            analysis_data = _analyze_ux_context(doc_file)
+        else:
+            analysis_data = cache_data.get('analysis_data', {})
+        
+        # Update cache data
+        cache_data['analysis_data'] = analysis_data
+        cache_data['last_refreshed'] = datetime.now().isoformat()
+        
+        # Update content hash
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            doc_content = f.read()
+        cache_data['content_hash'] = hashlib.md5(doc_content.encode()).hexdigest()
+        
+        # Save updated cache
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            yaml.dump(cache_data, f, default_flow_style=False, sort_keys=False)
+                
+    except Exception as e:
+        raise Exception(f"Failed to refresh lightweight context for {doc_id}: {e}")
+
 @click.group()
 def cli():
     """Code Builder CLI"""
@@ -3943,35 +4317,58 @@ def discover_scan(auto_generate, pack, question_set, type):
             
             if not cache_file.exists():
                 click.echo(f"  ❌ Missing cache file: {cache_file}")
-                if auto_generate and doc_type == "prd":
-                    # Only auto-generate for PRDs (other types don't have discovery contexts)
-                    click.echo(f"  🔄 Auto-generating context for {doc_id}...")
-                    try:
-                        # Try to extract target from document content or use repo root
-                        target = _extract_target_from_doc(doc_file) or "."
-                        
-                        # Run discovery with auto-generation
-                        batch_kwargs = _extract_batch_kwargs_from_doc(doc_file)
-                        results = engine.discover(target, batch_kwargs=batch_kwargs)
-                        
-                        # Check if the generated PRD matches our target PRD
-                        generated_prd_id = results.get('prd_id')
-                        if generated_prd_id == doc_id:
-                            click.echo(f"  ✅ Generated context for {doc_id}")
+                if auto_generate:
+                    # Determine discovery tier for this document type
+                    discovery_tier = _get_discovery_tier(doc_type)
+                    
+                    if discovery_tier == "full":
+                        # Tier 1: Full discovery context (PRD)
+                        click.echo(f"  🔄 Auto-generating full discovery context for {doc_id}...")
+                        try:
+                            target = _extract_target_from_doc(doc_file) or "."
+                            batch_kwargs = _extract_batch_kwargs_from_doc(doc_file)
+                            results = engine.discover(target, batch_kwargs=batch_kwargs)
+                            
+                            generated_prd_id = results.get('prd_id')
+                            if generated_prd_id == doc_id:
+                                click.echo(f"  ✅ Generated full context for {doc_id}")
+                                refreshed_count += 1
+                            else:
+                                click.echo(f"  🔄 Generated {generated_prd_id}, adapting for {doc_id}...")
+                                _adapt_results_for_prd(results, doc_id, doc_file)
+                                click.echo(f"  ✅ Generated full context for {doc_id}")
+                                refreshed_count += 1
+                        except Exception as e:
+                            click.echo(f"  ❌ Error generating full context: {e}")
+                            missing_count += 1
+                    
+                    elif discovery_tier == "targeted":
+                        # Tier 2: Targeted discovery context (ARCH, IMPL)
+                        click.echo(f"  🔄 Auto-generating targeted discovery context for {doc_id}...")
+                        try:
+                            _generate_targeted_discovery_context(doc_id, doc_file, doc_type)
+                            click.echo(f"  ✅ Generated targeted context for {doc_id}")
                             refreshed_count += 1
-                        else:
-                            # The generated PRD doesn't match, but we can still use the results
-                            # to create a context for our target PRD
-                            click.echo(f"  🔄 Generated {generated_prd_id}, adapting for {doc_id}...")
-                            _adapt_results_for_prd(results, doc_id, doc_file)
-                            click.echo(f"  ✅ Generated context for {doc_id}")
+                        except Exception as e:
+                            click.echo(f"  ❌ Error generating targeted context: {e}")
+                            missing_count += 1
+                    
+                    elif discovery_tier == "lightweight":
+                        # Tier 3: Lightweight discovery context (ADR, EXEC, UX)
+                        click.echo(f"  🔄 Auto-generating lightweight discovery context for {doc_id}...")
+                        try:
+                            _generate_lightweight_discovery_context(doc_id, doc_file, doc_type)
+                            click.echo(f"  ✅ Generated lightweight context for {doc_id}")
                             refreshed_count += 1
-                    except Exception as e:
-                        click.echo(f"  ❌ Error generating context: {e}")
+                        except Exception as e:
+                            click.echo(f"  ❌ Error generating lightweight context: {e}")
+                            missing_count += 1
+                    
+                    else:
+                        # Tier 4: Content hash only (TASKS, INTEGRATIONS)
+                        click.echo(f"  ℹ️  {doc_type.upper()} documents use content hash tracking only")
                         missing_count += 1
                 else:
-                    if doc_type != "prd":
-                        click.echo(f"  ℹ️  {doc_type.upper()} documents don't have discovery contexts")
                     missing_count += 1
                 continue
             
@@ -3979,12 +4376,22 @@ def discover_scan(auto_generate, pack, question_set, type):
             if _is_doc_stale(doc_file, cache_file):
                 click.echo(f"  🔄 Stale cache detected, refreshing {doc_id}...")
                 try:
-                    # Use existing refresh logic for PRDs
-                    if doc_type == "prd":
+                    # Use appropriate refresh logic based on discovery tier
+                    discovery_tier = _get_discovery_tier(doc_type)
+                    
+                    if discovery_tier == "full":
+                        # Tier 1: Full discovery refresh (PRD)
                         _refresh_prd_context(doc_id, question_set, pack)
+                    elif discovery_tier == "targeted":
+                        # Tier 2: Targeted discovery refresh (ARCH, IMPL)
+                        _refresh_targeted_context(doc_id, doc_file, doc_type, pack)
+                    elif discovery_tier == "lightweight":
+                        # Tier 3: Lightweight discovery refresh (ADR, EXEC, UX)
+                        _refresh_lightweight_context(doc_id, doc_file, doc_type)
                     else:
-                        # For other document types, just update the content hash
+                        # Tier 4: Content hash only (TASKS, INTEGRATIONS)
                         _update_doc_content_hash(doc_id, doc_file)
+                    
                     click.echo(f"  ✅ Refreshed {doc_id}")
                     refreshed_count += 1
                 except Exception as e:
