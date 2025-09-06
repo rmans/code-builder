@@ -1,0 +1,85 @@
+# Discovery Questions Configuration
+# This file defines the questions used during the interview phase of discovery
+
+questions:
+  - id: purpose
+    question: "What is the primary purpose of this code?"
+    type: "categorical"
+    options: ["implementation", "testing", "configuration", "utility", "entry-point", "unknown"]
+    
+  - id: complexity
+    question: "How would you assess the complexity of this code?"
+    type: "categorical"
+    options: ["simple", "moderate", "complex", "unknown"]
+    
+  - id: dependencies
+    question: "How many external dependencies does this code have?"
+    type: "numerical"
+    min: 0
+    max: 100
+    
+  - id: architecture
+    question: "What architectural patterns are used in this code?"
+    type: "multi_select"
+    options: ["object_oriented", "functional", "procedural", "modular", "layered", "microservices", "unknown"]
+    
+  - id: testing
+    question: "What is the testing coverage for this code?"
+    type: "categorical"
+    options: ["comprehensive", "partial", "minimal", "none", "unknown"]
+    
+  - id: documentation
+    question: "How well is this code documented?"
+    type: "categorical"
+    options: ["excellent", "good", "fair", "poor", "none", "unknown"]
+    
+  - id: maintainability
+    question: "How maintainable is this code?"
+    type: "categorical"
+    options: ["excellent", "good", "fair", "poor", "unknown"]
+    
+  - id: performance
+    question: "Are there any performance concerns with this code?"
+    type: "categorical"
+    options: ["none", "minor", "moderate", "major", "unknown"]
+    
+  - id: security
+    question: "Are there any security concerns with this code?"
+    type: "categorical"
+    options: ["none", "minor", "moderate", "major", "unknown"]
+    
+  - id: error_handling
+    question: "How is error handling implemented in this code?"
+    type: "categorical"
+    options: ["comprehensive", "basic", "minimal", "none", "unknown"]
+
+# Question categories for organization
+categories:
+  basic:
+    - purpose
+    - complexity
+    - dependencies
+    
+  quality:
+    - testing
+    - documentation
+    - maintainability
+    
+  technical:
+    - architecture
+    - performance
+    - security
+    - error_handling
+
+# Scoring weights for different question types
+scoring:
+  purpose: 1.0
+  complexity: 1.5
+  dependencies: 0.8
+  architecture: 1.2
+  testing: 1.3
+  documentation: 1.1
+  maintainability: 1.4
+  performance: 1.0
+  security: 1.5
+  error_handling: 1.2

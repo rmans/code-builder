@@ -1,0 +1,189 @@
+# Discovery Patterns Configuration
+# This file defines patterns used for code analysis and detection
+
+patterns:
+  design_patterns:
+    - id: singleton
+      pattern: "class.*__new__"
+      description: "Singleton pattern implementation"
+      confidence: 0.8
+      
+    - id: factory
+      pattern: "def.*create.*\(|class.*Factory"
+      description: "Factory pattern implementation"
+      confidence: 0.7
+      
+    - id: observer
+      pattern: "def.*notify|def.*update|class.*Observer"
+      description: "Observer pattern implementation"
+      confidence: 0.6
+      
+    - id: decorator
+      pattern: "@\w+|def.*decorator"
+      description: "Decorator pattern implementation"
+      confidence: 0.8
+      
+    - id: strategy
+      pattern: "def.*strategy|class.*Strategy"
+      description: "Strategy pattern implementation"
+      confidence: 0.6
+
+  anti_patterns:
+    - id: god_class
+      pattern: "class.*:\s*$"
+      description: "Potential God class (large class)"
+      confidence: 0.5
+      
+    - id: long_method
+      pattern: "def.*:\s*$"
+      description: "Potential long method"
+      confidence: 0.4
+      
+    - id: duplicate_code
+      pattern: "def.*def.*def"
+      description: "Potential code duplication"
+      confidence: 0.3
+      
+    - id: magic_numbers
+      pattern: "\b\d{3,}\b"
+      description: "Magic numbers detected"
+      confidence: 0.6
+      
+    - id: deep_nesting
+      pattern: "if.*if.*if.*if"
+      description: "Deep nesting detected"
+      confidence: 0.7
+
+  architectural_patterns:
+    - id: mvc
+      pattern: "class.*Controller|class.*Model|class.*View"
+      description: "MVC architectural pattern"
+      confidence: 0.8
+      
+    - id: repository
+      pattern: "class.*Repository|def.*save|def.*find"
+      description: "Repository pattern"
+      confidence: 0.7
+      
+    - id: service_layer
+      pattern: "class.*Service|def.*service"
+      description: "Service layer pattern"
+      confidence: 0.6
+      
+    - id: dependency_injection
+      pattern: "def.*__init__.*self.*:"
+      description: "Dependency injection pattern"
+      confidence: 0.5
+
+  test_patterns:
+    - id: unit_test
+      pattern: "def test_|class Test|import unittest|import pytest"
+      description: "Unit test pattern"
+      confidence: 0.9
+      
+    - id: integration_test
+      pattern: "def test_.*integration|class.*Integration"
+      description: "Integration test pattern"
+      confidence: 0.8
+      
+    - id: mock_test
+      pattern: "mock\.|patch\.|MagicMock"
+      description: "Mock testing pattern"
+      confidence: 0.9
+
+  security_patterns:
+    - id: sql_injection
+      pattern: "SELECT.*\+|INSERT.*\+|UPDATE.*\+"
+      description: "Potential SQL injection vulnerability"
+      confidence: 0.8
+      
+    - id: xss
+      pattern: "innerHTML|document\.write"
+      description: "Potential XSS vulnerability"
+      confidence: 0.7
+      
+    - id: hardcoded_secrets
+      pattern: "password\s*=\s*[\"'][^\"']+[\"']|api_key\s*=\s*[\"'][^\"']+[\"']"
+      description: "Hardcoded secrets detected"
+      confidence: 0.9
+      
+    - id: eval_usage
+      pattern: "eval\(|exec\("
+      description: "Dangerous eval/exec usage"
+      confidence: 0.95
+
+  performance_patterns:
+    - id: n_plus_one
+      pattern: "for.*in.*:.*\.get\(|for.*in.*:.*\.filter\("
+      description: "Potential N+1 query problem"
+      confidence: 0.6
+      
+    - id: memory_leak
+      pattern: "global.*list|global.*dict|global.*set"
+      description: "Potential memory leak"
+      confidence: 0.4
+      
+    - id: blocking_io
+      pattern: "time\.sleep|requests\.get|urllib\.request"
+      description: "Blocking I/O operations"
+      confidence: 0.7
+
+# Pattern categories for organization
+categories:
+  design:
+    - singleton
+    - factory
+    - observer
+    - decorator
+    - strategy
+    
+  anti_patterns:
+    - god_class
+    - long_method
+    - duplicate_code
+    - magic_numbers
+    - deep_nesting
+    
+  architecture:
+    - mvc
+    - repository
+    - service_layer
+    - dependency_injection
+    
+  testing:
+    - unit_test
+    - integration_test
+    - mock_test
+    
+  security:
+    - sql_injection
+    - xss
+    - hardcoded_secrets
+    - eval_usage
+    
+  performance:
+    - n_plus_one
+    - memory_leak
+    - blocking_io
+
+# Pattern severity levels
+severity:
+  critical:
+    - eval_usage
+    - hardcoded_secrets
+    - sql_injection
+    
+  high:
+    - xss
+    - god_class
+    - deep_nesting
+    
+  medium:
+    - long_method
+    - magic_numbers
+    - blocking_io
+    
+  low:
+    - duplicate_code
+    - memory_leak
+    - n_plus_one
