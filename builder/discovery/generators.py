@@ -7,6 +7,7 @@ synthesis data, including documentation, diagrams, and recommendations.
 
 import json
 import os
+import re
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 from datetime import datetime
@@ -469,6 +470,222 @@ class DiscoveryGenerators:
         
         return f"PRD-{date_str}-{slug}"
     
+    def _discover_existing_adrs(self) -> List[Dict[str, Any]]:
+        """Discover existing ADR files and extract their metadata.
+        
+        Returns:
+            List of ADR metadata dictionaries
+        """
+        adrs = []
+        
+        # Look for ADR files in common locations
+        adr_dirs = [
+            Path('docs/adrs'),
+            Path('docs/adr'),
+            Path('adrs'),
+            Path('docs/decisions'),
+            Path('docs/architecture/decisions')
+        ]
+        
+        for adr_dir in adr_dirs:
+            if adr_dir.exists():
+                for adr_file in adr_dir.glob('ADR-*.md'):
+                    try:
+                        adr_metadata = self._extract_adr_metadata(adr_file)
+                        if adr_metadata:
+                            adrs.append(adr_metadata)
+                    except Exception as e:
+                        # Skip files that can't be parsed
+                        continue
+        
+        return adrs
+    
+    def _extract_adr_metadata(self, adr_file: Path) -> Optional[Dict[str, Any]]:
+        """Extract metadata from an ADR file.
+        
+        Args:
+            adr_file: Path to ADR file
+            
+        Returns:
+            ADR metadata dictionary or None if parsing fails
+        """
+        try:
+            with open(adr_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Extract YAML front-matter
+            yaml_match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
+            if not yaml_match:
+                return None
+            
+            yaml_content = yaml_match.group(1)
+            
+            # Parse YAML metadata
+            metadata = {}
+            for line in yaml_content.split('\n'):
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    
+                    # Handle array values
+                    if value.startswith('[') and value.endswith(']'):
+                        # Simple array parsing
+                        value = [item.strip().strip("'\"") for item in value[1:-1].split(',') if item.strip()]
+                    elif value.startswith('- '):
+                        # List item
+                        if key not in metadata:
+                            metadata[key] = []
+                        metadata[key].append(value[2:].strip())
+                    else:
+                        # Simple string value
+                        metadata[key] = value
+            
+            # Add file path and content for analysis
+            metadata['file_path'] = str(adr_file)
+            metadata['file_name'] = adr_file.name
+            metadata['content'] = content
+            
+            return metadata
+            
+        except Exception:
+            return None
+    
+    def _find_related_adrs(self, synthesis_data: Dict[str, Any], existing_adrs: List[Dict[str, Any]]) -> List[str]:
+        """Find ADRs related to the current PRD based on content analysis.
+        
+        Args:
+            synthesis_data: Synthesis data from discovery
+            existing_adrs: List of existing ADR metadata
+            
+        Returns:
+            List of related ADR IDs
+        """
+        related_adrs = []
+        
+        if not existing_adrs:
+            return related_adrs
+        
+        # Extract key terms from synthesis data
+        key_terms = self._extract_key_terms(synthesis_data)
+        
+        for adr in existing_adrs:
+            relevance_score = self._calculate_adr_relevance(adr, key_terms, synthesis_data)
+            
+            # Include ADR if relevance score is above threshold
+            if relevance_score > 0.1:  # 10% relevance threshold
+                adr_id = adr.get('id', adr.get('file_name', '').replace('.md', ''))
+                if adr_id:
+                    related_adrs.append(adr_id)
+        
+        # Sort by relevance (we could enhance this with actual scoring)
+        return sorted(related_adrs)
+    
+    def _extract_key_terms(self, synthesis_data: Dict[str, Any]) -> List[str]:
+        """Extract key terms from synthesis data for ADR matching.
+        
+        Args:
+            synthesis_data: Synthesis data from discovery
+            
+        Returns:
+            List of key terms
+        """
+        key_terms = []
+        
+        # Extract from questions
+        questions = synthesis_data.get('questions', {})
+        if 'product_name' in questions:
+            key_terms.append(questions['product_name'].lower())
+        if 'main_idea' in questions:
+            key_terms.extend(questions['main_idea'].lower().split())
+        if 'tech_stack_preferences' in questions:
+            key_terms.extend(questions['tech_stack_preferences'].lower().split())
+        
+        # Extract from detected technologies
+        detected = synthesis_data.get('detected', {})
+        for tech_type in ['languages', 'frameworks', 'libraries', 'tools']:
+            if tech_type in detected:
+                key_terms.extend([tech.lower() for tech in detected[tech_type]])
+        
+        # Extract from key features
+        if 'key_features' in questions:
+            features = questions['key_features']
+            if isinstance(features, list):
+                for feature in features:
+                    key_terms.extend(feature.lower().split())
+            else:
+                key_terms.extend(features.lower().split())
+        
+        # Remove common stop words and clean up
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those'}
+        
+        # Clean up terms: remove punctuation, convert to lowercase, filter
+        cleaned_terms = []
+        for term in key_terms:
+            # Remove punctuation and convert to lowercase
+            clean_term = re.sub(r'[^\w\s]', '', term.lower().strip())
+            # Split on spaces and add individual words
+            words = clean_term.split()
+            for word in words:
+                if word not in stop_words and len(word) > 2:
+                    cleaned_terms.append(word)
+        
+        return list(set(cleaned_terms))  # Remove duplicates
+    
+    def _calculate_adr_relevance(self, adr: Dict[str, Any], key_terms: List[str], synthesis_data: Dict[str, Any]) -> float:
+        """Calculate relevance score between ADR and PRD.
+        
+        Args:
+            adr: ADR metadata dictionary
+            key_terms: Key terms from synthesis data
+            synthesis_data: Synthesis data from discovery
+            
+        Returns:
+            Relevance score between 0 and 1
+        """
+        score = 0.0
+        total_weight = 0.0
+        
+        # Check title relevance
+        title = adr.get('title', '').lower()
+        if title:
+            title_matches = sum(1 for term in key_terms if term in title)
+            title_score = title_matches / len(key_terms) if key_terms else 0
+            score += title_score * 0.4  # 40% weight for title
+            total_weight += 0.4
+        
+        # Check tags relevance
+        tags = adr.get('tags', [])
+        if tags:
+            tag_matches = sum(1 for tag in tags if any(term in tag.lower() for term in key_terms))
+            tag_score = tag_matches / len(tags) if tags else 0
+            score += tag_score * 0.3  # 30% weight for tags
+            total_weight += 0.3
+        
+        # Check content relevance
+        content = adr.get('content', '').lower()
+        if content:
+            content_matches = sum(1 for term in key_terms if term in content)
+            content_score = content_matches / len(key_terms) if key_terms else 0
+            score += content_score * 0.2  # 20% weight for content
+            total_weight += 0.2
+        
+        # Check technology stack relevance
+        detected = synthesis_data.get('detected', {})
+        tech_terms = []
+        for tech_type in ['languages', 'frameworks', 'libraries', 'tools']:
+            if tech_type in detected:
+                tech_terms.extend([tech.lower() for tech in detected[tech_type]])
+        
+        if tech_terms and content:
+            tech_matches = sum(1 for tech in tech_terms if tech in content)
+            tech_score = tech_matches / len(tech_terms) if tech_terms else 0
+            score += tech_score * 0.1  # 10% weight for technology
+            total_weight += 0.1
+        
+        # Normalize score
+        return score / total_weight if total_weight > 0 else 0.0
+    
     def _create_slug(self, text: str) -> str:
         """Create URL-safe slug from text.
         
@@ -509,8 +726,12 @@ class DiscoveryGenerators:
             prd_dir = Path('docs/prd')
             prd_dir.mkdir(parents=True, exist_ok=True)
             
-            # Generate main PRD file
-            prd_content = self._generate_prd_content(synthesis_data, prd_id)
+            # Discover existing ADRs and find related ones
+            existing_adrs = self._discover_existing_adrs()
+            related_adrs = self._find_related_adrs(synthesis_data, existing_adrs)
+            
+            # Generate main PRD file with related ADRs
+            prd_content = self._generate_prd_content(synthesis_data, prd_id, related_adrs)
             prd_file = prd_dir / f"{prd_id}.md"
             
             with open(prd_file, 'w', encoding='utf-8') as f:
@@ -559,16 +780,19 @@ class DiscoveryGenerators:
             # Silently fail for master file updates
             pass
     
-    def _generate_prd_content(self, synthesis_data: Dict[str, Any], prd_id: str) -> str:
+    def _generate_prd_content(self, synthesis_data: Dict[str, Any], prd_id: str, related_adrs: List[str] = None) -> str:
         """Generate PRD content.
         
         Args:
             synthesis_data: Data from synthesis phase
             prd_id: Generated PRD ID
+            related_adrs: List of related ADR IDs
             
         Returns:
             PRD content as string
         """
+        if related_adrs is None:
+            related_adrs = []
         questions = synthesis_data.get('questions', {})
         detected = synthesis_data.get('detected', {})
         
@@ -595,13 +819,14 @@ owner: product_team
 created: {datetime.now().strftime('%Y-%m-%d')}
 links:
   prd: {prd_id}
-  adr: []
+  adr: {related_adrs}
   arch: []
   exec: []
   impl: []
   integrations: []
   tasks: []
   ux: []
+related_adrs: {related_adrs}
 ---
 
 # Product Requirements Document: {product_name}
