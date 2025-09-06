@@ -4257,9 +4257,249 @@ def ctx_budget(target_path, feature, budget, output, report):
 
 
 # Discovery Commands
+
+def _get_template_defaults(template):
+    """Get template-specific defaults for discovery context."""
+    templates = {
+        'default': {
+            'question_set': 'new_product',
+            'timeline': '3-6 months',
+            'team_size': '3-5 developers',
+            'tech_stack_preferences': 'Modern web technologies',
+            'success_metrics': 'User engagement, feature adoption, performance metrics'
+        },
+        'enterprise': {
+            'question_set': 'comprehensive',
+            'timeline': '6-12 months',
+            'team_size': '10+ developers',
+            'tech_stack_preferences': 'Enterprise-grade technologies (Java, .NET, microservices)',
+            'success_metrics': 'ROI, compliance metrics, scalability, security metrics',
+            'additional_fields': {
+                'compliance_requirements': 'SOC2, GDPR, HIPAA',
+                'integration_requirements': 'ERP, CRM, legacy systems',
+                'security_requirements': 'SSO, RBAC, audit logging',
+                'scalability_requirements': 'High availability, load balancing'
+            }
+        },
+        'startup': {
+            'question_set': 'new_product',
+            'timeline': '1-3 months',
+            'team_size': '2-4 developers',
+            'tech_stack_preferences': 'Rapid development technologies (React, Node.js, cloud services)',
+            'success_metrics': 'User acquisition, retention, revenue growth',
+            'additional_fields': {
+                'mvp_features': 'Core functionality only',
+                'go_to_market': 'Direct sales, freemium model',
+                'funding_stage': 'Seed, Series A',
+                'competitive_advantage': 'Speed to market, unique value proposition'
+            }
+        }
+    }
+    return templates.get(template, templates['default'])
+
+def _collect_interactive_inputs(template_defaults):
+    """Collect inputs interactively from user."""
+    inputs = {}
+    
+    # Required fields
+    inputs['product'] = click.prompt("Product name", default="My Product")
+    inputs['idea'] = click.prompt("Short idea description", default="A new product idea")
+    
+    # Optional fields with template defaults
+    inputs['problem'] = click.prompt("Problem this product solves", default="Problem to be defined")
+    inputs['users'] = click.prompt("Target users", default="Target users to be defined")
+    inputs['features'] = click.prompt("Key features (comma-separated)", default="Feature 1, Feature 2, Feature 3")
+    inputs['metrics'] = click.prompt("Success metrics", default=template_defaults['success_metrics'])
+    inputs['tech'] = click.prompt("Technology stack preferences", default=template_defaults['tech_stack_preferences'])
+    inputs['timeline'] = click.prompt("Project timeline", default=template_defaults['timeline'])
+    inputs['team_size'] = click.prompt("Development team size", default=template_defaults['team_size'])
+    
+    # Template-specific fields
+    if 'additional_fields' in template_defaults:
+        for field, default in template_defaults['additional_fields'].items():
+            inputs[field] = click.prompt(f"{field.replace('_', ' ').title()}", default=default)
+    
+    return inputs
+
+def _collect_batch_inputs(template_defaults, product, idea, problem, users, features, metrics, tech, timeline, team_size):
+    """Collect inputs from command line arguments for batch mode."""
+    inputs = {}
+    
+    # Required fields
+    inputs['product'] = product or "My Product"
+    inputs['idea'] = idea or "A new product idea"
+    
+    # Optional fields with template defaults
+    inputs['problem'] = problem or "Problem to be defined"
+    inputs['users'] = users or "Target users to be defined"
+    inputs['features'] = features or "Feature 1, Feature 2, Feature 3"
+    inputs['metrics'] = metrics or template_defaults['success_metrics']
+    inputs['tech'] = tech or template_defaults['tech_stack_preferences']
+    inputs['timeline'] = timeline or template_defaults['timeline']
+    inputs['team_size'] = team_size or template_defaults['team_size']
+    
+    # Template-specific fields
+    if 'additional_fields' in template_defaults:
+        for field, default in template_defaults['additional_fields'].items():
+            inputs[field] = default
+    
+    return inputs
+
+def _create_discovery_context(inputs, template, question_set, auto_generate):
+    """Create discovery context with template-specific structure."""
+    from datetime import datetime
+    
+    # Base context structure
+    discovery_context = {
+        'product': inputs['product'],
+        'idea': inputs['idea'],
+        'created': datetime.now().isoformat(),
+        'status': 'draft',
+        'template': template,
+        'question_set': question_set,
+        'auto_generated': auto_generate,
+        'discovery_phases': {
+            'interview': {'completed': False, 'data': {}},
+            'analysis': {'completed': False, 'data': {}},
+            'synthesis': {'completed': False, 'data': {}},
+            'generation': {'completed': False, 'data': {}},
+            'validation': {'completed': False, 'data': {}}
+        },
+        'targets': [],
+        'insights': [],
+        'recommendations': [],
+        'next_steps': []
+    }
+    
+    # Add standard fields
+    discovery_context['problem_solved'] = inputs['problem']
+    discovery_context['target_users'] = inputs['users']
+    
+    # Split comma-separated features
+    feature_list = [f.strip() for f in inputs['features'].split(",") if f.strip()]
+    discovery_context['key_features'] = feature_list
+    
+    discovery_context['success_metrics'] = inputs['metrics']
+    discovery_context['tech_stack_preferences'] = inputs['tech']
+    discovery_context['timeline'] = inputs['timeline']
+    discovery_context['team_size'] = inputs['team_size']
+    
+    # Add template-specific fields
+    if template == 'enterprise':
+        discovery_context.update({
+            'compliance_requirements': inputs.get('compliance_requirements', 'SOC2, GDPR, HIPAA'),
+            'integration_requirements': inputs.get('integration_requirements', 'ERP, CRM, legacy systems'),
+            'security_requirements': inputs.get('security_requirements', 'SSO, RBAC, audit logging'),
+            'scalability_requirements': inputs.get('scalability_requirements', 'High availability, load balancing')
+        })
+    elif template == 'startup':
+        discovery_context.update({
+            'mvp_features': inputs.get('mvp_features', 'Core functionality only'),
+            'go_to_market': inputs.get('go_to_market', 'Direct sales, freemium model'),
+            'funding_stage': inputs.get('funding_stage', 'Seed, Series A'),
+            'competitive_advantage': inputs.get('competitive_advantage', 'Speed to market, unique value proposition')
+        })
+    
+    return discovery_context
+
+def _auto_generate_discovery_context(discovery_context, inputs, question_set):
+    """Auto-generate additional content for discovery context."""
+    from discovery.engine import DiscoveryEngine
+    
+    try:
+        # Initialize discovery engine
+        engine = DiscoveryEngine(question_set=question_set)
+        
+        # Prepare batch kwargs for discovery engine
+        batch_kwargs = {
+            'product': inputs['product'],
+            'idea': inputs['idea'],
+            'problem': inputs['problem'],
+            'users': inputs['users'],
+            'features': inputs['features'],
+            'metrics': inputs['metrics'],
+            'tech': inputs['tech'],
+            'timeline': inputs['timeline'],
+            'team_size': inputs['team_size']
+        }
+        
+        # Run discovery with batch kwargs to generate user stories
+        discovery_results = engine.discover(".", batch_kwargs=batch_kwargs)
+        
+        # Extract user stories from discovery results
+        if 'interview' in discovery_results and 'questions' in discovery_results['interview']:
+            questions = discovery_results['interview']['questions']
+            if 'features_with_stories' in questions:
+                discovery_context['features_with_stories'] = questions['features_with_stories']
+                click.echo("📝 Generated user stories for features")
+    except Exception as e:
+        click.echo(f"⚠️  Warning: Could not generate user stories: {e}")
+    
+    # Add template-specific next steps
+    if discovery_context['template'] == 'enterprise':
+        discovery_context['next_steps'] = [
+            f"Define enterprise requirements for {inputs['product']}",
+            f"Create compliance and security architecture",
+            f"Identify integration points with existing systems",
+            f"Plan enterprise deployment strategy",
+            f"Set up governance and audit processes"
+        ]
+    elif discovery_context['template'] == 'startup':
+        discovery_context['next_steps'] = [
+            f"Define MVP features for {inputs['product']}",
+            f"Create rapid prototyping plan",
+            f"Identify early adopters and beta users",
+            f"Plan go-to-market strategy",
+            f"Set up metrics and analytics tracking"
+        ]
+    else:  # default
+        discovery_context['next_steps'] = [
+            f"Define requirements for {inputs['product']}",
+            f"Create architecture for {inputs['idea']}",
+            f"Identify key stakeholders for {inputs['product']}",
+            f"Plan development phases for {inputs['idea']}",
+            f"Set up testing strategy for {inputs['product']}"
+        ]
+    
+    # Add template-specific insights
+    if discovery_context['template'] == 'enterprise':
+        discovery_context['insights'] = [
+            f"Enterprise product '{inputs['product']}' focuses on: {inputs['idea']}",
+            "Compliance and security requirements identified",
+            "Integration with existing enterprise systems planned",
+            "Scalability and high availability considerations included"
+        ]
+    elif discovery_context['template'] == 'startup':
+        discovery_context['insights'] = [
+            f"Startup product '{inputs['product']}' focuses on: {inputs['idea']}",
+            "MVP approach for rapid market entry",
+            "Lean development methodology recommended",
+            "Focus on user acquisition and retention metrics"
+        ]
+    else:  # default
+        discovery_context['insights'] = [
+            f"Product '{inputs['product']}' focuses on: {inputs['idea']}",
+            "Initial discovery phase completed",
+            "Ready for detailed analysis phase"
+        ]
+    
+    # Mark interview phase as completed
+    discovery_context['discovery_phases']['interview']['completed'] = True
+    discovery_context['discovery_phases']['interview']['data'] = {
+        'product_scope': inputs['idea'],
+        'complexity_estimate': 'medium',
+        'stakeholders': ['product_owner', 'development_team', 'end_users'],
+        'template_used': discovery_context['template']
+    }
+    
+    return discovery_context
+
 @cli.command("discover:new")
-@click.option("--product", required=True, help="Product name for discovery context")
-@click.option("--idea", required=True, help="Short idea description")
+@click.option("--interactive", is_flag=True, help="Run in interactive mode with prompts")
+@click.option("--batch", is_flag=True, help="Run in batch mode without prompts")
+@click.option("--template", type=click.Choice(['default', 'enterprise', 'startup']), default='default', help="Template to use for discovery context")
+@click.option("--product", help="Product name for discovery context")
+@click.option("--idea", help="Short idea description")
 @click.option("--problem", help="Problem this product solves")
 @click.option("--users", help="Target users")
 @click.option("--features", help="Key features (comma-separated)")
@@ -4269,131 +4509,62 @@ def ctx_budget(target_path, feature, budget, output, report):
 @click.option("--team-size", help="Development team size")
 @click.option("--question-set", default="new_product", help="Question set to use (new_product, existing_product, comprehensive)")
 @click.option("--auto-generate", is_flag=True, help="Auto-generate discovery context")
-@click.option("--output", default="builder/cache/discovery_context.yml", help="Output context file path")
-def discover_new(product, idea, problem, users, features, metrics, tech, timeline, team_size, question_set, auto_generate, output):
+@click.option("--output", help="Output context file path (default: builder/cache/discovery_context.yml)")
+def discover_new(interactive, batch, template, product, idea, problem, users, features, metrics, tech, timeline, team_size, question_set, auto_generate, output):
     """Create a new discovery context for product development"""
     try:
         from discovery.engine import DiscoveryEngine
         import yaml
         from datetime import datetime
         
-        click.echo(f"🔍 Creating discovery context for: {product}")
-        click.echo(f"💡 Idea: {idea}")
+        # Determine mode
+        if interactive and batch:
+            click.echo("❌ Error: Cannot use both --interactive and --batch flags")
+            raise SystemExit(1)
+        
+        if not interactive and not batch:
+            # Default to interactive mode if neither is specified
+            interactive = True
+        
+        # Set default output path if not provided
+        if not output:
+            output = "builder/cache/discovery_context.yml"
+        
+        # Get template-specific defaults
+        template_defaults = _get_template_defaults(template)
+        
+        # Collect inputs based on mode
+        if interactive:
+            inputs = _collect_interactive_inputs(template_defaults)
+        else:  # batch mode
+            inputs = _collect_batch_inputs(template_defaults, product, idea, problem, users, features, metrics, tech, timeline, team_size)
+        
+        # Validate required inputs for batch mode
+        if batch and not inputs.get('product'):
+            click.echo("❌ Error: --product is required in batch mode")
+            raise SystemExit(1)
+        if batch and not inputs.get('idea'):
+            click.echo("❌ Error: --idea is required in batch mode")
+            raise SystemExit(1)
+        
+        click.echo(f"🔍 Creating discovery context for: {inputs['product']}")
+        click.echo(f"💡 Idea: {inputs['idea']}")
+        click.echo(f"📋 Template: {template}")
         click.echo(f"📋 Question Set: {question_set}")
+        click.echo(f"📁 Output: {output}")
         
         # Ensure output directory exists
         output_dir = os.path.dirname(output)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
         
-        # Create discovery context with batch inputs
-        discovery_context = {
-            'product': product,
-            'idea': idea,
-            'created': datetime.now().isoformat(),
-            'status': 'draft',
-            'question_set': question_set,
-            'auto_generated': auto_generate,
-            'discovery_phases': {
-                'interview': {'completed': False, 'data': {}},
-                'analysis': {'completed': False, 'data': {}},
-                'synthesis': {'completed': False, 'data': {}},
-                'generation': {'completed': False, 'data': {}},
-                'validation': {'completed': False, 'data': {}}
-            },
-            'targets': [],
-            'insights': [],
-            'recommendations': [],
-            'next_steps': []
-        }
-        
-        # Add batch inputs if provided
-        if problem:
-            discovery_context['problem_solved'] = problem
-        if users:
-            discovery_context['target_users'] = users
-        if features:
-            # Split comma-separated features
-            feature_list = [f.strip() for f in features.split(",") if f.strip()]
-            discovery_context['key_features'] = feature_list
-        if metrics:
-            discovery_context['success_metrics'] = metrics
-        if tech:
-            discovery_context['tech_stack_preferences'] = tech
-        if timeline:
-            discovery_context['timeline'] = timeline
-        if team_size:
-            discovery_context['team_size'] = team_size
+        # Create discovery context with template-specific structure
+        discovery_context = _create_discovery_context(inputs, template, question_set, auto_generate)
         
         # Auto-generate if requested
         if auto_generate:
             click.echo("🤖 Auto-generating discovery context...")
-            
-            # Prepare batch kwargs for discovery engine
-            batch_kwargs = {
-                'product': product,
-                'idea': idea,
-                'problem': problem,
-                'users': users,
-                'features': features,
-                'metrics': metrics,
-                'tech': tech,
-                'timeline': timeline,
-                'team_size': team_size
-            }
-            
-            # Initialize discovery engine
-            engine = DiscoveryEngine(question_set=question_set)
-            
-            # Run discovery with batch kwargs to generate user stories
-            try:
-                discovery_results = engine.discover(".", batch_kwargs=batch_kwargs)
-                
-                # Extract user stories from discovery results
-                if 'interview' in discovery_results and 'questions' in discovery_results['interview']:
-                    questions = discovery_results['interview']['questions']
-                    if 'features_with_stories' in questions:
-                        discovery_context['features_with_stories'] = questions['features_with_stories']
-                        click.echo("📝 Generated user stories for features")
-            except Exception as e:
-                click.echo(f"⚠️  Warning: Could not generate user stories: {e}")
-            
-            # Fill in missing required fields for new products
-            if 'problem_solved' not in discovery_context:
-                discovery_context['problem_solved'] = f"Problem to be defined for {product}"
-            if 'target_users' not in discovery_context:
-                discovery_context['target_users'] = "Target users to be defined"
-            if 'key_features' not in discovery_context:
-                discovery_context['key_features'] = ["Feature 1", "Feature 2", "Feature 3"]
-            if 'success_metrics' not in discovery_context:
-                discovery_context['success_metrics'] = "Success metrics to be defined"
-            if 'tech_stack_preferences' not in discovery_context:
-                discovery_context['tech_stack_preferences'] = "Technology stack to be defined"
-            if 'timeline' not in discovery_context:
-                discovery_context['timeline'] = "Timeline to be defined"
-            
-            # Add some basic next steps
-            discovery_context['next_steps'] = [
-                f"Define requirements for {product}",
-                f"Create architecture for {idea}",
-                f"Identify key stakeholders for {product}",
-                f"Plan development phases for {idea}",
-                f"Set up testing strategy for {product}"
-            ]
-            
-            # Add some initial insights
-            discovery_context['insights'] = [
-                f"Product '{product}' focuses on: {idea}",
-                "Initial discovery phase completed",
-                "Ready for detailed analysis phase"
-            ]
-            
-            discovery_context['discovery_phases']['interview']['completed'] = True
-            discovery_context['discovery_phases']['interview']['data'] = {
-                'product_scope': idea,
-                'complexity_estimate': 'medium',
-                'stakeholders': ['product_owner', 'development_team', 'end_users']
-            }
+            discovery_context = _auto_generate_discovery_context(discovery_context, inputs, question_set)
         
         # Save discovery context
         with open(output, 'w', encoding='utf-8') as f:
@@ -4402,25 +4573,21 @@ def discover_new(product, idea, problem, users, features, metrics, tech, timelin
         click.echo(f"✅ Discovery context created successfully!")
         click.echo(f"📄 Saved to: {output}")
         click.echo(f"📊 Status: {discovery_context['status']}")
+        click.echo(f"🎯 Template: {template}")
         
         # Show what was filled in
-        filled_fields = [k for k, v in discovery_context.items() if k not in ["created", "status", "question_set", "auto_generated", "discovery_phases", "targets", "insights", "recommendations", "next_steps"] and v not in ["To be defined", "Target users to be defined", "Success metrics to be defined", "Technology stack to be defined", "Timeline to be defined"]]
+        filled_fields = [k for k, v in discovery_context.items() if k not in ["created", "status", "question_set", "auto_generated", "discovery_phases", "targets", "insights", "recommendations", "next_steps", "template"] and v not in ["To be defined", "Target users to be defined", "Success metrics to be defined", "Technology stack to be defined", "Timeline to be defined"]]
         if filled_fields:
             click.echo(f"📝 Filled fields: {', '.join(filled_fields)}")
         
         if auto_generate:
-            click.echo(f"🤖 Auto-generated with {len(discovery_context['next_steps'])} next steps")
-            click.echo(f"💡 Generated {len(discovery_context['insights'])} initial insights")
-        
-        # Show next steps
-        click.echo(f"\n🚀 Next Steps:")
-        click.echo(f"1. Run: python builder/cli.py discover:analyze --repo-root")
-        click.echo(f"2. Run: python builder/cli.py discover:validate {output}")
-        click.echo(f"3. Review generated context and refine as needed")
-        click.echo(f"4. Run: python builder/cli.py discover:regenerate --batch")
+            click.echo("🚀 Next steps:")
+            click.echo("  1. Review the generated discovery context")
+            click.echo("  2. Run: python builder/cli.py discover:scan --auto-generate")
+            click.echo("  3. Run: python builder/cli.py discover:regenerate --all")
         
     except Exception as e:
-        click.echo(f"❌ Error: {e}")
+        click.echo(f"❌ Error creating discovery context: {e}")
         raise SystemExit(1)
 
 
