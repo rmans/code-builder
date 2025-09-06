@@ -8,7 +8,7 @@ from typing import Dict
 import requests
 import yaml
 
-ROOT  = os.path.dirname(os.path.dirname(__file__))
+ROOT  = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DOCS  = os.path.join(ROOT, "docs")
 ADRS  = os.path.join(DOCS, "adrs")
 TEMPL = os.path.join(DOCS, "templates")
@@ -4691,7 +4691,10 @@ def discover_analyze(repo_root, target, feature, question_set, output, batch):
 def cleanup_artifacts(dry_run, clean, root):
     """Clean up test/example artifacts outside of designated directories."""
     try:
-        from cleanup_rules import ArtifactCleaner
+        import sys
+        import os
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+        from utils.cleanup_rules import ArtifactCleaner
         
         cleaner = ArtifactCleaner(root)
         

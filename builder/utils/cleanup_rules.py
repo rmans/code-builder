@@ -29,7 +29,16 @@ class ArtifactCleaner:
     """Cleans up test and example artifacts based on defined rules."""
     
     def __init__(self, root_dir: str = "."):
-        self.root_dir = Path(root_dir)
+        # Resolve the root directory to absolute path
+        if root_dir == ".":
+            # If running from builder/core/, go up two levels to project root
+            current_dir = Path(__file__).parent
+            if current_dir.name == "utils" and current_dir.parent.name == "builder":
+                self.root_dir = current_dir.parent.parent
+            else:
+                self.root_dir = Path(root_dir).resolve()
+        else:
+            self.root_dir = Path(root_dir).resolve()
         self.rules = self._load_cleanup_rules()
         self.designated_dirs = {
             "test": ["test/", "tests/", "spec/", "specs/"],
