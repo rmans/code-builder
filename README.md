@@ -39,21 +39,48 @@ Run these commands after cloning:
     pnpm run docs:all   # validate documentation
     pnpm run rules:check "test/**/*.ts" --feature auth --stacks typescript,react
 
-## Discovery
+## Discovery System
 
-The Discovery system helps you explore and understand your codebase:
+The Discovery system helps you explore, understand, and document your codebase with intelligent analysis and automated context generation:
 
-    # Discover related files and dependencies
-    python3 builder/cli.py discover test/example.ts
-    
-    # Show discovery results with explanations
-    python3 builder/cli.py discover test/example.ts --explain
-    
-    # Generate discovery report
-    python3 builder/cli.py discover test/example.ts --report
-    
-    # Clear discovery cache
-    python3 builder/cli.py discover --clear-cache
+### Quick Discovery
+```bash
+# Interactive discovery with guided prompts
+python3 builder/cli.py discover:new --interactive
+
+# Batch discovery with templates
+python3 builder/cli.py discover:new --batch --template enterprise --product "My Product" --idea "Product idea"
+
+# Auto-generate enhanced content
+python3 builder/cli.py discover:new --batch --template startup --auto-generate
+```
+
+### Discovery Templates
+- **`default`**: Standard product development (3-6 months, 3-5 developers)
+- **`enterprise`**: Enterprise-grade (6-12 months, 10+ developers, compliance)
+- **`startup`**: Rapid development (1-3 months, 2-4 developers, MVP)
+
+### Discovery Analysis
+```bash
+# Analyze entire repository
+python3 builder/cli.py discover:analyze --repo-root
+
+# Scan and auto-generate missing contexts
+python3 builder/cli.py discover:scan --auto-generate
+
+# Regenerate all discovery outputs
+python3 builder/cli.py discover:regenerate --all
+
+# Validate discovery context
+python3 builder/cli.py discover:validate discovery_context.yml
+```
+
+### Auto ADR Linking
+All document types now automatically discover and link related ADRs:
+- **Content similarity matching**: Based on title, tags, content, and technology
+- **Weighted relevance scoring**: Title (40%), tags (30%), content (20%), tech (10%)
+- **Smart tech detection**: Automatically extract technologies from document titles
+- **Cross-document linking**: Works across PRD, ARCH, IMPL, EXEC, UX documents
 
 ---
 
@@ -286,12 +313,39 @@ python3 builder/cli.py iter:finish src/hello.ts --winner B --scores-file cursor_
 - **Document indexing**: `python3 builder/cli.py doc:index`
 - **Document validation**: `python3 builder/cli.py doc:check`
 - **Link management**: `python3 builder/cli.py doc:set-links`
+- **Auto ADR linking**: Automatic discovery and linking of related ADRs across all document types
+
+#### Discovery System
+- **Interactive discovery**: `python3 builder/cli.py discover:new --interactive`
+- **Batch discovery**: `python3 builder/cli.py discover:new --batch --template <type>`
+- **Template support**: `default`, `enterprise`, `startup` templates with tailored fields
+- **Auto-generation**: `--auto-generate` flag for enhanced content generation
+- **Discovery scanning**: `python3 builder/cli.py discover:scan --auto-generate`
+- **Context regeneration**: `python3 builder/cli.py discover:regenerate --all`
 
 #### Context System
 - **Graph building**: `python3 builder/cli.py ctx:graph:build`
 - **Context selection**: `python3 builder/cli.py ctx:select`
 - **Budget management**: `python3 builder/cli.py ctx:budget`
 - **Context diffing**: `python3 builder/cli.py ctx:diff`
+- **Context packing**: `python3 builder/cli.py ctx:pack --split --stdout`
+
+#### Security & Compliance
+- **PII detection**: Automatic detection of personally identifiable information
+- **Redaction policy**: Optional redaction of sensitive data in discovery contexts
+- **Security validation**: `python3 builder/cli.py discover:validate <context_file>`
+
+#### Metrics & Reporting
+- **Comprehensive metrics**: Feature counts, gap analysis, performance tracking
+- **Historical data**: `builder/cache/discovery_report.json` with trends
+- **Quality indicators**: Code quality, complexity, security metrics
+- **Performance tracking**: Analysis timing and success rates
+
+#### CI/CD Integration
+- **Discovery CI**: Automated discovery scanning on PR changes
+- **Context Pack CI**: Automated context generation and validation
+- **Artifact uploads**: Discovery and context artifacts in PR comments
+- **Validation gates**: Rules and acceptance criteria validation
 
 #### Caching & Performance
 - **Intelligent caching**: SHA256-based cache keys

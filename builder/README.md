@@ -1,6 +1,14 @@
 # Builder CLI
 
-Python CLI (builder/cli.py) manages ADRs, context generation, planning, iterations, rules, documentation, and code evaluation. The CLI provides a comprehensive set of commands for AI-assisted development workflows.
+Python CLI (builder/cli.py) manages ADRs, context generation, planning, iterations, rules, documentation, discovery, and code evaluation. The CLI provides a comprehensive set of commands for AI-assisted development workflows with intelligent discovery, auto ADR linking, and comprehensive metrics tracking.
+
+## Recent Updates
+
+- **Discovery System**: Interactive and batch discovery with templates
+- **Auto ADR Linking**: Automatic discovery and linking of related ADRs across all document types
+- **PII Detection**: Security validation with automatic PII detection and redaction
+- **Metrics Tracking**: Comprehensive reporting with historical data and trends
+- **CI Integration**: Automated discovery and context pack generation in pull requests
 
 ---
 
@@ -12,6 +20,41 @@ Python CLI (builder/cli.py) manages ADRs, context generation, planning, iteratio
       python3 builder/cli.py adr:new "Create hello module" --parent ADR-0000 --related src/hello.ts --tags demo
 
   Creates `docs/adrs/ADR-000X.md` and links it in `0000_MASTER_ADR.md`.
+
+---
+
+### Discovery System
+- `discover:new`
+
+      python3 builder/cli.py discover:new --interactive
+      python3 builder/cli.py discover:new --batch --template enterprise --product "My Product" --idea "Product idea"
+      python3 builder/cli.py discover:new --batch --template startup --auto-generate
+
+  Creates discovery contexts with interactive prompts or batch processing. Supports `default`, `enterprise`, and `startup` templates.
+
+- `discover:analyze`
+
+      python3 builder/cli.py discover:analyze --repo-root
+
+  Analyzes codebase and generates comprehensive discovery reports with metrics.
+
+- `discover:scan`
+
+      python3 builder/cli.py discover:scan --auto-generate
+
+  Scans all documents and auto-generates missing discovery contexts.
+
+- `discover:regenerate`
+
+      python3 builder/cli.py discover:regenerate --all
+
+  Regenerates all discovery outputs and documentation.
+
+- `discover:validate`
+
+      python3 builder/cli.py discover:validate discovery_context.yml
+
+  Validates discovery context files with PII detection and security checks.
 
 ---
 
