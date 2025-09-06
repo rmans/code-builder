@@ -278,6 +278,180 @@ def _adapt_results_for_prd(results, target_prd_id, prd_file):
     except Exception as e:
         raise Exception(f"Failed to adapt results for {target_prd_id}: {e}")
 
+def _get_doc_type_from_file(doc_file):
+    """Determine document type from file path"""
+    doc_name = doc_file.stem
+    if doc_name.startswith("PRD-"):
+        return "prd"
+    elif doc_name.startswith("ADR-"):
+        return "adr"
+    elif doc_name.startswith("ARCH-"):
+        return "arch"
+    elif doc_name.startswith("EXEC-"):
+        return "exec"
+    elif doc_name.startswith("IMPL-"):
+        return "impl"
+    elif doc_name.startswith("INTEGRATIONS-"):
+        return "integrations"
+    elif doc_name.startswith("TASKS-"):
+        return "tasks"
+    elif doc_name.startswith("UX-"):
+        return "ux"
+    else:
+        return "unknown"
+
+def _extract_target_from_doc(doc_file):
+    """Extract target path from document content (generalized for all types)"""
+    try:
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Look for target information in document content
+        import re
+        
+        # Try to find target path patterns
+        target_patterns = [
+            r'Target Path[:\s]+(.+)',
+            r'Source[:\s]+(.+)',
+            r'Repository[:\s]+(.+)',
+            r'Codebase[:\s]+(.+)',
+            r'Implementation Path[:\s]+(.+)',
+            r'Code Path[:\s]+(.+)'
+        ]
+        
+        for pattern in target_patterns:
+            match = re.search(pattern, content, re.IGNORECASE)
+            if match:
+                target = match.group(1).strip()
+                if target and target != '.':
+                    return target
+        
+        # Default to repo root
+        return "."
+        
+    except Exception:
+        return "."
+
+def _extract_batch_kwargs_from_doc(doc_file):
+    """Extract batch kwargs from document content (generalized for all types)"""
+    try:
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Extract key information from document content
+        import re
+        
+        batch_kwargs = {}
+        
+        # Extract title/name
+        title_patterns = [
+            r'# (.+?)(?:\n|$)',
+            r'Title[:\s]+(.+)',
+            r'Name[:\s]+(.+)'
+        ]
+        
+        for pattern in title_patterns:
+            match = re.search(pattern, content, re.IGNORECASE)
+            if match:
+                batch_kwargs['product'] = match.group(1).strip()
+                break
+        
+        # Extract description/summary
+        desc_patterns = [
+            r'## Summary\s*\n\s*(.+?)(?=\n##|\Z)',
+            r'## Description\s*\n\s*(.+?)(?=\n##|\Z)',
+            r'## Overview\s*\n\s*(.+?)(?=\n##|\Z)'
+        ]
+        
+        for pattern in desc_patterns:
+            match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+            if match:
+                batch_kwargs['idea'] = match.group(1).strip()
+                break
+        
+        # Extract problem/context
+        problem_patterns = [
+            r'## Problem\s*\n\s*(.+?)(?=\n##|\Z)',
+            r'## Context\s*\n\s*(.+?)(?=\n##|\Z)',
+            r'## Background\s*\n\s*(.+?)(?=\n##|\Z)'
+        ]
+        
+        for pattern in problem_patterns:
+            match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+            if match:
+                batch_kwargs['problem'] = match.group(1).strip()
+                break
+        
+        return batch_kwargs
+        
+    except Exception:
+        return {}
+
+def _is_doc_stale(doc_file, cache_file):
+    """Check if document cache is stale by comparing content hashes (generalized)"""
+    try:
+        import hashlib
+        
+        # Get document file modification time
+        doc_mtime = doc_file.stat().st_mtime
+        
+        # Get cache file modification time
+        cache_mtime = cache_file.stat().st_mtime
+        
+        # If document is newer than cache, it's stale
+        if doc_mtime > cache_mtime:
+            return True
+        
+        # Load cache file to check for content hash
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            cache_data = yaml.safe_load(f)
+        
+        # Check if cache has content hash
+        cached_hash = cache_data.get('content_hash')
+        if not cached_hash:
+            return True  # No hash means stale
+        
+        # Compute current document content hash
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            doc_content = f.read()
+        
+        current_hash = hashlib.md5(doc_content.encode()).hexdigest()
+        
+        # Compare hashes
+        return cached_hash != current_hash
+        
+    except Exception:
+        return True  # Error means stale
+
+def _update_doc_content_hash(doc_id, doc_file):
+    """Update content hash for non-PRD documents"""
+    import yaml
+    import hashlib
+    from pathlib import Path
+    from datetime import datetime
+    
+    try:
+        # Load existing cache file
+        cache_file = Path("builder/cache/discovery") / f"{doc_id}.yml"
+        if not cache_file.exists():
+            return
+        
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            cache_data = yaml.safe_load(f)
+        
+        # Update content hash
+        with open(doc_file, 'r', encoding='utf-8') as f:
+            doc_content = f.read()
+        cache_data['content_hash'] = hashlib.md5(doc_content.encode()).hexdigest()
+        cache_data['last_updated'] = datetime.now().isoformat()
+        
+        # Save updated cache
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            yaml.dump(cache_data, f, default_flow_style=False, sort_keys=False)
+            
+    except Exception:
+        pass  # Silently fail for content hash updates
+
 @click.group()
 def cli():
     """Code Builder CLI"""
@@ -3708,28 +3882,49 @@ def discover_refresh(prd, regenerate_docs, regenerate_pack, question_set):
         raise SystemExit(1)
 
 @cli.command("discover:scan")
-@click.option("--auto-generate", is_flag=True, help="Auto-generate missing PRD contexts")
-@click.option("--pack", is_flag=True, help="Generate context packs for refreshed PRDs")
+@click.option("--auto-generate", is_flag=True, help="Auto-generate missing contexts")
+@click.option("--pack", is_flag=True, help="Generate context packs for refreshed documents")
 @click.option("--question-set", default="comprehensive", help="Question set to use for refresh")
-def discover_scan(auto_generate, pack, question_set):
-    """Scan all PRDs and refresh stale or missing contexts"""
+@click.option("--type", default="all", help="Document type to scan (prd, adr, arch, exec, impl, integrations, tasks, ux, all)")
+def discover_scan(auto_generate, pack, question_set, type):
+    """Scan all documents and refresh stale or missing contexts"""
     import yaml
     import hashlib
     from pathlib import Path
     from discovery.engine import DiscoveryEngine
     
     try:
-        click.echo("🔍 Scanning all PRDs for freshness...")
+        # Determine document types to scan
+        if type == "all":
+            doc_types = ["prd", "adr", "arch", "exec", "impl", "integrations", "tasks", "ux"]
+        else:
+            doc_types = [type]
         
-        # Find all PRD markdown files
-        prd_dir = Path("docs/prd")
-        prd_files = list(prd_dir.glob("PRD-*.md"))
+        click.echo(f"🔍 Scanning {', '.join(doc_types)} documents for freshness...")
         
-        if not prd_files:
-            click.echo("❌ No PRD files found in docs/prd/")
+        # Find all document files
+        all_files = []
+        for doc_type in doc_types:
+            doc_dir = Path(f"docs/{doc_type}")
+            if doc_type == "adr":
+                # ADRs use different pattern
+                pattern = "ADR-*.md"
+            elif doc_type == "integrations":
+                # Integrations use different pattern
+                pattern = "INTEGRATIONS-*.md"
+            else:
+                # Other types use TYPE-*.md pattern
+                pattern = f"{doc_type.upper()}-*.md"
+            
+            files = list(doc_dir.glob(pattern))
+            all_files.extend(files)
+            click.echo(f"📋 Found {len(files)} {doc_type.upper()} files")
+        
+        if not all_files:
+            click.echo("❌ No document files found")
             return
         
-        click.echo(f"📋 Found {len(prd_files)} PRD files")
+        click.echo(f"📋 Total: {len(all_files)} documents")
         
         # Initialize discovery engine
         engine = DiscoveryEngine(question_set=question_set)
@@ -3738,57 +3933,65 @@ def discover_scan(auto_generate, pack, question_set):
         up_to_date_count = 0
         missing_count = 0
         
-        for prd_file in prd_files:
-            prd_id = prd_file.stem  # e.g., "PRD-2025-09-06-payments"
-            click.echo(f"\n🔍 Checking {prd_id}...")
+        for doc_file in all_files:
+            doc_id = doc_file.stem  # e.g., "PRD-2025-09-06-payments", "ADR-2025-09-06-test"
+            doc_type = _get_doc_type_from_file(doc_file)
+            click.echo(f"\n🔍 Checking {doc_id} ({doc_type.upper()})...")
             
-            # Check if PRD cache exists
-            cache_file = Path("builder/cache/discovery") / f"{prd_id}.yml"
+            # Check if document cache exists
+            cache_file = Path("builder/cache/discovery") / f"{doc_id}.yml"
             
             if not cache_file.exists():
                 click.echo(f"  ❌ Missing cache file: {cache_file}")
-                if auto_generate:
-                    click.echo(f"  🔄 Auto-generating context for {prd_id}...")
+                if auto_generate and doc_type == "prd":
+                    # Only auto-generate for PRDs (other types don't have discovery contexts)
+                    click.echo(f"  🔄 Auto-generating context for {doc_id}...")
                     try:
-                        # Try to extract target from PRD content or use repo root
-                        target = _extract_target_from_prd(prd_file) or "."
+                        # Try to extract target from document content or use repo root
+                        target = _extract_target_from_doc(doc_file) or "."
                         
                         # Run discovery with auto-generation
-                        batch_kwargs = _extract_batch_kwargs_from_prd(prd_file)
+                        batch_kwargs = _extract_batch_kwargs_from_doc(doc_file)
                         results = engine.discover(target, batch_kwargs=batch_kwargs)
                         
                         # Check if the generated PRD matches our target PRD
                         generated_prd_id = results.get('prd_id')
-                        if generated_prd_id == prd_id:
-                            click.echo(f"  ✅ Generated context for {prd_id}")
+                        if generated_prd_id == doc_id:
+                            click.echo(f"  ✅ Generated context for {doc_id}")
                             refreshed_count += 1
                         else:
                             # The generated PRD doesn't match, but we can still use the results
                             # to create a context for our target PRD
-                            click.echo(f"  🔄 Generated {generated_prd_id}, adapting for {prd_id}...")
-                            _adapt_results_for_prd(results, prd_id, prd_file)
-                            click.echo(f"  ✅ Generated context for {prd_id}")
+                            click.echo(f"  🔄 Generated {generated_prd_id}, adapting for {doc_id}...")
+                            _adapt_results_for_prd(results, doc_id, doc_file)
+                            click.echo(f"  ✅ Generated context for {doc_id}")
                             refreshed_count += 1
                     except Exception as e:
                         click.echo(f"  ❌ Error generating context: {e}")
                         missing_count += 1
                 else:
+                    if doc_type != "prd":
+                        click.echo(f"  ℹ️  {doc_type.upper()} documents don't have discovery contexts")
                     missing_count += 1
                 continue
             
             # Check freshness by comparing content hashes
-            if _is_prd_stale(prd_file, cache_file):
-                click.echo(f"  🔄 Stale cache detected, refreshing {prd_id}...")
+            if _is_doc_stale(doc_file, cache_file):
+                click.echo(f"  🔄 Stale cache detected, refreshing {doc_id}...")
                 try:
-                    # Use existing refresh logic
-                    _refresh_prd_context(prd_id, question_set, pack)
-                    click.echo(f"  ✅ Refreshed {prd_id}")
+                    # Use existing refresh logic for PRDs
+                    if doc_type == "prd":
+                        _refresh_prd_context(doc_id, question_set, pack)
+                    else:
+                        # For other document types, just update the content hash
+                        _update_doc_content_hash(doc_id, doc_file)
+                    click.echo(f"  ✅ Refreshed {doc_id}")
                     refreshed_count += 1
                 except Exception as e:
-                    click.echo(f"  ❌ Error refreshing {prd_id}: {e}")
+                    click.echo(f"  ❌ Error refreshing {doc_id}: {e}")
                     missing_count += 1
             else:
-                click.echo(f"  ✅ Up-to-date: {prd_id}")
+                click.echo(f"  ✅ Up-to-date: {doc_id}")
                 up_to_date_count += 1
         
         # Print summary
@@ -3796,7 +3999,7 @@ def discover_scan(auto_generate, pack, question_set):
         click.echo(f"  🔄 Refreshed: {refreshed_count}")
         click.echo(f"  ✅ Up-to-date: {up_to_date_count}")
         click.echo(f"  ❌ Missing/Failed: {missing_count}")
-        click.echo(f"  📋 Total: {len(prd_files)}")
+        click.echo(f"  📋 Total: {len(all_files)}")
         
     except Exception as e:
         click.echo(f"❌ Error during scan: {e}")
