@@ -112,6 +112,9 @@ class DiscoveryEngine:
             # Save legacy discovery context
             self._save_legacy_context()
             
+            # Try auto ctx:build handoff
+            self._try_auto_ctx_build(target)
+            
             return self.results
             
         except Exception as e:
@@ -317,3 +320,96 @@ class DiscoveryEngine:
         except Exception as e:
             # Silently fail for legacy context saving
             pass
+    
+    def _try_auto_ctx_build(self, target: Path) -> None:
+        """Try to run ctx:build on sensible paths after discovery generation."""
+        try:
+            # Find sensible paths to try ctx:build on
+            sensible_paths = self._find_sensible_paths(target)
+            
+            if not sensible_paths:
+                print("Next: ctx:build <path> --purpose implement")
+                return
+            
+            # Try each sensible path until one succeeds
+            for path in sensible_paths:
+                if self._run_ctx_build(path):
+                    print(f"✅ Auto ctx:build succeeded for: {path}")
+                    return
+            
+            # If none succeeded, print next steps
+            print("Next: ctx:build <path> --purpose implement")
+            
+        except Exception as e:
+            # Silently fail for auto ctx:build
+            pass
+    
+    def _find_sensible_paths(self, target: Path) -> List[str]:
+        """Find sensible paths to try ctx:build on."""
+        sensible_paths = []
+        
+        # Priority order for sensible paths
+        priority_paths = [
+            "src/index.ts",
+            "src/main.ts", 
+            "src/app.ts",
+            "src/auth/login.ts",
+            "src/auth/index.ts",
+            "index.ts",
+            "main.ts",
+            "app.ts"
+        ]
+        
+        # Check priority paths first
+        for path in priority_paths:
+            full_path = self.root_path / path
+            if full_path.exists() and full_path.suffix in ['.ts', '.tsx']:
+                sensible_paths.append(str(full_path))
+        
+        # If no priority paths found, find first TypeScript file
+        if not sensible_paths:
+            for ext in ['*.ts', '*.tsx']:
+                for ts_file in self.root_path.rglob(ext):
+                    # Skip node_modules but allow test files
+                    ts_file_str = str(ts_file)
+                    if 'node_modules' not in ts_file_str:
+                        sensible_paths.append(ts_file_str)
+                        break
+                if sensible_paths:
+                    break
+        
+        return sensible_paths
+    
+    def _run_ctx_build(self, target_path: str) -> bool:
+        """Run ctx:build on the target path and return success status."""
+        try:
+            import subprocess
+            import os
+            
+            # Run ctx:build command
+            cmd = [
+                'python3', 'builder/cli.py', 'ctx:build', target_path,
+                '--purpose', 'implement'
+            ]
+            
+            result = subprocess.run(
+                cmd, 
+                cwd=self.root_path,
+                capture_output=True, 
+                text=True,
+                timeout=30
+            )
+            
+            # Check if ctx:build succeeded
+            if result.returncode == 0:
+                # Check if context files were created
+                context_md = self.root_path / "builder" / "cache" / "context.md"
+                pack_context = self.root_path / "builder" / "cache" / "pack_context.json"
+                
+                if context_md.exists() and pack_context.exists():
+                    return True
+            
+            return False
+            
+        except Exception:
+            return False
