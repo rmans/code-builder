@@ -540,11 +540,19 @@ class DiscoveryGenerators:
         questions = synthesis_data.get('questions', {})
         title = questions.get('product_name', 'Unknown Product')
         
-        # Create the new row
-        row = f"| {prd_id} | {title} | draft |  | ./{prd_id}.md |\n"
-        
-        # Append to master file
+        # Check if entry already exists
         try:
+            with open(master_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Check if prd_id already exists in the file
+            if f"| {prd_id} |" in content:
+                return  # Entry already exists, skip update
+            
+            # Create the new row
+            row = f"| {prd_id} | {title} | draft |  | ./{prd_id}.md |\n"
+            
+            # Append to master file
             with open(master_file, 'a', encoding='utf-8') as f:
                 f.write(row)
         except OSError as e:

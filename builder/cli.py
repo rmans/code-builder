@@ -34,11 +34,20 @@ def _update_master_file(doc_type, doc_id, title, status="draft", domain=""):
     if not master_file or not os.path.exists(master_file):
         return
     
-    # Create the new row
-    row = f"| {doc_id} | {title} | {status} | {domain} | ./{doc_id}.md |\n"
-    
-    # Append to master file
+    # Check if entry already exists
     try:
+        with open(master_file, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        # Check if doc_id already exists in the file
+        if f"| {doc_id} |" in content:
+            click.echo(f"Entry {doc_id} already exists in {master_file}")
+            return
+        
+        # Create the new row
+        row = f"| {doc_id} | {title} | {status} | {domain} | ./{doc_id}.md |\n"
+        
+        # Append to master file
         with open(master_file, "a", encoding="utf-8") as f:
             f.write(row)
         click.echo(f"Updated {master_file}")
