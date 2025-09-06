@@ -610,9 +610,9 @@ class DiscoveryGenerators:
 
 This PRD references the following Architecture Decision Records (ADRs):
 
-- [ADR-001: Technology Stack Selection](./adr-001-technology-stack.md)
-- [ADR-002: System Architecture](./adr-002-system-architecture.md)
-- [ADR-003: Data Model Design](./adr-003-data-model.md)
+- [ADR-0001: Technology Stack Selection](./adr/0001-technology-stack.md)
+- [ADR-0002: System Architecture](./adr/0002-system-architecture.md)
+- [ADR-0003: Data Model Design](./adr/0003-data-model.md)
 
 ## Implementation Plan
 
@@ -680,7 +680,8 @@ This PRD references the following Architecture Decision Records (ADRs):
             adr_dir = Path('docs/adr')
             if adr_dir.exists():
                 for adr_file in adr_dir.glob('*.md'):
-                    if adr_file.name.startswith('adr-'):
+                    # Check for proper ADR format: 0001-title.md
+                    if adr_file.name[0:4].isdigit() and adr_file.name[4] == '-':
                         # Extract ADR number and title
                         adr_number = adr_file.stem
                         title = self._extract_adr_title(adr_file)
@@ -691,8 +692,8 @@ This PRD references the following Architecture Decision Records (ADRs):
                             'path': str(adr_file.relative_to(Path('docs')))
                         })
             
-            # Sort by ADR number
-            adr_links.sort(key=lambda x: x['number'])
+            # Sort by ADR number (numeric sort)
+            adr_links.sort(key=lambda x: int(x['number'].split('-')[0]))
             
         except OSError:
             # Handle file operation errors gracefully
@@ -752,8 +753,8 @@ This document contains links to Architecture Decision Records (ADRs) referenced 
 
 When creating new ADRs:
 
-1. Use the format: `adr-XXX-title.md`
-2. Include a clear title and decision statement
+1. Use the format: `000X-title.md` (4-digit zero-padded number)
+2. Include proper ADR structure: Context, Decision, Consequences
 3. Reference the PRD ID: {prd_id}
 4. Update this links file
 
