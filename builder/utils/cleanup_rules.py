@@ -10,8 +10,9 @@ test/example directories.
 import os
 import re
 from pathlib import Path
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Optional
 from dataclasses import dataclass
+from .agent_tracker import AgentTracker
 
 
 @dataclass
@@ -28,7 +29,7 @@ class CleanupRule:
 class ArtifactCleaner:
     """Cleans up test and example artifacts based on defined rules."""
     
-    def __init__(self, root_dir: str = "."):
+    def __init__(self, root_dir: str = ".", respect_agent_ownership: bool = True):
         # Resolve the root directory to absolute path
         if root_dir == ".":
             # If running from builder/core/, go up two levels to project root
@@ -39,6 +40,7 @@ class ArtifactCleaner:
                 self.root_dir = Path(root_dir).resolve()
         else:
             self.root_dir = Path(root_dir).resolve()
+        
         self.rules = self._load_cleanup_rules()
         self.designated_dirs = {
             "test": ["test/", "tests/", "spec/", "specs/"],
@@ -46,6 +48,11 @@ class ArtifactCleaner:
             "cache": ["builder/cache/", ".cache/", "node_modules/", ".git/"],
             "venv": [".venv/", "venv/", "env/", ".env/"]
         }
+        
+        # Agent tracking for concurrent operations
+        self.respect_agent_ownership = respect_agent_ownership
+        self.agent_tracker = AgentTracker() if respect_agent_ownership else None
+        self.protected_files = self._get_protected_files() if respect_agent_ownership else set()
     
     def _load_cleanup_rules(self) -> List[CleanupRule]:
         """Load cleanup rules for different types of artifacts."""
@@ -105,6 +112,17 @@ class ArtifactCleaner:
             )
         ]
     
+    def _get_protected_files(self) -> Set[str]:
+        """Get files that are protected from cleanup due to active agent sessions."""
+        if not self.agent_tracker:
+            return set()
+        
+        # Clean up old sessions first
+        self.agent_tracker.cleanup_old_sessions()
+        self.agent_tracker.timeout_inactive_sessions()
+        
+        return self.agent_tracker.get_all_protected_files()
+    
     def is_in_designated_directory(self, file_path: Path) -> bool:
         """Check if a file is in a designated test/example directory."""
         file_str = str(file_path)
@@ -156,6 +174,10 @@ class ArtifactCleaner:
         """Find artifacts that should be cleaned up."""
         artifacts = {}
         
+        # Refresh protected files if agent tracking is enabled
+        if self.respect_agent_ownership and self.agent_tracker:
+            self.protected_files = self._get_protected_files()
+        
         for rule in self.rules:
             artifacts[rule.name] = []
             
@@ -166,6 +188,10 @@ class ArtifactCleaner:
                 
                 # Skip if in designated directory
                 if self.is_in_designated_directory(file_path):
+                    continue
+                
+                # Skip if file is protected by active agent
+                if self.respect_agent_ownership and str(file_path.absolute()) in self.protected_files:
                     continue
                 
                 # Check file extension
