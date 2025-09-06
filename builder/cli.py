@@ -3402,6 +3402,99 @@ def discover_validate(context_file, strict, output):
         raise SystemExit(1)
 
 
+@cli.command("discover:refresh")
+@click.option("--prd", required=True, help="PRD ID to refresh (e.g., PRD-2025-09-06-example)")
+@click.option("--regenerate-docs", is_flag=True, help="Regenerate documentation after refresh")
+@click.option("--regenerate-pack", is_flag=True, help="Regenerate context pack after refresh")
+@click.option("--question-set", default="comprehensive", help="Question set to use for refresh")
+def discover_refresh(prd, regenerate_docs, regenerate_pack, question_set):
+    """Refresh a single PRD by re-running analysis and synthesis"""
+    import yaml
+    from pathlib import Path
+    from discovery.engine import DiscoveryEngine
+    from discovery.analyzer import CodeAnalyzer
+    from discovery.synthesizer import DiscoverySynthesizer
+    from discovery.validator import DiscoveryValidator
+    from discovery.generators import DiscoveryGenerators
+    
+    try:
+        # Load the PRD cache file
+        prd_cache_file = Path("builder/cache/discovery") / f"{prd}.yml"
+        if not prd_cache_file.exists():
+            click.echo(f"❌ PRD cache file not found: {prd_cache_file}")
+            click.echo("Available PRDs:")
+            for prd_file in Path("builder/cache/discovery").glob("PRD-*.yml"):
+                click.echo(f"  - {prd_file.stem}")
+            raise SystemExit(1)
+        
+        # Load PRD data
+        with open(prd_cache_file, 'r', encoding='utf-8') as f:
+            prd_data = yaml.safe_load(f)
+        
+        click.echo(f"🔄 Refreshing PRD: {prd}")
+        click.echo(f"📋 Product: {prd_data.get('product_name', 'Unknown')}")
+        
+        # Extract original discovery results
+        discovery_results = prd_data.get('discovery_results', {})
+        interview_data = discovery_results.get('interview', {})
+        original_target = interview_data.get('target', '.')
+        
+        # Initialize discovery engine
+        engine = DiscoveryEngine(question_set=question_set)
+        
+        # Re-run analysis
+        click.echo("🔍 Re-running analysis...")
+        analysis_data = engine.analyzer.analyze(Path(original_target), interview_data)
+        
+        # Re-run synthesis
+        click.echo("🔄 Re-running synthesis...")
+        synthesis_data = engine.synthesizer.synthesize(analysis_data, interview_data)
+        
+        # Re-run validation
+        click.echo("✅ Re-running validation...")
+        validation_data = engine.validator.validate(analysis_data, synthesis_data)
+        
+        # Update PRD cache with refreshed data
+        prd_data['discovery_results']['analysis'] = analysis_data
+        prd_data['discovery_results']['synthesis'] = synthesis_data
+        prd_data['discovery_results']['validation'] = validation_data
+        prd_data['last_refreshed'] = engine._get_timestamp()
+        
+        # Save updated PRD cache
+        with open(prd_cache_file, 'w', encoding='utf-8') as f:
+            yaml.dump(prd_data, f, default_flow_style=False, sort_keys=False)
+        
+        click.echo(f"✅ PRD refreshed: {prd}")
+        
+        # Optional: Regenerate documentation
+        if regenerate_docs:
+            click.echo("📝 Regenerating documentation...")
+            generators = DiscoveryGenerators()
+            try:
+                artifacts, warnings, new_prd_id = generators.generate(synthesis_data, Path(original_target))
+                if warnings:
+                    for warning in warnings:
+                        click.echo(f"⚠️  {warning}")
+                click.echo(f"✅ Documentation regenerated")
+            except Exception as e:
+                click.echo(f"⚠️  Documentation regeneration failed: {e}")
+        
+        # Optional: Regenerate context pack
+        if regenerate_pack:
+            click.echo("📦 Regenerating context pack...")
+            try:
+                # Try to run ctx:build on sensible paths
+                engine._try_auto_ctx_build(Path(original_target))
+                click.echo("✅ Context pack regenerated")
+            except Exception as e:
+                click.echo(f"⚠️  Context pack regeneration failed: {e}")
+        
+        click.echo(f"🎉 PRD refresh complete: {prd}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error refreshing PRD: {e}")
+        raise SystemExit(1)
+
 @cli.command("discover:regenerate")
 @click.option("--batch", is_flag=True, help="Run in batch mode (non-interactive)")
 @click.option("--reports", is_flag=True, help="Generate reports only")
