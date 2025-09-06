@@ -10,6 +10,81 @@ from typing import Dict, List, Set, Tuple, Any, Optional
 import yaml
 
 
+# Constants for node and edge types
+NODE_TYPES = {
+    'prd', 'arch', 'integration', 'ux', 'impl', 'exec', 'task', 'adr', 'rules', 'code'
+}
+
+EDGE_TYPES = {
+    'informs', 'implements', 'constrains', 'depends_on', 'tests', 'supersedes'
+}
+
+
+class GraphNode:
+    """Represents a node in the context graph"""
+    
+    def __init__(self, id: str, node_type: str, title: str, file_path: str, 
+                 metadata: Dict[str, Any] = None, properties: Dict[str, Any] = None):
+        self.id = id
+        self.node_type = node_type
+        self.title = title
+        self.file_path = file_path
+        self.metadata = metadata or {}
+        self.properties = properties or {}
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert node to dictionary format"""
+        return {
+            'id': self.id,
+            'type': self.node_type,
+            'title': self.title,
+            'file_path': self.file_path,
+            'metadata': self.metadata,
+            'properties': self.properties
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'GraphNode':
+        """Create node from dictionary"""
+        return cls(
+            id=data['id'],
+            node_type=data['type'],
+            title=data.get('title', ''),
+            file_path=data.get('file_path', ''),
+            metadata=data.get('metadata', {}),
+            properties=data.get('properties', {})
+        )
+
+
+class GraphEdge:
+    """Represents an edge in the context graph"""
+    
+    def __init__(self, from_node: str, to_node: str, edge_type: str, **kwargs):
+        self.from_node = from_node
+        self.to_node = to_node
+        self.edge_type = edge_type
+        self.properties = kwargs
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert edge to dictionary format"""
+        return {
+            'from': self.from_node,
+            'to': self.to_node,
+            'type': self.edge_type,
+            **self.properties
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'GraphEdge':
+        """Create edge from dictionary"""
+        return cls(
+            from_node=data['from'],
+            to_node=data['to'],
+            edge_type=data['type'],
+            **{k: v for k, v in data.items() if k not in ['from', 'to', 'type']}
+        )
+
+
 class ContextGraph:
     """Dict-based context graph for tracking relationships between docs and code"""
     
@@ -23,33 +98,62 @@ class ContextGraph:
             'informs', 'implements', 'constrains', 'depends_on', 'tests', 'supersedes'
         }
     
-    def add_node(self, node_id: str, node_type: str, **kwargs) -> None:
+    def add_node(self, node_or_id, node_type: str = None, **kwargs) -> None:
         """Add a node to the graph"""
-        if node_type not in self.node_types:
-            raise ValueError(f"Invalid node type: {node_type}")
-        
-        self.nodes[node_id] = {
-            'id': node_id,
-            'type': node_type,
-            **kwargs
-        }
+        if isinstance(node_or_id, GraphNode):
+            # Handle GraphNode object
+            node = node_or_id
+            if node.node_type not in self.node_types:
+                raise ValueError(f"Invalid node type: {node.node_type}")
+            self.nodes[node.id] = node.to_dict()
+        else:
+            # Handle string ID with parameters
+            node_id = node_or_id
+            if node_type not in self.node_types:
+                raise ValueError(f"Invalid node type: {node_type}")
+            
+            self.nodes[node_id] = {
+                'id': node_id,
+                'type': node_type,
+                **kwargs
+            }
     
-    def add_edge(self, from_node: str, to_node: str, edge_type: str, **kwargs) -> None:
+    def add_edge(self, from_node_or_edge, to_node: str = None, edge_type: str = None, **kwargs) -> None:
         """Add an edge to the graph"""
-        if edge_type not in self.edge_types:
-            raise ValueError(f"Invalid edge type: {edge_type}")
-        
-        if from_node not in self.edges:
-            self.edges[from_node] = []
-        
-        self.edges[from_node].append({
-            'to': to_node,
-            'type': edge_type,
-            **kwargs
-        })
+        if isinstance(from_node_or_edge, GraphEdge):
+            # Handle GraphEdge object
+            edge = from_node_or_edge
+            if edge.edge_type not in self.edge_types:
+                raise ValueError(f"Invalid edge type: {edge.edge_type}")
+            
+            if edge.from_node not in self.edges:
+                self.edges[edge.from_node] = []
+            
+            self.edges[edge.from_node].append(edge.to_dict())
+        else:
+            # Handle string parameters
+            from_node = from_node_or_edge
+            if edge_type not in self.edge_types:
+                raise ValueError(f"Invalid edge type: {edge_type}")
+            
+            if from_node not in self.edges:
+                self.edges[from_node] = []
+            
+            self.edges[from_node].append({
+                'to': to_node,
+                'type': edge_type,
+                **kwargs
+            })
     
-    def get_node(self, node_id: str) -> Optional[Dict[str, Any]]:
-        """Get a node by ID"""
+    def get_node(self, node_id: str) -> Optional[GraphNode]:
+        """Get a node by ID as GraphNode object"""
+        node_data = self.nodes.get(node_id)
+        if node_data:
+            return GraphNode.from_dict(node_data)
+        return None
+    
+    def get_node_dict(self, node_id: str) -> Optional[Dict[str, Any]]:
+        """Get a node by ID as dictionary"""
         return self.nodes.get(node_id)
     
     def get_edges_from(self, node_id: str) -> List[Dict[str, Any]]:
@@ -67,6 +171,17 @@ class ContextGraph:
                         **edge
                     })
         return edges_to
+    
+    def get_adjacent_nodes(self, node_id: str) -> List[str]:
+        """Get all adjacent node IDs"""
+        adjacent = set()
+        # Get nodes connected by outgoing edges
+        for edge in self.get_edges_from(node_id):
+            adjacent.add(edge['to'])
+        # Get nodes connected by incoming edges
+        for edge in self.get_edges_to(node_id):
+            adjacent.add(edge['from'])
+        return list(adjacent)
     
     def get_stats(self) -> Dict[str, Any]:
         """Get graph statistics"""
@@ -130,6 +245,127 @@ class ContextGraph:
             graph.edges = {}
         
         return graph
+
+
+    def scan_project(self, project_root: str) -> None:
+        """Scan project directory and build graph"""
+        project_path = Path(project_root)
+        
+        # Scan for markdown files in docs/
+        docs_path = project_path / "docs"
+        if docs_path.exists():
+            for md_file in docs_path.rglob("*.md"):
+                self._process_markdown_file(md_file, project_path)
+        
+        # Scan for code files
+        for code_file in project_path.rglob("*.ts"):
+            if not str(code_file).startswith(str(project_path / "node_modules")):
+                self._process_code_file(code_file, project_path)
+        
+        for code_file in project_path.rglob("*.js"):
+            if not str(code_file).startswith(str(project_path / "node_modules")):
+                self._process_code_file(code_file, project_path)
+    
+    def _process_markdown_file(self, file_path: Path, project_root: Path) -> None:
+        """Process a markdown file and add to graph"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Parse front matter
+            front_matter, error = self._parse_front_matter(content)
+            if error or not front_matter:
+                return
+            
+            # Extract title
+            title = self._extract_title_from_content(content)
+            
+            # Determine feature
+            feature = self._determine_feature(file_path)
+            
+            # Create node
+            node_id = front_matter.get('id', file_path.stem)
+            self.add_node(
+                node_id,
+                front_matter.get('type', 'unknown'),
+                title=title,
+                file_path=str(file_path.relative_to(project_root)),
+                metadata=front_matter,
+                properties={'feature': feature}
+            )
+            
+        except Exception as e:
+            print(f"Error processing {file_path}: {e}")
+    
+    def _process_code_file(self, file_path: Path, project_root: Path) -> None:
+        """Process a code file and add to graph"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Extract exports
+            exports = self._extract_exports(content)
+            
+            # Determine feature
+            feature = self._determine_feature(file_path)
+            
+            # Create node
+            node_id = f"code:{file_path.relative_to(project_root)}"
+            self.add_node(
+                node_id,
+                'code',
+                title=file_path.name,
+                file_path=str(file_path.relative_to(project_root)),
+                metadata={'exports': exports},
+                properties={'feature': feature, 'file_type': file_path.suffix[1:]}
+            )
+            
+        except Exception as e:
+            print(f"Error processing {file_path}: {e}")
+    
+    def _parse_front_matter(self, content: str) -> Tuple[Optional[Dict], Optional[str]]:
+        """Parse YAML front matter from markdown content"""
+        try:
+            if not content.startswith('---'):
+                return None, "No front matter"
+            
+            parts = content.split('---', 2)
+            if len(parts) < 3:
+                return None, "Invalid front matter format"
+            
+            front_matter_text = parts[1].strip()
+            front_matter = yaml.safe_load(front_matter_text)
+            return front_matter, None
+        except Exception as e:
+            return None, str(e)
+    
+    def _extract_title_from_content(self, content: str) -> str:
+        """Extract title from markdown content"""
+        lines = content.split('\n')
+        for line in lines:
+            if line.startswith('# '):
+                return line[2:].strip()
+        return "Untitled"
+    
+    def _extract_exports(self, content: str) -> List[str]:
+        """Extract TypeScript/JavaScript exports from content"""
+        exports = []
+        # Simple regex to find export statements
+        export_pattern = r'export\s+(?:function|class|const|let|var|interface|type)\s+(\w+)'
+        matches = re.findall(export_pattern, content)
+        exports.extend(matches)
+        return exports
+    
+    def _determine_feature(self, file_path: Path) -> str:
+        """Determine feature from file path"""
+        # Simple feature determination based on path
+        path_str = str(file_path)
+        if 'auth' in path_str:
+            return 'auth'
+        elif 'content' in path_str:
+            return 'content-engine'
+        else:
+            return 'unknown'
 
 
 class ContextGraphBuilder:

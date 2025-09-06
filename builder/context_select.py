@@ -10,16 +10,37 @@ from datetime import datetime, timedelta
 import re
 
 
+class ContextItem:
+    """Represents a context item with scoring information"""
+    
+    def __init__(self, node, score: float = 0.0, distance: int = 0, reasons: List[str] = None):
+        self.node = node
+        self.score = score
+        self.distance = distance
+        self.reasons = reasons or []
+    
+    def __repr__(self):
+        return f"ContextItem(node={self.node.id}, score={self.score}, distance={self.distance})"
+
+
 class ContextSelector:
     """Retrieval and ranking system for context selection"""
     
-    def __init__(self, root_path: str, graph_file: str = "builder/cache/context_graph.json"):
-        self.root_path = Path(root_path)
-        self.graph_file = self.root_path / graph_file
-        self.graph = None
-        self.feature_map = {}
-        self._load_graph()
-        self._load_feature_map()
+    def __init__(self, graph_or_root_path, graph_file: str = "builder/cache/context_graph.json"):
+        if isinstance(graph_or_root_path, str):
+            # Handle string path (original behavior)
+            self.root_path = Path(graph_or_root_path)
+            self.graph_file = self.root_path / graph_file
+            self.graph = None
+            self.feature_map = {}
+            self._load_graph()
+            self._load_feature_map()
+        else:
+            # Handle ContextGraph object (for tests)
+            self.graph = graph_or_root_path
+            self.root_path = None
+            self.graph_file = None
+            self.feature_map = {}
     
     def _load_graph(self) -> None:
         """Load context graph from JSON file"""
@@ -46,7 +67,134 @@ class ContextSelector:
             except Exception:
                 self.feature_map = {}
     
-    def select_context(self, target_path: str, feature: str = "", top_k: int = 5) -> Dict[str, List[Dict[str, Any]]]:
+    def select_context(self, start_path: str = None, start_feature: str = None, 
+                      max_items: int = 5, max_distance: int = 3) -> List[ContextItem]:
+        """
+        Select and rank context items for a target path or feature
+        
+        Args:
+            start_path: Path to the target file (e.g., "src/auth/login.ts")
+            start_feature: Feature name for feature-based scoring
+            max_items: Maximum number of items to return
+            max_distance: Maximum distance to traverse in the graph
+            
+        Returns:
+            List of ContextItem objects with scores and reasons
+        """
+        if not self.graph:
+            return []
+        
+        items = []
+        
+        # Find starting nodes
+        if start_path:
+            # Find nodes by path
+            for node_id, node_data in self.graph.nodes.items():
+                if node_data.get('file_path') == start_path:
+                    start_node = self.graph.get_node(node_id)
+                    if start_node:
+                        items.append(ContextItem(start_node, score=10.0, distance=0, reasons=["starting node"]))
+                        break
+        
+        if start_feature:
+            # Find nodes by feature
+            for node_id, node_data in self.graph.nodes.items():
+                if node_data.get('properties', {}).get('feature') == start_feature:
+                    node = self.graph.get_node(node_id)
+                    if node:
+                        score = 3.0  # Same feature bonus
+                        reasons = ["same feature"]
+                        if node_data.get('metadata', {}).get('status') == 'approved':
+                            score += 2.0
+                            reasons.append("approved status")
+                        items.append(ContextItem(node, score=score, distance=0, reasons=reasons))
+        
+        # Add related nodes
+        for item in items[:]:  # Copy to avoid modifying while iterating
+            self._add_related_items(item, items, max_distance)
+        
+        # Sort by score and limit results
+        items.sort(key=lambda x: x.score, reverse=True)
+        return items[:max_items]
+    
+    def _add_related_items(self, item: ContextItem, items: List[ContextItem], max_distance: int):
+        """Add related items to the context list"""
+        if item.distance >= max_distance:
+            return
+        
+        # Get adjacent nodes
+        adjacent_ids = self.graph.get_adjacent_nodes(item.node.id)
+        
+        for adj_id in adjacent_ids:
+            # Check if already added
+            if any(existing.node.id == adj_id for existing in items):
+                continue
+            
+            adj_node = self.graph.get_node(adj_id)
+            if not adj_node:
+                continue
+            
+            # Calculate score based on relationship
+            score = 1.0  # Base score
+            reasons = [f"related to {item.node.id}"]
+            
+            # Add feature bonus
+            if adj_node.properties.get('feature') == item.node.properties.get('feature'):
+                score += 3.0
+                reasons.append("same feature +3.0")
+            
+            # Add status bonus
+            if adj_node.metadata.get('status') == 'approved':
+                score += 2.0
+                reasons.append("approved status +2.0")
+            
+            # Add folder bonus
+            if (item.node.file_path and adj_node.file_path and 
+                Path(item.node.file_path).parent == Path(adj_node.file_path).parent):
+                score += 2.0
+                reasons.append("same folder +2.0")
+            
+            new_item = ContextItem(adj_node, score=score, distance=item.distance + 1, reasons=reasons)
+            items.append(new_item)
+    
+    def get_context_summary(self, items: List[ContextItem]) -> Dict[str, Any]:
+        """Get summary statistics for context items"""
+        if not items:
+            return {
+                'total_items': 0,
+                'by_type': {},
+                'by_feature': {},
+                'by_distance': {},
+                'score_range': {'min': 0, 'max': 0}
+            }
+        
+        by_type = {}
+        by_feature = {}
+        by_distance = {}
+        scores = [item.score for item in items]
+        
+        for item in items:
+            # Count by type
+            node_type = item.node.node_type
+            by_type[node_type] = by_type.get(node_type, 0) + 1
+            
+            # Count by feature
+            feature = item.node.properties.get('feature', 'unknown')
+            by_feature[feature] = by_feature.get(feature, 0) + 1
+            
+            # Count by distance
+            distance = item.distance
+            by_distance[distance] = by_distance.get(distance, 0) + 1
+        
+        return {
+            'total_items': len(items),
+            'by_type': by_type,
+            'by_feature': by_feature,
+            'by_distance': by_distance,
+            'score_range': {'min': min(scores), 'max': max(scores)}
+        }
+    
+    def select_context_old(self, target_path: str, feature: str = "", top_k: int = 5) -> Dict[str, List[Dict[str, Any]]]:
         """
         Select and rank context for a target path
         
@@ -305,26 +453,3 @@ class ContextSelector:
         
         return result
     
-    def get_context_summary(self, context: Dict[str, List[Dict[str, Any]]]) -> str:
-        """Generate a human-readable summary of selected context"""
-        summary_parts = []
-        
-        for node_type, nodes in context.items():
-            if not nodes:
-                continue
-            
-            summary_parts.append(f"\n## {node_type.upper()} ({len(nodes)} items)")
-            
-            for node in nodes:
-                title = node['node'].get('title', node['id'])
-                score = node['score']
-                reasons = ', '.join(node['reasons'])
-                file_path = node['node'].get('file_path', '')
-                
-                summary_parts.append(f"- **{title}** (score: {score:.1f})")
-                summary_parts.append(f"  - Reasons: {reasons}")
-                if file_path:
-                    summary_parts.append(f"  - Path: {file_path}")
-                summary_parts.append("")
-        
-        return '\n'.join(summary_parts)
