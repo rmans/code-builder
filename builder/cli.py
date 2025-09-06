@@ -2946,5 +2946,446 @@ def ctx_budget(target_path, feature, budget, output, report):
         click.echo(f"❌ Error: {e}")
         raise SystemExit(1)
 
+
+# Discovery Commands
+@cli.command("discover:new")
+@click.option("--product", required=True, help="Product name for discovery context")
+@click.option("--idea", required=True, help="Short idea description")
+@click.option("--auto-generate", is_flag=True, help="Auto-generate discovery context")
+@click.option("--output", default="builder/cache/discovery_context.yml", help="Output context file path")
+def discover_new(product, idea, auto_generate, output):
+    """Create a new discovery context for product development"""
+    try:
+        from discovery.engine import DiscoveryEngine
+        import yaml
+        from datetime import datetime
+        
+        click.echo(f"🔍 Creating discovery context for: {product}")
+        click.echo(f"💡 Idea: {idea}")
+        
+        # Ensure output directory exists
+        output_dir = os.path.dirname(output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # Create discovery context
+        discovery_context = {
+            'product': product,
+            'idea': idea,
+            'created': datetime.now().isoformat(),
+            'status': 'draft',
+            'auto_generated': auto_generate,
+            'discovery_phases': {
+                'interview': {'completed': False, 'data': {}},
+                'analysis': {'completed': False, 'data': {}},
+                'synthesis': {'completed': False, 'data': {}},
+                'generation': {'completed': False, 'data': {}},
+                'validation': {'completed': False, 'data': {}}
+            },
+            'targets': [],
+            'insights': [],
+            'recommendations': [],
+            'next_steps': []
+        }
+        
+        # Auto-generate if requested
+        if auto_generate:
+            click.echo("🤖 Auto-generating discovery context...")
+            
+            # Initialize discovery engine
+            engine = DiscoveryEngine()
+            
+            # Add some basic next steps
+            discovery_context['next_steps'] = [
+                f"Define requirements for {product}",
+                f"Create architecture for {idea}",
+                f"Identify key stakeholders for {product}",
+                f"Plan development phases for {idea}",
+                f"Set up testing strategy for {product}"
+            ]
+            
+            # Add some initial insights
+            discovery_context['insights'] = [
+                f"Product '{product}' focuses on: {idea}",
+                "Initial discovery phase completed",
+                "Ready for detailed analysis phase"
+            ]
+            
+            discovery_context['discovery_phases']['interview']['completed'] = True
+            discovery_context['discovery_phases']['interview']['data'] = {
+                'product_scope': idea,
+                'complexity_estimate': 'medium',
+                'stakeholders': ['product_owner', 'development_team', 'end_users']
+            }
+        
+        # Save discovery context
+        with open(output, 'w', encoding='utf-8') as f:
+            yaml.dump(discovery_context, f, default_flow_style=False, sort_keys=False)
+        
+        click.echo(f"✅ Discovery context created successfully!")
+        click.echo(f"📄 Saved to: {output}")
+        click.echo(f"📊 Status: {discovery_context['status']}")
+        
+        if auto_generate:
+            click.echo(f"🤖 Auto-generated with {len(discovery_context['next_steps'])} next steps")
+            click.echo(f"💡 Generated {len(discovery_context['insights'])} initial insights")
+        
+        # Show next steps
+        click.echo(f"\n🚀 Next Steps:")
+        click.echo(f"1. Run: python builder/cli.py discover:analyze --repo-root")
+        click.echo(f"2. Run: python builder/cli.py discover:validate {output}")
+        click.echo(f"3. Review generated context and refine as needed")
+        click.echo(f"4. Run: python builder/cli.py discover:regenerate --batch")
+        
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
+
+@cli.command("discover:analyze")
+@click.option("--repo-root", is_flag=True, help="Analyze entire repository root")
+@click.option("--target", help="Specific target path to analyze")
+@click.option("--feature", default="", help="Feature name for analysis")
+@click.option("--output", default="builder/cache/discovery_analysis.json", help="Output analysis file path")
+@click.option("--batch", is_flag=True, help="Run in batch mode (non-interactive)")
+def discover_analyze(repo_root, target, feature, output, batch):
+    """Analyze codebase using discovery engine"""
+    try:
+        from discovery.engine import DiscoveryEngine
+        import json
+        
+        if not repo_root and not target:
+            click.echo("❌ Error: Must specify either --repo-root or --target")
+            raise SystemExit(1)
+        
+        # Initialize discovery engine
+        engine = DiscoveryEngine()
+        
+        if repo_root:
+            click.echo("🔍 Analyzing entire repository...")
+            analysis_target = "."
+        else:
+            click.echo(f"🔍 Analyzing target: {target}")
+            analysis_target = target
+        
+        # Run discovery analysis
+        results = engine.discover(analysis_target, {
+            'feature': feature,
+            'batch_mode': batch,
+            'include_patterns': True,
+            'include_security': True,
+            'include_performance': True
+        })
+        
+        # Ensure output directory exists
+        output_dir = os.path.dirname(output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # Save analysis results
+        with open(output, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=2)
+        
+        if 'error' in results:
+            click.echo(f"❌ Discovery failed: {results['error']}")
+            raise SystemExit(1)
+        
+        # Show summary
+        click.echo(f"✅ Discovery analysis completed!")
+        click.echo(f"📄 Results saved to: {output}")
+        click.echo(f"🎯 Target: {results.get('target', 'unknown')}")
+        
+        # Show key insights
+        synthesis = results.get('synthesis', {})
+        insights = synthesis.get('insights', [])
+        if insights:
+            click.echo(f"\n💡 Key Insights ({len(insights)}):")
+            for i, insight in enumerate(insights[:3], 1):  # Show top 3
+                click.echo(f"  {i}. {insight}")
+            if len(insights) > 3:
+                click.echo(f"  ... and {len(insights) - 3} more insights")
+        
+        # Show recommendations
+        recommendations = synthesis.get('recommendations', [])
+        if recommendations:
+            click.echo(f"\n📋 Recommendations ({len(recommendations)}):")
+            for i, rec in enumerate(recommendations[:3], 1):  # Show top 3
+                click.echo(f"  {i}. {rec}")
+            if len(recommendations) > 3:
+                click.echo(f"  ... and {len(recommendations) - 3} more recommendations")
+        
+        # Show next steps
+        click.echo(f"\n🚀 Next Steps:")
+        click.echo(f"1. Review analysis results in: {output}")
+        click.echo(f"2. Run: python builder/cli.py discover:validate {output}")
+        click.echo(f"3. Generate reports: python builder/cli.py discover:regenerate --reports")
+        
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
+
+@cli.command("discover:validate")
+@click.argument("context_file")
+@click.option("--strict", is_flag=True, help="Use strict validation mode")
+@click.option("--output", default="builder/cache/validation_report.json", help="Output validation report path")
+def discover_validate(context_file, strict, output):
+    """Validate discovery context or analysis results"""
+    try:
+        from discovery.validator import DiscoveryValidator
+        import json
+        import yaml
+        from pathlib import Path
+        
+        click.echo(f"🔍 Validating: {context_file}")
+        
+        # Check if file exists
+        if not Path(context_file).exists():
+            click.echo(f"❌ Error: File not found: {context_file}")
+            raise SystemExit(1)
+        
+        # Load file based on extension
+        file_ext = Path(context_file).suffix.lower()
+        if file_ext == '.json':
+            with open(context_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        elif file_ext in ['.yml', '.yaml']:
+            with open(context_file, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f)
+        else:
+            click.echo(f"❌ Error: Unsupported file format: {file_ext}")
+            raise SystemExit(1)
+        
+        # Initialize validator
+        validator = DiscoveryValidator()
+        
+        # Determine validation type based on data structure
+        if 'discovery_phases' in data:
+            # This is a discovery context file
+            click.echo("📋 Validating discovery context...")
+            validation_results = {
+                'type': 'discovery_context',
+                'is_valid': True,
+                'errors': [],
+                'warnings': [],
+                'checks': []
+            }
+            
+            # Check required fields
+            required_fields = ['product', 'idea', 'created', 'status', 'discovery_phases']
+            for field in required_fields:
+                if field not in data:
+                    validation_results['errors'].append(f"Missing required field: {field}")
+                    validation_results['is_valid'] = False
+                else:
+                    validation_results['checks'].append(f"Field '{field}' present")
+            
+            # Check discovery phases
+            phases = data.get('discovery_phases', {})
+            expected_phases = ['interview', 'analysis', 'synthesis', 'generation', 'validation']
+            for phase in expected_phases:
+                if phase not in phases:
+                    validation_results['warnings'].append(f"Missing phase: {phase}")
+                else:
+                    validation_results['checks'].append(f"Phase '{phase}' present")
+            
+        elif 'synthesis' in data and 'analysis' in data:
+            # This is a discovery analysis result
+            click.echo("📊 Validating discovery analysis results...")
+            validation_results = validator.validate(data)
+        else:
+            click.echo("❌ Error: Unknown file format - not a discovery context or analysis result")
+            raise SystemExit(1)
+        
+        # Ensure output directory exists
+        output_dir = os.path.dirname(output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # Save validation report
+        with open(output, 'w', encoding='utf-8') as f:
+            json.dump(validation_results, f, indent=2)
+        
+        # Show validation results
+        if validation_results.get('is_valid', False):
+            click.echo(f"✅ Validation passed!")
+        else:
+            click.echo(f"❌ Validation failed!")
+        
+        # Show errors
+        errors = validation_results.get('errors', [])
+        if errors:
+            click.echo(f"\n❌ Errors ({len(errors)}):")
+            for error in errors:
+                click.echo(f"  - {error}")
+        
+        # Show warnings
+        warnings = validation_results.get('warnings', [])
+        if warnings:
+            click.echo(f"\n⚠️  Warnings ({len(warnings)}):")
+            for warning in warnings:
+                click.echo(f"  - {warning}")
+        
+        # Show checks performed
+        checks = validation_results.get('checks', [])
+        if checks:
+            click.echo(f"\n✅ Checks performed ({len(checks)}):")
+            for check in checks[:5]:  # Show first 5
+                click.echo(f"  - {check}")
+            if len(checks) > 5:
+                click.echo(f"  ... and {len(checks) - 5} more checks")
+        
+        click.echo(f"\n📄 Validation report saved to: {output}")
+        
+        # Show next steps
+        if validation_results.get('is_valid', False):
+            click.echo(f"\n🚀 Next Steps:")
+            click.echo(f"1. Run: python builder/cli.py discover:regenerate --reports")
+            click.echo(f"2. Review generated documentation")
+            click.echo(f"3. Update discovery context as needed")
+        else:
+            click.echo(f"\n🔧 Fix Issues:")
+            click.echo(f"1. Address validation errors above")
+            click.echo(f"2. Re-run validation: python builder/cli.py discover:validate {context_file}")
+            click.echo(f"3. Check file format and required fields")
+        
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
+
+@cli.command("discover:regenerate")
+@click.option("--batch", is_flag=True, help="Run in batch mode (non-interactive)")
+@click.option("--reports", is_flag=True, help="Generate reports only")
+@click.option("--docs", is_flag=True, help="Generate documentation only")
+@click.option("--diagrams", is_flag=True, help="Generate diagrams only")
+@click.option("--all", is_flag=True, help="Generate all outputs")
+@click.option("--input", default="builder/cache/discovery_analysis.json", help="Input analysis file path")
+@click.option("--output-dir", default="builder/cache/discovery_outputs", help="Output directory for generated files")
+def discover_regenerate(batch, reports, docs, diagrams, all, input, output_dir):
+    """Regenerate discovery outputs from analysis results"""
+    try:
+        from discovery.generators import DiscoveryGenerators
+        import json
+        from pathlib import Path
+        
+        # Determine what to generate
+        if all:
+            generate_reports = True
+            generate_docs = True
+            generate_diagrams = True
+        else:
+            generate_reports = reports
+            generate_docs = docs
+            generate_diagrams = diagrams
+            
+            # If nothing specified, generate reports by default
+            if not any([reports, docs, diagrams]):
+                generate_reports = True
+        
+        click.echo(f"🔄 Regenerating discovery outputs...")
+        click.echo(f"📁 Input: {input}")
+        click.echo(f"📁 Output: {output_dir}")
+        
+        # Check if input file exists
+        if not Path(input).exists():
+            click.echo(f"❌ Error: Input file not found: {input}")
+            raise SystemExit(1)
+        
+        # Load analysis results
+        with open(input, 'r', encoding='utf-8') as f:
+            analysis_data = json.load(f)
+        
+        if 'error' in analysis_data:
+            click.echo(f"❌ Error: Analysis file contains error: {analysis_data['error']}")
+            raise SystemExit(1)
+        
+        # Create output directory
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        
+        # Initialize generators
+        generators = DiscoveryGenerators()
+        
+        # Get synthesis data
+        synthesis_data = analysis_data.get('synthesis', {})
+        if not synthesis_data:
+            click.echo(f"❌ Error: No synthesis data found in analysis file")
+            raise SystemExit(1)
+        
+        # Generate outputs
+        target_path = Path(analysis_data.get('target', 'unknown'))
+        generation_data = generators.generate(synthesis_data, target_path)
+        
+        # Save generated outputs
+        generated_files = []
+        
+        if generate_reports:
+            click.echo("📄 Generating reports...")
+            reports = generation_data.get('reports', {})
+            for format_name, content in reports.items():
+                report_file = Path(output_dir) / f"discovery_report.{format_name}"
+                with open(report_file, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                generated_files.append(str(report_file))
+                click.echo(f"  ✅ {format_name.upper()} report: {report_file}")
+        
+        if generate_docs:
+            click.echo("📚 Generating documentation...")
+            documentation = generation_data.get('documentation', {})
+            for doc_name, content in documentation.items():
+                doc_file = Path(output_dir) / f"{doc_name.lower()}.md"
+                with open(doc_file, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                generated_files.append(str(doc_file))
+                click.echo(f"  ✅ {doc_name} documentation: {doc_file}")
+        
+        if generate_diagrams:
+            click.echo("📊 Generating diagrams...")
+            diagrams = generation_data.get('diagrams', {})
+            for diagram_name, content in diagrams.items():
+                diagram_file = Path(output_dir) / diagram_name
+                with open(diagram_file, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                generated_files.append(str(diagram_file))
+                click.echo(f"  ✅ {diagram_name} diagram: {diagram_file}")
+        
+        # Generate recommendations
+        recommendations = generation_data.get('recommendations', {})
+        if recommendations:
+            click.echo("📋 Generating recommendations...")
+            for rec_name, content in recommendations.items():
+                rec_file = Path(output_dir) / rec_name
+                with open(rec_file, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                generated_files.append(str(rec_file))
+                click.echo(f"  ✅ {rec_name} recommendations: {rec_file}")
+        
+        # Save generation metadata
+        metadata = generation_data.get('metadata', {})
+        metadata_file = Path(output_dir) / "generation_metadata.json"
+        with open(metadata_file, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, indent=2)
+        generated_files.append(str(metadata_file))
+        
+        click.echo(f"\n✅ Discovery outputs regenerated successfully!")
+        click.echo(f"📁 Generated {len(generated_files)} files in: {output_dir}")
+        
+        # Show generated files
+        click.echo(f"\n📄 Generated Files:")
+        for file_path in generated_files:
+            click.echo(f"  - {file_path}")
+        
+        # Show next steps
+        click.echo(f"\n🚀 Next Steps:")
+        click.echo(f"1. Review generated outputs in: {output_dir}")
+        click.echo(f"2. Share reports with stakeholders")
+        click.echo(f"3. Update discovery context based on findings")
+        click.echo(f"4. Run: python builder/cli.py discover:analyze --repo-root (to re-analyze)")
+        
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
     cli()
