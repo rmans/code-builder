@@ -14,7 +14,7 @@ from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass
 from collections import defaultdict
 
-ROOT = os.path.dirname(os.path.dirname(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 RULES_DIR = os.path.join(ROOT, "docs", "rules")
 
 @dataclass

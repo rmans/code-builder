@@ -2854,6 +2854,44 @@ def ctx_build(target_path, purpose, feature, stacks, token_limit, prd):
             if in_acceptance and line.strip().startswith('-'):
                 acceptance_criteria.append(line.strip())
     
+    # Generate default acceptance criteria if none found
+    if not acceptance_criteria:
+        click.echo("📋 Generating default acceptance criteria based on target file")
+        file_ext = os.path.splitext(target_path)[1].lower()
+        
+        if file_ext in ['.ts', '.tsx', '.js', '.jsx']:
+            acceptance_criteria = [
+                "Code compiles without TypeScript/JavaScript errors",
+                "All functions and classes are properly exported",
+                "Code follows established patterns and conventions",
+                "Type definitions are accurate and complete",
+                "Code is readable and well-structured"
+            ]
+        elif file_ext in ['.py']:
+            acceptance_criteria = [
+                "Code runs without Python syntax errors",
+                "All functions and classes are properly defined",
+                "Code follows PEP 8 style guidelines",
+                "Type hints are used where appropriate",
+                "Code is readable and well-documented"
+            ]
+        elif file_ext in ['.md']:
+            acceptance_criteria = [
+                "Document follows markdown best practices",
+                "Content is clear and well-structured",
+                "All links and references are valid",
+                "Document serves its intended purpose",
+                "Formatting is consistent throughout"
+            ]
+        else:
+            acceptance_criteria = [
+                "File content is valid and well-formed",
+                "Code follows established patterns",
+                "Content is readable and maintainable",
+                "All dependencies are properly handled",
+                "File serves its intended purpose"
+            ]
+    
     # Build context package
     context_package = {
         'target_path': target_path,
