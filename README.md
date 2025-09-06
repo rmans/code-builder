@@ -475,60 +475,99 @@ mkdir -p src tests docs && echo "Project structure created" > setup.log
 
 ## Directory Structure
 
-    docs/
-      adrs/         # Architecture Decision Records
-      arch/         # Architecture documents
-      integrations/ # Integration specifications
-      impl/         # Implementation plans
-      exec/         # Execution plans
-      ux/           # User experience designs
-      tasks/        # Task definitions
-      templates/    # Workflow and document templates
-      rules/        # Global/project/stack/feature rules + guardrails.json
-      eval/         # Evaluation configuration and weights
-      CURSOR-Custom-Commands.md    # Cursor integration guide
-      USAGE-Cursor-Evaluation.md   # Evaluation usage guide
-      README.md     # Documentation index
-    builder/
-      cli.py        # Python CLI with all commands
-      context_graph.py      # Context graph building
-      context_select.py     # Context selection and ranking
-      context_budget.py     # Token budget management
-      context_rules.py      # Rules merging and conflict detection
-      evaluators/   # Objective evaluation system
-        objective.py        # Core evaluation logic
-        artifact_detector.py # File type detection
-        doc_schema.py       # Documentation validation
-      config/
-        prompts/    # Evaluation prompt generation
-          evaluation_prompt.py
-      scripts/      # Utility scripts
-        cursor_server.py    # Flask bridge server
-      test_data/    # Sample files for testing
-      tests/        # Python unit tests
-      cache/        # Generated reports, evaluations, context packs
-        packs/      # Cached context packs
-        prompt/     # Generated prompt blocks
-    tests/          # Consolidated test directory
-      data/         # Test files and fixtures
-        hello.test.ts # Vitest tests
-        hello_bad.ts  # Test fixtures
-        hello_good.ts # Test fixtures
-        hello_ugly.ts # Test fixtures
-        invalid-prd.md # Test data
-      results/      # Test output and reports
-        budget_report.md
-        coverage-final.json
-        vitest.json
-      integration/  # Integration tests
-      scripts/      # Test scripts
-      unit/         # Unit tests
-    .github/
-      workflows/
-        ci.yml        # CI with evaluation jobs
-        context.yml   # Context pack generation
-        docs.yml      # Documentation validation
-      pull_request_template.md  # PR template with context preview
+    code-builder/
+    ├── 📁 docs/                    # Documentation system (8 document types)
+    │   ├── 📁 adrs/               # Architecture Decision Records
+    │   │   └── 0000_MASTER_ADR.md # Master ADR index (auto-synced)
+    │   ├── 📁 arch/               # Architecture documents  
+    │   │   └── 0000_MASTER_ARCH.md # Master architecture index
+    │   ├── 📁 prd/                # Product Requirements Documents
+    │   │   └── 0000_MASTER_PRD.md # Master PRD index
+    │   ├── 📁 exec/               # Execution plans
+    │   │   └── 0000_MASTER_EXEC.md # Master execution index
+    │   ├── 📁 impl/               # Implementation plans
+    │   │   └── 0000_MASTER_IMPL.md # Master implementation index
+    │   ├── 📁 integrations/       # Integration specifications
+    │   │   └── 0000_MASTER_INTEGRATIONS.md # Master integrations index
+    │   ├── 📁 tasks/              # Task definitions
+    │   │   └── 0000_MASTER_TASKS.md # Master tasks index
+    │   ├── 📁 ux/                 # User experience designs
+    │   │   └── 0000_MASTER_UX.md # Master UX index
+    │   ├── 📁 templates/          # Jinja2 document templates
+    │   ├── 📁 rules/              # Rules & guardrails system
+    │   │   ├── 00-global.md       # Global rules
+    │   │   ├── 10-project.md      # Project rules
+    │   │   ├── stack/             # Stack-specific rules
+    │   │   ├── feature/           # Feature-specific rules
+    │   │   └── guardrails.json    # Forbidden patterns
+    │   ├── 📁 eval/               # Evaluation configuration
+    │   │   └── config.yaml        # Evaluation weights & config
+    │   ├── 📁 examples/           # Usage examples
+    │   ├── CURSOR-Custom-Commands.md    # Cursor integration guide
+    │   ├── USAGE-Cursor-Evaluation.md   # Evaluation usage guide
+    │   ├── SECURITY.md            # Security guidelines
+    │   └── README.md              # Documentation index
+    │
+    ├── 📁 builder/                # Core Python system (34 modules)
+    │   ├── 📁 core/               # Core functionality
+    │   │   ├── cli.py             # Main CLI (53 commands)
+    │   │   ├── context_graph.py   # Context graph building
+    │   │   ├── context_select.py  # Context selection & ranking
+    │   │   ├── context_budget.py  # Token budget management
+    │   │   └── context_rules.py   # Rules merging & conflict detection
+    │   ├── 📁 discovery/          # Discovery system (6 commands)
+    │   │   ├── engine.py          # Discovery orchestration
+    │   │   ├── analyzer.py        # Code analysis
+    │   │   ├── synthesizer.py     # Findings synthesis
+    │   │   ├── generators.py      # Document generation
+    │   │   └── validator.py       # Validation system
+    │   ├── 📁 evaluators/         # Evaluation system (4 commands)
+    │   │   ├── objective.py       # Objective evaluation
+    │   │   ├── artifact_detector.py # File type detection
+    │   │   └── doc_schema.py      # Documentation validation
+    │   ├── 📁 utils/              # Utility modules
+    │   │   ├── agent_tracker.py   # Agent session management
+    │   │   ├── task_orchestrator.py # Task orchestration
+    │   │   ├── multi_agent_cursor.py # Multi-agent Cursor integration
+    │   │   ├── cleanup_rules.py   # Artifact cleanup
+    │   │   └── cursor_agent_integration.py # Cursor integration
+    │   ├── 📁 config/             # Configuration
+    │   │   └── prompts/           # Evaluation prompt generation
+    │   │       └── evaluation_prompt.py
+    │   ├── 📁 scripts/            # Utility scripts
+    │   │   └── cursor_server.py   # Flask bridge server
+    │   ├── 📁 cache/              # Generated data & reports
+    │   │   ├── packs/             # Cached context packs
+    │   │   ├── discovery/         # Discovery outputs
+    │   │   ├── multi_agents/      # Agent workspaces
+    │   │   └── evaluations/       # Evaluation results
+    │   └── README.md              # Builder documentation
+    │
+    ├── 📁 tests/                  # Consolidated test system
+    │   ├── 📁 unit/               # Unit tests
+    │   ├── 📁 integration/        # Integration tests
+    │   ├── 📁 data/               # Test fixtures & data
+    │   │   ├── hello.test.ts      # Vitest tests
+    │   │   ├── hello_bad.ts       # Test fixtures
+    │   │   ├── hello_good.ts      # Test fixtures
+    │   │   └── hello_ugly.ts      # Test fixtures
+    │   ├── 📁 results/            # Test output & reports
+    │   └── 📁 scripts/            # Test scripts
+    │
+    ├── 📁 src/                    # Source code (TypeScript/JavaScript)
+    ├── 📁 scripts/                # Project scripts
+    ├── 📁 .github/                # GitHub workflows & templates
+    │   └── workflows/             # CI/CD pipelines
+    ├── 📁 .cursor/                # Cursor configuration
+    │   └── rules/                 # Cursor rules
+    ├── package.json               # Node.js dependencies & scripts
+    ├── pnpm-lock.yaml            # Package lock file
+    ├── requirements.txt           # Python dependencies
+    ├── tsconfig.json              # TypeScript configuration
+    ├── vitest.config.ts           # Test configuration
+    ├── eslint.config.js           # Linting configuration
+    ├── cspell.json               # Spell checking configuration
+    └── README.md                  # Main documentation
 
 ---
 
