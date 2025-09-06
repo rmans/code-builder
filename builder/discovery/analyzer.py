@@ -29,6 +29,7 @@ class CodeAnalyzer:
             Analysis results dictionary
         """
         analysis_data = {
+            'detected': self._detect_stack_and_structure(target),
             'relationships': self._analyze_relationships(target),
             'complexity_metrics': self._calculate_complexity_metrics(target),
             'code_patterns': self._identify_code_patterns(target),
@@ -503,3 +504,495 @@ class CodeAnalyzer:
                 pass
         
         return maintainability
+    
+    def _detect_stack_and_structure(self, target: Path) -> Dict[str, Any]:
+        """Detect programming languages, frameworks, dependencies, and project structure.
+        
+        Args:
+            target: Path to analyze (file or directory)
+            
+        Returns:
+            Dictionary containing detected technologies and structure
+        """
+        detected = {
+            'languages': [],
+            'frameworks': [],
+            'dependencies': [],
+            'project_structure': [],
+            'test_runners': [],
+            'ci_systems': [],
+            'package_managers': [],
+            'build_tools': []
+        }
+        
+        if target.is_file():
+            # Analyze single file
+            detected.update(self._analyze_file_stack(target))
+        else:
+            # Analyze directory structure
+            detected.update(self._analyze_directory_stack(target))
+        
+        return detected
+    
+    def _analyze_file_stack(self, file_path: Path) -> Dict[str, Any]:
+        """Analyze a single file for technology stack."""
+        detected = {
+            'languages': [],
+            'frameworks': [],
+            'dependencies': [],
+            'project_structure': [],
+            'test_runners': [],
+            'ci_systems': [],
+            'package_managers': [],
+            'build_tools': []
+        }
+        
+        # Detect language by file extension
+        if file_path.suffix in ['.js', '.jsx']:
+            detected['languages'].append('JavaScript')
+        elif file_path.suffix in ['.ts', '.tsx']:
+            detected['languages'].append('TypeScript')
+        elif file_path.suffix == '.py':
+            detected['languages'].append('Python')
+        elif file_path.suffix == '.go':
+            detected['languages'].append('Go')
+        elif file_path.suffix in ['.java', '.jar']:
+            detected['languages'].append('Java')
+        elif file_path.suffix in ['.rs', '.rlib']:
+            detected['languages'].append('Rust')
+        
+        return detected
+    
+    def _analyze_directory_stack(self, target: Path) -> Dict[str, Any]:
+        """Analyze directory for technology stack and project structure."""
+        detected = {
+            'languages': [],
+            'frameworks': [],
+            'dependencies': [],
+            'project_structure': [],
+            'test_runners': [],
+            'ci_systems': [],
+            'package_managers': [],
+            'build_tools': []
+        }
+        
+        # Detect languages and frameworks from config files
+        detected.update(self._detect_from_config_files(target))
+        
+        # Detect project structure
+        detected['project_structure'] = self._detect_project_structure(target)
+        
+        # Detect test runners
+        detected['test_runners'] = self._detect_test_runners(target)
+        
+        # Detect CI systems
+        detected['ci_systems'] = self._detect_ci_systems(target)
+        
+        # Detect package managers
+        detected['package_managers'] = self._detect_package_managers(target)
+        
+        # Detect build tools
+        detected['build_tools'] = self._detect_build_tools(target)
+        
+        return detected
+    
+    def _detect_from_config_files(self, target: Path) -> Dict[str, Any]:
+        """Detect technologies from configuration files."""
+        detected = {
+            'languages': [],
+            'frameworks': [],
+            'dependencies': [],
+            'package_managers': []
+        }
+        
+        # Check for package.json (Node.js/JavaScript/TypeScript)
+        package_json = target / 'package.json'
+        if package_json.exists():
+            try:
+                import json
+                with open(package_json, 'r') as f:
+                    data = json.load(f)
+                
+                detected['package_managers'].append('npm')
+                if 'pnpm' in str(target / 'pnpm-lock.yaml'):
+                    detected['package_managers'].append('pnpm')
+                if 'yarn' in str(target / 'yarn.lock'):
+                    detected['package_managers'].append('yarn')
+                
+                # Detect languages
+                if 'typescript' in data.get('devDependencies', {}):
+                    detected['languages'].append('TypeScript')
+                else:
+                    detected['languages'].append('JavaScript')
+                
+                # Detect frameworks
+                dependencies = {**data.get('dependencies', {}), **data.get('devDependencies', {})}
+                
+                if 'react' in dependencies:
+                    detected['frameworks'].append('React')
+                if 'vue' in dependencies:
+                    detected['frameworks'].append('Vue.js')
+                if 'angular' in dependencies:
+                    detected['frameworks'].append('Angular')
+                if 'express' in dependencies:
+                    detected['frameworks'].append('Express.js')
+                if 'next' in dependencies:
+                    detected['frameworks'].append('Next.js')
+                if 'nuxt' in dependencies:
+                    detected['frameworks'].append('Nuxt.js')
+                if 'svelte' in dependencies:
+                    detected['frameworks'].append('Svelte')
+                if 'fastapi' in dependencies:
+                    detected['frameworks'].append('FastAPI')
+                if 'django' in dependencies:
+                    detected['frameworks'].append('Django')
+                if 'flask' in dependencies:
+                    detected['frameworks'].append('Flask')
+                
+                # Extract dependencies
+                for dep, version in dependencies.items():
+                    detected['dependencies'].append({
+                        'name': dep,
+                        'version': version,
+                        'type': 'npm'
+                    })
+                    
+            except (json.JSONDecodeError, FileNotFoundError):
+                pass
+        
+        # Check for requirements.txt (Python)
+        requirements_txt = target / 'requirements.txt'
+        if requirements_txt.exists():
+            detected['languages'].append('Python')
+            detected['package_managers'].append('pip')
+            
+            try:
+                with open(requirements_txt, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            # Parse package name and version
+                            if '==' in line:
+                                name, version = line.split('==', 1)
+                            elif '>=' in line:
+                                name, version = line.split('>=', 1)
+                            else:
+                                name, version = line, 'latest'
+                            
+                            detected['dependencies'].append({
+                                'name': name.strip(),
+                                'version': version.strip(),
+                                'type': 'pip'
+                            })
+            except FileNotFoundError:
+                pass
+        
+        # Check for pyproject.toml (Python)
+        pyproject_toml = target / 'pyproject.toml'
+        if pyproject_toml.exists():
+            detected['languages'].append('Python')
+            detected['package_managers'].append('pip')
+            
+            try:
+                import toml
+                with open(pyproject_toml, 'r') as f:
+                    data = toml.load(f)
+                
+                # Extract dependencies
+                if 'project' in data and 'dependencies' in data['project']:
+                    for dep in data['project']['dependencies']:
+                        detected['dependencies'].append({
+                            'name': dep,
+                            'version': 'latest',
+                            'type': 'pip'
+                        })
+            except (toml.TomlDecodeError, FileNotFoundError, ImportError):
+                pass
+        
+        # Check for go.mod (Go)
+        go_mod = target / 'go.mod'
+        if go_mod.exists():
+            detected['languages'].append('Go')
+            detected['package_managers'].append('go mod')
+            
+            try:
+                with open(go_mod, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith('require '):
+                            # Parse Go module requirements
+                            parts = line.split()
+                            if len(parts) >= 3:
+                                detected['dependencies'].append({
+                                    'name': parts[1],
+                                    'version': parts[2],
+                                    'type': 'go'
+                                })
+            except FileNotFoundError:
+                pass
+        
+        # Check for Cargo.toml (Rust)
+        cargo_toml = target / 'Cargo.toml'
+        if cargo_toml.exists():
+            detected['languages'].append('Rust')
+            detected['package_managers'].append('cargo')
+            
+            try:
+                import toml
+                with open(cargo_toml, 'r') as f:
+                    data = toml.load(f)
+                
+                # Extract dependencies
+                if 'dependencies' in data:
+                    for dep, version in data['dependencies'].items():
+                        if isinstance(version, str):
+                            detected['dependencies'].append({
+                                'name': dep,
+                                'version': version,
+                                'type': 'cargo'
+                            })
+            except (toml.TomlDecodeError, FileNotFoundError, ImportError):
+                pass
+        
+        # Check for pom.xml (Java)
+        pom_xml = target / 'pom.xml'
+        if pom_xml.exists():
+            detected['languages'].append('Java')
+            detected['package_managers'].append('maven')
+            
+            try:
+                import xml.etree.ElementTree as ET
+                tree = ET.parse(pom_xml)
+                root = tree.getroot()
+                
+                # Extract dependencies
+                for dependency in root.findall('.//{http://maven.apache.org/POM/4.0.0}dependency'):
+                    group_id = dependency.find('{http://maven.apache.org/POM/4.0.0}groupId')
+                    artifact_id = dependency.find('{http://maven.apache.org/POM/4.0.0}artifactId')
+                    version = dependency.find('{http://maven.apache.org/POM/4.0.0}version')
+                    
+                    if group_id is not None and artifact_id is not None:
+                        detected['dependencies'].append({
+                            'name': f"{group_id.text}:{artifact_id.text}",
+                            'version': version.text if version is not None else 'latest',
+                            'type': 'maven'
+                        })
+            except (ET.ParseError, FileNotFoundError):
+                pass
+        
+        return detected
+    
+    def _detect_project_structure(self, target: Path) -> List[str]:
+        """Detect project structure patterns."""
+        structure = []
+        
+        # Common directory patterns
+        common_dirs = [
+            'src', 'app', 'apps', 'lib', 'libs', 'packages', 'components',
+            'pages', 'views', 'templates', 'static', 'public', 'assets',
+            'config', 'configs', 'settings', 'utils', 'helpers', 'services',
+            'models', 'entities', 'controllers', 'routes', 'middleware',
+            'tests', 'test', 'specs', 'docs', 'documentation'
+        ]
+        
+        for item in target.iterdir():
+            if item.is_dir() and item.name in common_dirs:
+                structure.append(item.name)
+        
+        # Detect specific patterns
+        if (target / 'src').exists():
+            structure.append('src_based')
+        if (target / 'app').exists():
+            structure.append('app_based')
+        if (target / 'packages').exists():
+            structure.append('monorepo')
+        if (target / 'lib').exists():
+            structure.append('library')
+        
+        return structure
+    
+    def _detect_test_runners(self, target: Path) -> List[str]:
+        """Detect test runners and testing frameworks."""
+        test_runners = []
+        
+        # Check package.json for test runners
+        package_json = target / 'package.json'
+        if package_json.exists():
+            try:
+                import json
+                with open(package_json, 'r') as f:
+                    data = json.load(f)
+                
+                dependencies = {**data.get('dependencies', {}), **data.get('devDependencies', {})}
+                
+                if 'jest' in dependencies:
+                    test_runners.append('Jest')
+                if 'vitest' in dependencies:
+                    test_runners.append('Vitest')
+                if 'mocha' in dependencies:
+                    test_runners.append('Mocha')
+                if 'jasmine' in dependencies:
+                    test_runners.append('Jasmine')
+                if 'cypress' in dependencies:
+                    test_runners.append('Cypress')
+                if 'playwright' in dependencies:
+                    test_runners.append('Playwright')
+                if 'puppeteer' in dependencies:
+                    test_runners.append('Puppeteer')
+                    
+            except (json.JSONDecodeError, FileNotFoundError):
+                pass
+        
+        # Check for Python test runners
+        requirements_txt = target / 'requirements.txt'
+        if requirements_txt.exists():
+            try:
+                with open(requirements_txt, 'r') as f:
+                    content = f.read()
+                
+                if 'pytest' in content:
+                    test_runners.append('pytest')
+                if 'unittest' in content:
+                    test_runners.append('unittest')
+                if 'nose' in content:
+                    test_runners.append('nose')
+                if 'tox' in content:
+                    test_runners.append('tox')
+                    
+            except FileNotFoundError:
+                pass
+        
+        # Check for test configuration files
+        test_configs = [
+            'jest.config.js', 'jest.config.ts', 'vitest.config.js', 'vitest.config.ts',
+            'pytest.ini', 'setup.cfg', 'tox.ini', 'cypress.config.js', 'playwright.config.js'
+        ]
+        
+        for config in test_configs:
+            if (target / config).exists():
+                if 'jest' in config:
+                    test_runners.append('Jest')
+                elif 'vitest' in config:
+                    test_runners.append('Vitest')
+                elif 'pytest' in config:
+                    test_runners.append('pytest')
+                elif 'cypress' in config:
+                    test_runners.append('Cypress')
+                elif 'playwright' in config:
+                    test_runners.append('Playwright')
+        
+        return list(set(test_runners))  # Remove duplicates
+    
+    def _detect_ci_systems(self, target: Path) -> List[str]:
+        """Detect CI/CD systems."""
+        ci_systems = []
+        
+        # Check for GitHub Actions
+        if (target / '.github' / 'workflows').exists():
+            ci_systems.append('GitHub Actions')
+        
+        # Check for GitLab CI
+        if (target / '.gitlab-ci.yml').exists():
+            ci_systems.append('GitLab CI')
+        
+        # Check for Jenkins
+        if (target / 'Jenkinsfile').exists():
+            ci_systems.append('Jenkins')
+        
+        # Check for CircleCI
+        if (target / '.circleci').exists():
+            ci_systems.append('CircleCI')
+        
+        # Check for Travis CI
+        if (target / '.travis.yml').exists():
+            ci_systems.append('Travis CI')
+        
+        # Check for Azure DevOps
+        if (target / 'azure-pipelines.yml').exists():
+            ci_systems.append('Azure DevOps')
+        
+        return ci_systems
+    
+    def _detect_package_managers(self, target: Path) -> List[str]:
+        """Detect package managers."""
+        package_managers = []
+        
+        # Check for lock files and config files
+        if (target / 'package.json').exists():
+            package_managers.append('npm')
+        if (target / 'pnpm-lock.yaml').exists():
+            package_managers.append('pnpm')
+        if (target / 'yarn.lock').exists():
+            package_managers.append('yarn')
+        if (target / 'requirements.txt').exists():
+            package_managers.append('pip')
+        if (target / 'pyproject.toml').exists():
+            package_managers.append('pip')
+        if (target / 'go.mod').exists():
+            package_managers.append('go mod')
+        if (target / 'Cargo.toml').exists():
+            package_managers.append('cargo')
+        if (target / 'pom.xml').exists():
+            package_managers.append('maven')
+        if (target / 'gradle').exists() or (target / 'build.gradle').exists():
+            package_managers.append('gradle')
+        
+        return list(set(package_managers))  # Remove duplicates
+    
+    def _detect_build_tools(self, target: Path) -> List[str]:
+        """Detect build tools and bundlers."""
+        build_tools = []
+        
+        # Check package.json for build tools
+        package_json = target / 'package.json'
+        if package_json.exists():
+            try:
+                import json
+                with open(package_json, 'r') as f:
+                    data = json.load(f)
+                
+                dependencies = {**data.get('dependencies', {}), **data.get('devDependencies', {})}
+                
+                if 'webpack' in dependencies:
+                    build_tools.append('Webpack')
+                if 'vite' in dependencies:
+                    build_tools.append('Vite')
+                if 'rollup' in dependencies:
+                    build_tools.append('Rollup')
+                if 'esbuild' in dependencies:
+                    build_tools.append('esbuild')
+                if 'parcel' in dependencies:
+                    build_tools.append('Parcel')
+                if 'babel' in dependencies:
+                    build_tools.append('Babel')
+                if 'typescript' in dependencies:
+                    build_tools.append('TypeScript Compiler')
+                    
+            except (json.JSONDecodeError, FileNotFoundError):
+                pass
+        
+        # Check for build configuration files
+        build_configs = [
+            'webpack.config.js', 'webpack.config.ts', 'vite.config.js', 'vite.config.ts',
+            'rollup.config.js', 'rollup.config.ts', 'babel.config.js', 'babel.config.json',
+            'tsconfig.json', 'tsconfig.build.json', 'build.gradle', 'Makefile'
+        ]
+        
+        for config in build_configs:
+            if (target / config).exists():
+                if 'webpack' in config:
+                    build_tools.append('Webpack')
+                elif 'vite' in config:
+                    build_tools.append('Vite')
+                elif 'rollup' in config:
+                    build_tools.append('Rollup')
+                elif 'babel' in config:
+                    build_tools.append('Babel')
+                elif 'tsconfig' in config:
+                    build_tools.append('TypeScript Compiler')
+                elif 'gradle' in config:
+                    build_tools.append('Gradle')
+                elif 'Makefile' in config:
+                    build_tools.append('Make')
+        
+        return list(set(build_tools))  # Remove duplicates
