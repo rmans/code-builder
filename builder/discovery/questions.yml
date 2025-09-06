@@ -2,6 +2,7 @@
 # This file defines the questions used during the interview phase of discovery
 
 questions:
+  # Basic Technical Questions
   - id: purpose
     question: "What is the primary purpose of this code?"
     type: "categorical"
@@ -53,6 +54,111 @@ questions:
     type: "categorical"
     options: ["comprehensive", "basic", "minimal", "none", "unknown"]
 
+  # Product Vision Questions
+  - id: product_vision
+    question: "What problem does this product solve?"
+    type: "text"
+    required: true
+    
+  - id: target_users
+    question: "Who are the target users of this product?"
+    type: "text"
+    required: true
+    
+  - id: main_idea
+    question: "What is the main idea for this product?"
+    type: "text"
+    required: true
+    
+  - id: key_features
+    question: "What are the key features of this product? (minimum 3)"
+    type: "text"
+    required: true
+    
+  - id: use_cases
+    question: "What are the primary use cases for this product? (minimum 1)"
+    type: "text"
+    required: true
+
+  # Current State Questions
+  - id: current_features
+    question: "Are there features I should know about that aren't obvious from the code?"
+    type: "text"
+    
+  - id: hidden_functionality
+    question: "What functionality exists that might not be visible in the current codebase?"
+    type: "text"
+    
+  - id: external_integrations
+    question: "What external services or APIs does this product integrate with?"
+    type: "text"
+    
+  - id: data_sources
+    question: "What are the main data sources for this product?"
+    type: "text"
+
+  # Roadmap and Planning Questions
+  - id: planned_features
+    question: "What features are planned next?"
+    type: "text"
+    
+  - id: major_refactoring
+    question: "Is any major refactoring planned?"
+    type: "categorical"
+    options: ["yes", "no", "maybe", "unknown"]
+    
+  - id: refactoring_details
+    question: "If refactoring is planned, what areas will be affected?"
+    type: "text"
+    
+  - id: timeline
+    question: "What is the expected timeline for the next major release?"
+    type: "categorical"
+    options: ["1-3 months", "3-6 months", "6-12 months", "12+ months", "unknown"]
+    
+  - id: priorities
+    question: "What are the current development priorities?"
+    type: "text"
+
+  # Team Preferences Questions
+  - id: coding_standards
+    question: "What coding standards or practices does the team follow?"
+    type: "text"
+    
+  - id: development_practices
+    question: "What development practices does the team use (CI/CD, testing, code review, etc.)?"
+    type: "text"
+    
+  - id: tech_stack_preferences
+    question: "What are the team's tech stack preferences?"
+    type: "text"
+    
+  - id: team_size
+    question: "What is the size of the development team?"
+    type: "categorical"
+    options: ["1-2", "3-5", "6-10", "11-20", "20+", "unknown"]
+    
+  - id: team_experience
+    question: "What is the team's experience level with the current tech stack?"
+    type: "categorical"
+    options: ["beginner", "intermediate", "advanced", "expert", "mixed", "unknown"]
+
+  # Project Status Questions
+  - id: project_initialized
+    question: "Has the new application been initialized yet and are we inside the project folder?"
+    type: "categorical"
+    options: ["yes", "no", "partially", "unknown"]
+    
+  - id: project_stage
+    question: "What stage is the project currently in?"
+    type: "categorical"
+    options: ["planning", "initial_development", "active_development", "testing", "deployment", "maintenance", "unknown"]
+    
+  - id: deployment_status
+    question: "What is the current deployment status?"
+    type: "categorical"
+    options: ["not_deployed", "development", "staging", "production", "unknown"]
+
 # Question categories for organization
 categories:
   basic:
@@ -70,9 +176,42 @@ categories:
     - performance
     - security
     - error_handling
+    
+  product_vision:
+    - product_vision
+    - target_users
+    - main_idea
+    - key_features
+    - use_cases
+    
+  current_state:
+    - current_features
+    - hidden_functionality
+    - external_integrations
+    - data_sources
+    
+  roadmap:
+    - planned_features
+    - major_refactoring
+    - refactoring_details
+    - timeline
+    - priorities
+    
+  team_preferences:
+    - coding_standards
+    - development_practices
+    - tech_stack_preferences
+    - team_size
+    - team_experience
+    
+  project_status:
+    - project_initialized
+    - project_stage
+    - deployment_status
 
 # Scoring weights for different question types
 scoring:
+  # Basic technical questions
   purpose: 1.0
   complexity: 1.5
   dependencies: 0.8
@@ -83,3 +222,35 @@ scoring:
   performance: 1.0
   security: 1.5
   error_handling: 1.2
+  
+  # Product vision questions (high priority for documentation)
+  product_vision: 2.0
+  target_users: 2.0
+  main_idea: 2.0
+  key_features: 1.8
+  use_cases: 1.8
+  
+  # Current state questions
+  current_features: 1.5
+  hidden_functionality: 1.3
+  external_integrations: 1.4
+  data_sources: 1.2
+  
+  # Roadmap questions
+  planned_features: 1.6
+  major_refactoring: 1.4
+  refactoring_details: 1.2
+  timeline: 1.3
+  priorities: 1.5
+  
+  # Team preferences
+  coding_standards: 1.3
+  development_practices: 1.2
+  tech_stack_preferences: 1.4
+  team_size: 0.8
+  team_experience: 1.1
+  
+  # Project status
+  project_initialized: 1.0
+  project_stage: 1.2
+  deployment_status: 1.1

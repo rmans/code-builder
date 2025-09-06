@@ -288,6 +288,7 @@ class DiscoveryInterview:
         for question in self.questions:
             question_id = question.get('id')
             question_text = question.get('question')
+            question_type = question.get('type', 'text')
             
             if question_id == 'purpose':
                 answers[question_id] = self._determine_purpose(target)
@@ -295,8 +296,58 @@ class DiscoveryInterview:
                 answers[question_id] = self._assess_complexity(target)
             elif question_id == 'dependencies':
                 answers[question_id] = len(self._find_dependencies(target)['imports'])
+            elif question_id == 'product_vision':
+                answers[question_id] = self._get_product_vision(target)
+            elif question_id == 'target_users':
+                answers[question_id] = self._get_target_users(target)
+            elif question_id == 'main_idea':
+                answers[question_id] = self._get_main_idea(target)
+            elif question_id == 'key_features':
+                answers[question_id] = self._get_key_features(target)
+            elif question_id == 'use_cases':
+                answers[question_id] = self._get_use_cases(target)
+            elif question_id == 'current_features':
+                answers[question_id] = self._get_current_features(target)
+            elif question_id == 'hidden_functionality':
+                answers[question_id] = self._get_hidden_functionality(target)
+            elif question_id == 'external_integrations':
+                answers[question_id] = self._get_external_integrations(target)
+            elif question_id == 'data_sources':
+                answers[question_id] = self._get_data_sources(target)
+            elif question_id == 'planned_features':
+                answers[question_id] = self._get_planned_features(target)
+            elif question_id == 'major_refactoring':
+                answers[question_id] = self._get_major_refactoring(target)
+            elif question_id == 'refactoring_details':
+                answers[question_id] = self._get_refactoring_details(target)
+            elif question_id == 'timeline':
+                answers[question_id] = self._get_timeline(target)
+            elif question_id == 'priorities':
+                answers[question_id] = self._get_priorities(target)
+            elif question_id == 'coding_standards':
+                answers[question_id] = self._get_coding_standards(target)
+            elif question_id == 'development_practices':
+                answers[question_id] = self._get_development_practices(target)
+            elif question_id == 'tech_stack_preferences':
+                answers[question_id] = self._get_tech_stack_preferences(target)
+            elif question_id == 'team_size':
+                answers[question_id] = self._get_team_size(target)
+            elif question_id == 'team_experience':
+                answers[question_id] = self._get_team_experience(target)
+            elif question_id == 'project_initialized':
+                answers[question_id] = self._get_project_initialized(target)
+            elif question_id == 'project_stage':
+                answers[question_id] = self._get_project_stage(target)
+            elif question_id == 'deployment_status':
+                answers[question_id] = self._get_deployment_status(target)
             else:
-                answers[question_id] = 'unknown'
+                # Default handling for unknown questions
+                if question_type == 'categorical':
+                    answers[question_id] = 'unknown'
+                elif question_type == 'numerical':
+                    answers[question_id] = 0
+                else:
+                    answers[question_id] = 'Not specified'
         
         return answers
     
@@ -336,13 +387,186 @@ class DiscoveryInterview:
                 return 'unknown'
         return 'unknown'
     
+    # Enhanced question methods
+    def _get_product_vision(self, target: Path) -> str:
+        """Get product vision from discovery context or infer from code."""
+        # This would typically come from discovery context
+        return "Product vision not specified - needs manual input"
+    
+    def _get_target_users(self, target: Path) -> str:
+        """Get target users from discovery context or infer from code."""
+        return "Target users not specified - needs manual input"
+    
+    def _get_main_idea(self, target: Path) -> str:
+        """Get main product idea from discovery context."""
+        return "Main product idea not specified - needs manual input"
+    
+    def _get_key_features(self, target: Path) -> str:
+        """Get key features from discovery context or infer from code."""
+        return "Key features not specified - needs manual input"
+    
+    def _get_use_cases(self, target: Path) -> str:
+        """Get use cases from discovery context."""
+        return "Use cases not specified - needs manual input"
+    
+    def _get_current_features(self, target: Path) -> str:
+        """Get current features that aren't obvious from code."""
+        return "Current features not documented - needs manual input"
+    
+    def _get_hidden_functionality(self, target: Path) -> str:
+        """Get hidden functionality not visible in codebase."""
+        return "Hidden functionality not documented - needs manual input"
+    
+    def _get_external_integrations(self, target: Path) -> str:
+        """Get external integrations from dependencies and code analysis."""
+        deps = self._find_dependencies(target)
+        integrations = []
+        
+        # Check for common integration patterns
+        if target.is_file():
+            try:
+                with open(target, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Look for API calls, database connections, etc.
+                if 'http' in content.lower() or 'api' in content.lower():
+                    integrations.append("HTTP/API integrations")
+                if 'database' in content.lower() or 'db' in content.lower():
+                    integrations.append("Database connections")
+                if 'auth' in content.lower() or 'login' in content.lower():
+                    integrations.append("Authentication services")
+                    
+            except UnicodeDecodeError:
+                pass
+        
+        return ", ".join(integrations) if integrations else "No external integrations detected"
+    
+    def _get_data_sources(self, target: Path) -> str:
+        """Get data sources from code analysis."""
+        return "Data sources not documented - needs manual input"
+    
+    def _get_planned_features(self, target: Path) -> str:
+        """Get planned features from discovery context."""
+        return "Planned features not specified - needs manual input"
+    
+    def _get_major_refactoring(self, target: Path) -> str:
+        """Check if major refactoring is planned."""
+        return "unknown"
+    
+    def _get_refactoring_details(self, target: Path) -> str:
+        """Get refactoring details if planned."""
+        return "Refactoring details not specified - needs manual input"
+    
+    def _get_timeline(self, target: Path) -> str:
+        """Get project timeline from discovery context."""
+        return "unknown"
+    
+    def _get_priorities(self, target: Path) -> str:
+        """Get current development priorities."""
+        return "Development priorities not specified - needs manual input"
+    
+    def _get_coding_standards(self, target: Path) -> str:
+        """Get coding standards from project files."""
+        # Look for linting configs, style guides, etc.
+        standards = []
+        
+        if target.is_dir():
+            # Check for common config files
+            config_files = [
+                'eslint.config.js', '.eslintrc', 'tsconfig.json',
+                'prettier.config.js', '.prettierrc', 'pyproject.toml',
+                'setup.cfg', '.flake8', 'pylintrc'
+            ]
+            
+            for config_file in config_files:
+                if (target / config_file).exists():
+                    standards.append(config_file)
+        
+        return ", ".join(standards) if standards else "Coding standards not explicitly configured"
+    
+    def _get_development_practices(self, target: Path) -> str:
+        """Get development practices from project files."""
+        practices = []
+        
+        if target.is_dir():
+            # Check for CI/CD, testing, etc.
+            if (target / '.github').exists():
+                practices.append("GitHub Actions CI/CD")
+            if (target / 'test').exists() or (target / 'tests').exists():
+                practices.append("Unit testing")
+            if (target / 'docs').exists():
+                practices.append("Documentation")
+            if (target / '.git').exists():
+                practices.append("Version control")
+        
+        return ", ".join(practices) if practices else "Development practices not explicitly configured"
+    
+    def _get_tech_stack_preferences(self, target: Path) -> str:
+        """Get tech stack preferences from project files."""
+        stack = []
+        
+        if target.is_dir():
+            # Check for package files
+            if (target / 'package.json').exists():
+                stack.append("Node.js/JavaScript")
+            if (target / 'requirements.txt').exists() or (target / 'pyproject.toml').exists():
+                stack.append("Python")
+            if (target / 'Cargo.toml').exists():
+                stack.append("Rust")
+            if (target / 'go.mod').exists():
+                stack.append("Go")
+            if (target / 'pom.xml').exists():
+                stack.append("Java")
+        
+        return ", ".join(stack) if stack else "Tech stack preferences not specified"
+    
+    def _get_team_size(self, target: Path) -> str:
+        """Get team size from discovery context."""
+        return "unknown"
+    
+    def _get_team_experience(self, target: Path) -> str:
+        """Get team experience level."""
+        return "unknown"
+    
+    def _get_project_initialized(self, target: Path) -> str:
+        """Check if project is initialized."""
+        if target.is_dir():
+            # Check for common project files
+            project_files = ['package.json', 'requirements.txt', 'Cargo.toml', 'go.mod', 'pom.xml']
+            if any((target / f).exists() for f in project_files):
+                return "yes"
+        return "unknown"
+    
+    def _get_project_stage(self, target: Path) -> str:
+        """Get project stage from discovery context."""
+        return "unknown"
+    
+    def _get_deployment_status(self, target: Path) -> str:
+        """Get deployment status from discovery context."""
+        return "unknown"
+    
     def _load_questions(self) -> List[Dict[str, str]]:
         """Load discovery questions from configuration."""
-        # Default questions - in real implementation, load from questions.yml
+        try:
+            import yaml
+            questions_file = Path(__file__).parent / "questions.yml"
+            if questions_file.exists():
+                with open(questions_file, 'r') as f:
+                    config = yaml.safe_load(f)
+                return config.get('questions', [])
+        except Exception:
+            pass
+        
+        # Fallback to default questions
         return [
             {'id': 'purpose', 'question': 'What is the purpose of this code?'},
             {'id': 'complexity', 'question': 'How complex is this code?'},
-            {'id': 'dependencies', 'question': 'How many dependencies does this have?'}
+            {'id': 'dependencies', 'question': 'How many dependencies does this have?'},
+            {'id': 'product_vision', 'question': 'What problem does this product solve?'},
+            {'id': 'target_users', 'question': 'Who are the target users of this product?'},
+            {'id': 'main_idea', 'question': 'What is the main idea for this product?'},
+            {'id': 'key_features', 'question': 'What are the key features of this product?'},
+            {'id': 'use_cases', 'question': 'What are the primary use cases for this product?'}
         ]
     
     def _load_patterns(self) -> List[Dict[str, str]]:
