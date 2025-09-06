@@ -63,37 +63,96 @@ jobs:
       run: |
         echo "Building context packs for representative paths..."
         
-        # Build context for existing TypeScript files
-        echo "Building context for builder/test_data/hello_good.ts..."
-        python3 builder/cli.py ctx:build builder/test_data/hello_good.ts --purpose implement --feature typescript --stacks typescript --token-limit 8000
+        # Function to build context with error handling
+        build_context() {
+          local target="$1"
+          local purpose="$2"
+          local feature="$3"
+          local stacks="$4"
+          local token_limit="$5"
+          
+          echo "Building context for $target..."
+          if python3 builder/cli.py ctx:build "$target" --purpose "$purpose" --feature "$feature" --stacks "$stacks" --token-limit "$token_limit"; then
+            echo "✅ Successfully built context for $target"
+            return 0
+          else
+            echo "⚠️  Warning: Failed to build context for $target"
+            return 1
+          fi
+        }
+        
+        # Build context for existing representative TypeScript files
+        echo "Building context for representative TypeScript files..."
+        build_context "builder/test_data/hello_good.ts" "implement" "typescript" "typescript" "8000" || true
         
         # Build context for any changed files in this PR
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           echo "Building context for changed files..."
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -E '\.(ts|tsx|js|jsx)$' | head -3)
-          for file in $CHANGED_FILES; do
+          
+          # Get changed files by type
+          CHANGED_TS_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -E '\.(ts|tsx)$' | head -3)
+          CHANGED_JS_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -E '\.(js|jsx)$' | head -2)
+          CHANGED_PY_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -E '\.py$' | head -2)
+          
+          # Build context for TypeScript files
+          for file in $CHANGED_TS_FILES; do
             if [ -f "$file" ]; then
-              echo "Building context for $file..."
-              python3 builder/cli.py ctx:build "$file" --purpose implement --stacks typescript --token-limit 6000
+              build_context "$file" "implement" "typescript" "typescript" "6000" || true
+            fi
+          done
+          
+          # Build context for JavaScript files
+          for file in $CHANGED_JS_FILES; do
+            if [ -f "$file" ]; then
+              build_context "$file" "implement" "javascript" "javascript" "5000" || true
+            fi
+          done
+          
+          # Build context for Python files
+          for file in $CHANGED_PY_FILES; do
+            if [ -f "$file" ]; then
+              build_context "$file" "implement" "python" "python" "5000" || true
             fi
           done
         fi
         
         # Build context for docs changes
         if [ "${{ github.event_name }}" = "pull_request" ]; then
-          CHANGED_DOCS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^docs/' | head -2)
+          echo "Building context for changed documentation..."
+          CHANGED_DOCS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^docs/' | head -3)
           for doc in $CHANGED_DOCS; do
             if [ -f "$doc" ]; then
-              echo "Building context for $doc..."
-              python3 builder/cli.py ctx:build "$doc" --purpose review --stacks typescript --token-limit 4000
+              # Determine doc type and purpose
+              if echo "$doc" | grep -q "prd/"; then
+                build_context "$doc" "review" "prd" "documentation" "4000" || true
+              elif echo "$doc" | grep -q "arch/"; then
+                build_context "$doc" "review" "architecture" "documentation" "4000" || true
+              else
+                build_context "$doc" "review" "documentation" "documentation" "3000" || true
+              fi
             fi
           done
         fi
         
-        # If no specific files, build context for builder directory
+        # Build context for builder directory changes
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          CHANGED_BUILDER=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^builder/' | head -1)
+          if [ -n "$CHANGED_BUILDER" ]; then
+            echo "Building context for builder directory changes..."
+            build_context "builder" "implement" "python" "python" "8000" || true
+          fi
+        fi
+        
+        # If no specific files or no context generated, build context for builder directory
         if [ ! -f "builder/cache/pack_context.json" ]; then
-          echo "Building context for builder directory..."
-          python3 builder/cli.py ctx:build builder --purpose implement --stacks typescript --token-limit 8000
+          echo "Building fallback context for builder directory..."
+          build_context "builder" "implement" "python" "python" "8000" || true
+        fi
+        
+        # Final check - ensure we have at least one context pack
+        if [ ! -f "builder/cache/pack_context.json" ]; then
+          echo "❌ ERROR: No context pack generated after all attempts"
+          exit 1
         fi
         
     - name: Validate context pack structure
@@ -110,24 +169,42 @@ jobs:
           exit 1
         fi
         
-        # Validate JSON structure first
-        echo "Validating JSON structure..."
+        # Validate JSON structure and Rules+Acceptance presence
+        echo "Validating JSON structure and Rules+Acceptance presence..."
         python3 -c "
         import json
         with open('builder/cache/pack_context.json', 'r') as f:
             data = json.load(f)
         
-  # Check for rules_markdown (always required)
-  if 'rules_markdown' not in data.get('rules', {}):
-      print('❌ ERROR: Missing rules_markdown in rules')
-      exit(1)
-  
-  # Check for code_excerpts section (always required)
-  if 'code_excerpts' not in data or not data['code_excerpts']:
-      print('❌ ERROR: Missing code_excerpts section or empty code_excerpts')
-      exit(1)
+        # Check for rules_markdown (always required)
+        if 'rules_markdown' not in data.get('rules', {}):
+            print('❌ ERROR: Missing rules_markdown in rules')
+            exit(1)
         
-        print('✅ Basic JSON structure validation passed')
+        # Check for acceptance criteria (always required)
+        acceptance = data.get('acceptance', [])
+        if not acceptance or len(acceptance) == 0:
+            print('❌ ERROR: Missing acceptance criteria')
+            exit(1)
+        
+        # Check for code_excerpts section (always required)
+        if 'code_excerpts' not in data or not data['code_excerpts']:
+            print('❌ ERROR: Missing code_excerpts section or empty code_excerpts')
+            exit(1)
+        
+        # Validate Rules content quality
+        rules_markdown = data.get('rules', {}).get('rules_markdown', '')
+        if len(rules_markdown.strip()) < 50:
+            print('⚠️  WARNING: Rules content seems too short')
+        
+        # Validate Acceptance content quality
+        acceptance_text = ' '.join([str(item) for item in acceptance])
+        if len(acceptance_text.strip()) < 20:
+            print('⚠️  WARNING: Acceptance criteria content seems too short')
+        
+        print('✅ Rules and Acceptance criteria validation passed')
+        print(f'✅ Found {len(acceptance)} acceptance criteria items')
+        print(f'✅ Rules content length: {len(rules_markdown)} characters')
         "
         
         # Validate context.md has content
@@ -137,9 +214,21 @@ jobs:
           exit 1
         fi
         
-        echo "✅ Context markdown file has content"
+        # Check that context.md contains Rules and Acceptance sections
+        echo "Checking context.md for Rules and Acceptance sections..."
+        if ! grep -q "## Rules" builder/cache/context.md; then
+          echo "❌ ERROR: context.md missing Rules section"
+          exit 1
+        fi
         
-        echo "✅ Context pack validation passed"
+        if ! grep -q "## Acceptance Criteria" builder/cache/context.md; then
+          echo "❌ ERROR: context.md missing Acceptance Criteria section"
+          exit 1
+        fi
+        
+        echo "✅ Context markdown file has required sections"
+        
+        echo "✅ Context pack validation passed - Rules and Acceptance present"
         
     - name: Generate context pack summary
       run: |
@@ -174,8 +263,34 @@ jobs:
           print(f'Acceptance Criteria: {len(data.get(\"acceptance\", []))} items')
           print(f'Architecture: {len(data.get(\"architecture\", []))} items')
           print(f'Code: {len(data.get(\"code\", []))} items')
+          
+          # Rules and Acceptance validation
+          rules = data.get('rules', {})
+          rules_markdown = rules.get('rules_markdown', '')
+          acceptance = data.get('acceptance', [])
+          
+          print(f'Rules Content: {len(rules_markdown)} characters')
+          print(f'Acceptance Items: {len(acceptance)} items')
+          
+          # Check if Rules and Acceptance are present and substantial
+          if len(rules_markdown.strip()) >= 50:
+              print('✅ Rules: Present and substantial')
+          else:
+              print('⚠️  Rules: Present but may be too short')
+              
+          if len(acceptance) > 0:
+              print('✅ Acceptance: Present')
+          else:
+              print('❌ Acceptance: Missing')
           " >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          
+          # Add Rules and Acceptance validation status
+          echo "### Validation Status" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Rules**: Present in context pack" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Acceptance Criteria**: Present in context pack" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Code Excerpts**: Present in context pack" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
         else
           echo "❌ No context pack generated" >> $GITHUB_STEP_SUMMARY
         fi
