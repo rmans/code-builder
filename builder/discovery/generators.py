@@ -585,24 +585,46 @@ class DiscoveryGenerators:
         frameworks = detected.get('frameworks', [])
         test_runners = detected.get('test_runners', [])
         
-        # Generate PRD content
-        content = f"""# Product Requirements Document: {product_name}
+        # Generate PRD content with YAML front-matter
+        content = f"""---
+type: prd
+id: {prd_id}
+title: {product_name}
+status: draft
+owner: product_team
+created: {datetime.now().strftime('%Y-%m-%d')}
+links:
+  prd: {prd_id}
+  adr: []
+  arch: []
+  exec: []
+  impl: []
+  integrations: []
+  tasks: []
+  ux: []
+---
+
+# Product Requirements Document: {product_name}
 
 **PRD ID:** {prd_id}  
 **Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
 **Status:** Draft
 
-## Executive Summary
-
-{main_idea}
-
-## Problem Statement
+## Problem
 
 {problem_solved}
 
-## Target Users
+## Goals
+
+{main_idea}
+
+## Requirements
 
 {target_users}
+
+## Metrics
+
+{success_metrics}
 
 ## Key Features
 

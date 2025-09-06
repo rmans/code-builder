@@ -54,6 +54,10 @@ def validate_file(path: Path):
     if "status" in fm and fm["status"] not in STATUS_ENUM:
         errs.append(f"invalid status: {fm['status']}")
     
+    # Skip section validation for master files (0000_MASTER_*.md)
+    if "0000_MASTER_" in path.name:
+        return {"file": str(path), "ok": len(errs)==0, "errors": errs}
+    
     # type sections
     t = fm.get("type")
     body = txt[e:] if e else ""

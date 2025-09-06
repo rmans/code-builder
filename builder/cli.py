@@ -55,6 +55,86 @@ def _update_master_file(doc_type, doc_id, title, status="draft", domain=""):
     except Exception as e:
         click.echo(f"Warning: Could not update {master_file}: {e}")
 
+def _fix_master_file_frontmatter(master_file_path, doc_type):
+    """Fix master file front-matter to include all required keys"""
+    from datetime import datetime
+    try:
+        with open(master_file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        # Check if file has front-matter
+        if not content.startswith("---"):
+            # Add front-matter if missing
+            front_matter = f"""---
+type: {doc_type}
+id: {doc_type.upper()}-0000
+title: Master {doc_type.upper()} Index
+status: accepted
+owner: system
+created: {datetime.now().strftime('%Y-%m-%d')}
+links:
+  prd: []
+  adr: []
+  arch: []
+  exec: []
+  impl: []
+  integrations: []
+  tasks: []
+  ux: []
+---
+
+"""
+            content = front_matter + content
+        
+        # Parse existing front-matter
+        import re
+        import yaml
+        
+        match = re.search(r'^---\n(.*?)\n---\n', content, flags=re.S)
+        if match:
+            try:
+                fm_data = yaml.safe_load(match.group(1)) or {}
+            except Exception:
+                fm_data = {}
+            
+            # Ensure all required keys are present
+            required_keys = {
+                'type': doc_type,
+                'id': f"{doc_type.upper()}-0000",
+                'title': f"Master {doc_type.upper()} Index",
+                'status': 'accepted',
+                'owner': 'system',
+                'created': datetime.now().strftime('%Y-%m-%d'),
+                'links': {
+                    'prd': [],
+                    'adr': [],
+                    'arch': [],
+                    'exec': [],
+                    'impl': [],
+                    'integrations': [],
+                    'tasks': [],
+                    'ux': []
+                }
+            }
+            
+            # Update missing keys
+            for key, value in required_keys.items():
+                if key not in fm_data:
+                    fm_data[key] = value
+            
+            # Rebuild front-matter
+            new_fm = yaml.dump(fm_data, default_flow_style=False, sort_keys=False)
+            new_content = f"---\n{new_fm}---\n" + content[match.end():]
+            
+            # Write back to file
+            with open(master_file_path, "w", encoding="utf-8") as f:
+                f.write(new_content)
+            
+            click.echo(f"Fixed front-matter for {master_file_path}")
+            
+    except Exception as e:
+        click.echo(f"Warning: Could not fix {master_file_path}: {e}")
+
 def _extract_target_from_prd(prd_file) -> str:
     """Extract target path from PRD content"""
     try:
@@ -2429,6 +2509,30 @@ def doc_check(output, fail_fast):
     ROOT = os.path.dirname(os.path.dirname(__file__))
     rc = subprocess.call([sys.executable, os.path.join(ROOT,"builder","evaluators","doc_schema.py")])
     sys.exit(rc)
+
+@cli.command("doc:fix-master")
+def doc_fix_master():
+    """Fix master files to include proper front-matter for doc:check compliance"""
+    master_files = {
+        'prd': 'docs/prd/0000_MASTER_PRD.md',
+        'arch': 'docs/arch/0000_MASTER_ARCH.md', 
+        'exec': 'docs/exec/0000_MASTER_EXEC.md',
+        'impl': 'docs/impl/0000_MASTER_IMPL.md',
+        'integrations': 'docs/integrations/0000_MASTER_INTEGRATIONS.md',
+        'tasks': 'docs/tasks/0000_MASTER_TASKS.md',
+        'ux': 'docs/ux/0000_MASTER_UX.md',
+        'adr': 'docs/adrs/0000_MASTER_ADR.md'
+    }
+    
+    click.echo("🔧 Fixing master files front-matter...")
+    
+    for doc_type, master_file in master_files.items():
+        if os.path.exists(master_file):
+            _fix_master_file_frontmatter(master_file, doc_type)
+        else:
+            click.echo(f"⚠️  Master file not found: {master_file}")
+    
+    click.echo("✅ Master files fixed!")
 
 # -------------------- CONTEXT GRAPH --------------------
 @cli.command("context:scan")
