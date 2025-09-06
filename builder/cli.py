@@ -4187,8 +4187,8 @@ def ctx_select(target_path, feature, top_k, output):
         click.echo(summary)
         
         # Show statistics
-        total_items = sum(len(items) for items in context.values())
-        click.echo(f"\n📊 Selected {total_items} context items across {len(context)} types")
+        total_items = len(context)
+        click.echo(f"\n📊 Selected {total_items} context items")
         
     except Exception as e:
         click.echo(f"❌ Error: {e}")
@@ -4979,7 +4979,7 @@ def discover_regenerate(batch, reports, docs, diagrams, all, input, output_dir):
         
         # Generate outputs
         target_path = Path(analysis_data.get('target', 'unknown'))
-        generation_data = generators.generate(synthesis_data, target_path)
+        generation_data, warnings, prd_id = generators.generate(synthesis_data, target_path)
         
         # Save generated outputs
         generated_files = []
