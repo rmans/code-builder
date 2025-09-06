@@ -518,6 +518,9 @@ class DiscoveryGenerators:
             
             prd_artifacts[f"{prd_id}.md"] = prd_content
             
+            # Update master PRD file
+            self._update_master_prd_file(prd_id, synthesis_data)
+            
             # Note: ADR linking is handled by the existing master ADR system
             # No need to create separate ADR-link files
             
@@ -526,6 +529,27 @@ class DiscoveryGenerators:
             prd_artifacts['error'] = f"Failed to generate PRD documentation: {e}"
         
         return prd_artifacts
+    
+    def _update_master_prd_file(self, prd_id: str, synthesis_data: Dict[str, Any]) -> None:
+        """Update the master PRD file with the new PRD entry."""
+        master_file = Path('docs/prd/0000_MASTER_PRD.md')
+        if not master_file.exists():
+            return
+        
+        # Extract title from synthesis data
+        questions = synthesis_data.get('questions', {})
+        title = questions.get('product_name', 'Unknown Product')
+        
+        # Create the new row
+        row = f"| {prd_id} | {title} | draft |  | ./{prd_id}.md |\n"
+        
+        # Append to master file
+        try:
+            with open(master_file, 'a', encoding='utf-8') as f:
+                f.write(row)
+        except OSError as e:
+            # Silently fail for master file updates
+            pass
     
     def _generate_prd_content(self, synthesis_data: Dict[str, Any], prd_id: str) -> str:
         """Generate PRD content.

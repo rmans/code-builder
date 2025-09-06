@@ -18,6 +18,32 @@ def _render(path, ctx):
     with open(path, "r", encoding="utf-8") as f:
         return Template(f.read()).render(**ctx)
 
+def _update_master_file(doc_type, doc_id, title, status="draft", domain=""):
+    """Update the master index file for a document type"""
+    master_files = {
+        'prd': 'docs/prd/0000_MASTER_PRD.md',
+        'arch': 'docs/arch/0000_MASTER_ARCH.md', 
+        'exec': 'docs/exec/0000_MASTER_EXEC.md',
+        'impl': 'docs/impl/0000_MASTER_IMPL.md',
+        'integrations': 'docs/integrations/0000_MASTER_INTEGRATIONS.md',
+        'tasks': 'docs/tasks/0000_MASTER_TASKS.md'
+    }
+    
+    master_file = master_files.get(doc_type)
+    if not master_file or not os.path.exists(master_file):
+        return
+    
+    # Create the new row
+    row = f"| {doc_id} | {title} | {status} | {domain} | ./{doc_id}.md |\n"
+    
+    # Append to master file
+    try:
+        with open(master_file, "a", encoding="utf-8") as f:
+            f.write(row)
+        click.echo(f"Updated {master_file}")
+    except Exception as e:
+        click.echo(f"Warning: Could not update {master_file}: {e}")
+
 @click.group()
 def cli():
     """Code Builder CLI"""
@@ -760,6 +786,10 @@ def doc_new(dtype, title, owner, links, prd, arch, adr, impl, exec_, ux):
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(content)
         click.echo(f"Created {output_path}")
+        
+        # Update master file
+        _update_master_file(dtype, doc_id, title, "draft", "")
+        
     except Exception as e:
         click.echo(f"Error writing file: {e}")
         raise SystemExit(1)
