@@ -1,6 +1,6 @@
 ---
 description: Implementation quality and reliability standards
-globs: builder/**/*.py,src/**/*.ts,test/**/*.ts
+globs: builder/**/*.py,src/**/*.ts,tests/**/*.ts
 alwaysApply: true
 ---
 # Implementation Rules

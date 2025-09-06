@@ -1,6 +1,6 @@
 ---
 description: Global defaults that apply everywhere
-globs: src/**/*,test/**/*
+globs: src/**/*,tests/**/*
 alwaysApply: true
 ---
 # Global Rules

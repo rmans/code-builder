@@ -1,12 +1,18 @@
 {
   "forbiddenPatterns": [
     { "pattern": "localStorage\\.(setItem|getItem)\\(", "message": "Do not store tokens in localStorage/sessionStorage" },
-    { "pattern": "throw\\s*['\"`]", "message": "Do not throw string literals; use Error or subclass" }
+    { "pattern": "throw\\s*['\"`]", "message": "Do not throw string literals; use Error or subclass" },
+    { "pattern": "\\.test\\.(ts|js|tsx|jsx)$", "message": "Test files must be in tests/ directory, not in src/ or root" },
+    { "pattern": "\\.spec\\.(ts|js|tsx|jsx)$", "message": "Spec files must be in tests/ directory, not in src/ or root" },
+    { "pattern": "test.*\\.(json|md|txt)$", "message": "Test artifacts must be in tests/data/ or tests/results/, not in root or src/" }
   ],
   "hints": [
     { "pattern": "axios\\.create\\(", "message": "Use shared http client instead of axios.create()" },
     { "pattern": "fetch\\(", "message": "Prefer shared http client (src/utils/http.ts)" },
     { "pattern": "\\nimport\\s+(requests|flask|click|yaml|jinja2|pydantic|python_dotenv)\\s*\\n", "message": "Python import detected - verify dependency is in requirements.txt and installed in .venv" },
-    { "pattern": "\\nimport\\s+\\w+", "message": "Python import: 1) Add to requirements.txt 2) Run 'source .venv/bin/activate && pip install -r requirements.txt' 3) Verify with 'python -c \"import <module>\"'" }
+    { "pattern": "\\nimport\\s+\\w+", "message": "Python import: 1) Add to requirements.txt 2) Run 'source .venv/bin/activate && pip install -r requirements.txt' 3) Verify with 'python -c \"import <module>\"'" },
+    { "pattern": "test.*\\.(ts|js|tsx|jsx)", "message": "Test files should be created in tests/data/ directory" },
+    { "pattern": ".*response.*\\.json", "message": "Test response files should go in tests/data/ directory" },
+    { "pattern": ".*report.*\\.(md|json|txt)", "message": "Test reports should go in tests/results/ directory" }
   ]
 }
