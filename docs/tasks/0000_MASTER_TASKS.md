@@ -24,7 +24,4 @@ links:
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| TASKS-2025-09-06-test-task-with-jinja | Test Task with Jinja2 Template | draft |  | ./TASKS-2025-09-06-test-task-with-jinja.md |
-| TASKS-2025-09-06-test-updated-jinja2- | Test Updated Jinja2 Template | draft |  | ./TASKS-2025-09-06-test-updated-jinja2-.md |
-| TASKS-2025-09-06-test-refactored-temp | Test Refactored Template | draft |  | ./TASKS-2025-09-06-test-refactored-temp.md |
-| TASKS-2025-09-06-cleanup-test | Cleanup Test | draft |  | ./TASKS-2025-09-06-cleanup-test.md |
+| *No documents currently defined* |  |  |  |  |

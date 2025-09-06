@@ -24,7 +24,4 @@ links:
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| *No PRDs currently defined* |  |  |  |  |
-| PRD-2025-09-06-test-abc-prd | Test ABC PRD | draft |  | ./PRD-2025-09-06-test-abc-prd.md |
-| PRD-2025-09-06-test-clean-prd | Test Clean PRD | draft |  | ./PRD-2025-09-06-test-clean-prd.md |
-| PRD-2025-09-06-test-system-abc | Test System ABC | draft |  | ./PRD-2025-09-06-test-system-abc.md |
+| *No documents currently defined* |  |  |  |  |

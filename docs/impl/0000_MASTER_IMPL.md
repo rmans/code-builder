@@ -24,4 +24,4 @@ links:
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| *No Implementation documents currently defined* |  |  |  |  |
+| *No documents currently defined* |  |  |  |  |

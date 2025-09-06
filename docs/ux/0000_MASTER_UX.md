@@ -24,5 +24,4 @@ links:
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| *No UX documents currently defined* |  |  |  |  |
-| UX-2025-09-06-test-regular-ux | Test Regular UX | draft |  | ./UX-2025-09-06-test-regular-ux.md |
+| *No documents currently defined* |  |  |  |  |

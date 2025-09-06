@@ -6873,5 +6873,225 @@ def discover_regenerate(batch, reports, docs, diagrams, all, input, output_dir):
         raise SystemExit(1)
 
 
+@cli.command("master:sync")
+@click.option("--type", help="Sync specific document type (prd, adr, arch, exec, impl, integrations, tasks, ux)")
+@click.option("--cleanup-refs", is_flag=True, help="Clean up cross-references when documents are deleted")
+@click.option("--dry-run", is_flag=True, help="Show what would be updated without making changes")
+def master_sync(type, cleanup_refs, dry_run):
+    """Synchronize master index files with their associated documents."""
+    try:
+        import sys
+        import os
+        from pathlib import Path
+        import yaml
+        import re
+        from datetime import datetime
+        
+        # Add the builder directory to the path
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        
+        # Document type mappings
+        doc_types = {
+            'prd': {'dir': 'docs/prd', 'prefix': 'PRD-', 'master': '0000_MASTER_PRD.md'},
+            'adr': {'dir': 'docs/adrs', 'prefix': 'ADR-', 'master': '0000_MASTER_ADR.md'},
+            'arch': {'dir': 'docs/arch', 'prefix': 'ARCH-', 'master': '0000_MASTER_ARCH.md'},
+            'exec': {'dir': 'docs/exec', 'prefix': 'EXEC-', 'master': '0000_MASTER_EXEC.md'},
+            'impl': {'dir': 'docs/impl', 'prefix': 'IMPL-', 'master': '0000_MASTER_IMPL.md'},
+            'integrations': {'dir': 'docs/integrations', 'prefix': 'INTEGRATIONS-', 'master': '0000_MASTER_INTEGRATIONS.md'},
+            'tasks': {'dir': 'docs/tasks', 'prefix': 'TASK-', 'master': '0000_MASTER_TASKS.md'},
+            'ux': {'dir': 'docs/ux', 'prefix': 'UX-', 'master': '0000_MASTER_UX.md'}
+        }
+        
+        # Determine which types to sync
+        types_to_sync = [type] if type else list(doc_types.keys())
+        
+        if type and type not in doc_types:
+            click.echo(f"❌ Unknown document type: {type}")
+            click.echo(f"Available types: {', '.join(doc_types.keys())}")
+            raise SystemExit(1)
+        
+        total_updated = 0
+        
+        for doc_type in types_to_sync:
+            config = doc_types[doc_type]
+            docs_dir = Path(config['dir'])
+            master_file = docs_dir / config['master']
+            prefix = config['prefix']
+            
+            if not docs_dir.exists():
+                click.echo(f"⚠️  Directory {docs_dir} does not exist, skipping {doc_type}")
+                continue
+                
+            if not master_file.exists():
+                click.echo(f"⚠️  Master file {master_file} does not exist, skipping {doc_type}")
+                continue
+            
+            click.echo(f"🔄 Syncing {doc_type.upper()} master file...")
+            
+            # Find all documents of this type
+            doc_files = []
+            for file_path in docs_dir.glob(f"{prefix}*.md"):
+                if file_path.name != config['master']:  # Skip the master file itself
+                    try:
+                        # Read front matter
+                        content = file_path.read_text(encoding='utf-8')
+                        front_matter = {}
+                        if content.startswith('---\n'):
+                            end_marker = content.find('\n---\n', 4)
+                            if end_marker != -1:
+                                yaml_content = content[4:end_marker]
+                                front_matter = yaml.safe_load(yaml_content) or {}
+                        
+                        # Extract document info
+                        doc_id = front_matter.get('id', file_path.stem)
+                        title = front_matter.get('title', file_path.stem.replace(f'{prefix}', '').replace('-', ' ').title())
+                        status = front_matter.get('status', 'draft')
+                        domain = front_matter.get('domain', '')
+                        
+                        doc_files.append({
+                            'id': doc_id,
+                            'title': title,
+                            'status': status,
+                            'domain': domain,
+                            'file': file_path.name,
+                            'path': str(file_path.relative_to(docs_dir))
+                        })
+                    except Exception as e:
+                        click.echo(f"⚠️  Error reading {file_path}: {e}")
+                        continue
+            
+            # Sort by ID
+            doc_files.sort(key=lambda x: x['id'])
+            
+            if dry_run:
+                click.echo(f"📋 Would update {doc_type.upper()} master with {len(doc_files)} documents:")
+                for doc in doc_files:
+                    click.echo(f"   • {doc['id']}: {doc['title']} ({doc['status']})")
+                continue
+            
+            # Read current master file
+            master_content = master_file.read_text(encoding='utf-8')
+            
+            # Update the table section
+            table_start = master_content.find('| ID | Title | Status | Domain | Link |')
+            if table_start == -1:
+                click.echo(f"⚠️  Could not find table in {master_file}")
+                continue
+                
+            table_end = master_content.find('\n\n', table_start)
+            if table_end == -1:
+                table_end = len(master_content)
+            
+            # Build new table
+            if doc_files:
+                table_rows = ['| ID | Title | Status | Domain | Link |', '|---|---|---|---|---|']
+                for doc in doc_files:
+                    table_rows.append(f"| {doc['id']} | {doc['title']} | {doc['status']} | {doc['domain']} | ./{doc['file']} |")
+            else:
+                table_rows = ['| ID | Title | Status | Domain | Link |', '|---|---|---|---|---|', '| *No documents currently defined* |  |  |  |  |']
+            
+            new_table = '\n'.join(table_rows)
+            
+            # Replace table in content
+            new_content = master_content[:table_start] + new_table + master_content[table_end:]
+            
+            # Write updated master file
+            master_file.write_text(new_content, encoding='utf-8')
+            click.echo(f"✅ Updated {doc_type.upper()} master with {len(doc_files)} documents")
+            total_updated += 1
+        
+        if cleanup_refs:
+            click.echo(f"\n🧹 Cleaning up cross-references...")
+            _cleanup_cross_references(doc_types, dry_run)
+        
+        if not dry_run:
+            click.echo(f"\n🎉 Successfully synced {total_updated} master files")
+        else:
+            click.echo(f"\n📋 Dry run completed - would sync {total_updated} master files")
+            
+    except Exception as e:
+        click.echo(f"❌ Error during master sync: {e}")
+        raise SystemExit(1)
+
+
+def _cleanup_cross_references(doc_types, dry_run=False):
+    """Clean up cross-references when documents are deleted."""
+    try:
+        from pathlib import Path
+        import yaml
+        import re
+        
+        # Get all existing document IDs
+        existing_ids = set()
+        for doc_type, config in doc_types.items():
+            docs_dir = Path(config['dir'])
+            if docs_dir.exists():
+                for file_path in docs_dir.glob(f"{config['prefix']}*.md"):
+                    if file_path.name != config['master']:
+                        try:
+                            content = file_path.read_text(encoding='utf-8')
+                            if content.startswith('---\n'):
+                                end_marker = content.find('\n---\n', 4)
+                                if end_marker != -1:
+                                    yaml_content = content[4:end_marker]
+                                    front_matter = yaml.safe_load(yaml_content) or {}
+                                    doc_id = front_matter.get('id', file_path.stem)
+                                    existing_ids.add(doc_id)
+                        except Exception:
+                            continue
+        
+        # Clean up references in all documents
+        cleaned_count = 0
+        for doc_type, config in doc_types.items():
+            docs_dir = Path(config['dir'])
+            if not docs_dir.exists():
+                continue
+                
+            for file_path in docs_dir.glob("*.md"):
+                try:
+                    content = file_path.read_text(encoding='utf-8')
+                    original_content = content
+                    
+                    # Parse front matter
+                    if content.startswith('---\n'):
+                        end_marker = content.find('\n---\n', 4)
+                        if end_marker != -1:
+                            yaml_content = content[4:end_marker]
+                            front_matter = yaml.safe_load(yaml_content) or {}
+                            
+                            # Clean up links section
+                            if 'links' in front_matter:
+                                for link_type, links in front_matter['links'].items():
+                                    if isinstance(links, list):
+                                        # Remove references to non-existent documents
+                                        original_links = links.copy()
+                                        front_matter['links'][link_type] = [
+                                            link for link in links 
+                                            if link in existing_ids or not link.startswith(('PRD-', 'ADR-', 'ARCH-', 'EXEC-', 'IMPL-', 'INTEGRATIONS-', 'TASK-', 'UX-'))
+                                        ]
+                                        
+                                        if front_matter['links'][link_type] != original_links:
+                                            cleaned_count += 1
+                            
+                            # Rebuild content
+                            new_yaml = yaml.dump(front_matter, default_flow_style=False, sort_keys=False)
+                            new_content = f"---\n{new_yaml}---\n{content[end_marker + 5:]}"
+                            
+                            if new_content != original_content and not dry_run:
+                                file_path.write_text(new_content, encoding='utf-8')
+                                
+                except Exception as e:
+                    continue
+        
+        if dry_run:
+            click.echo(f"📋 Would clean up references in {cleaned_count} files")
+        else:
+            click.echo(f"✅ Cleaned up references in {cleaned_count} files")
+            
+    except Exception as e:
+        click.echo(f"⚠️  Error during cross-reference cleanup: {e}")
+
+
 if __name__ == "__main__":
     cli()

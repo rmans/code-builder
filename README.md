@@ -28,6 +28,7 @@ It combines **ADRs (Architecture Decision Records)**, **context generation**, **
 - **Multi-agent support**: Better task orchestration and agent management capabilities
 - **Cache management**: Added cleanup commands for agent sessions and workspaces
 - **Documentation updates**: Improved templates and documentation structure
+- **Master file synchronization**: Automated sync of 0000_MASTER_*.md files with cross-reference cleanup
 
 ---
 
@@ -169,6 +170,43 @@ python3 builder/cli.py ctx:graph:stats
 - **`pack_context.json`**: Structured context data with rules, acceptance criteria, ADRs, and code
 - **`context.md`**: Human-readable context summary
 - **Prompt blocks**: Ready-to-use system, instructions, user, and references blocks
+
+---
+
+## Master File Synchronization
+
+Code Builder automatically maintains master index files (`0000_MASTER_*.md`) that provide centralized indexes of all documents in each category. The system automatically syncs these indexes and cleans up cross-references when documents are created, modified, or deleted.
+
+### Master Sync Commands
+```bash
+# Sync all master files
+python3 builder/core/cli.py master:sync
+
+# Sync specific document type
+python3 builder/core/cli.py master:sync --type prd
+
+# Clean up cross-references when documents are deleted
+python3 builder/core/cli.py master:sync --cleanup-refs
+
+# Dry run to see what would be updated
+python3 builder/core/cli.py master:sync --dry-run
+```
+
+### Supported Document Types
+- **PRD**: Product Requirements Documents (`PRD-*.md`)
+- **ADR**: Architecture Decision Records (`ADR-*.md`)
+- **ARCH**: Architecture Documents (`ARCH-*.md`)
+- **EXEC**: Execution Documents (`EXEC-*.md`)
+- **IMPL**: Implementation Documents (`IMPL-*.md`)
+- **INTEGRATIONS**: Integration Documents (`INTEGRATIONS-*.md`)
+- **TASKS**: Task Documents (`TASK-*.md`)
+- **UX**: User Experience Documents (`UX-*.md`)
+
+### Automatic Features
+- **Index Updates**: Master files automatically reflect current document status
+- **Cross-Reference Cleanup**: When documents are deleted, references are automatically removed
+- **Status Tracking**: Document status, domain, and metadata are maintained
+- **Link Management**: Relative links to documents are automatically generated
 
 ---
 

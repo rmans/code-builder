@@ -23,4 +23,4 @@ links:
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| *No ADRs currently defined* |  |  |  |  |
+| *No documents currently defined* |  |  |  |  |
