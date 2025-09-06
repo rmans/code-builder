@@ -642,6 +642,7 @@ This PRD references the following Architecture Decision Records (ADRs):
 - [Master Implementation Index](./impl/0000_MASTER_IMPL.md) - Complete list of all implementation documents
 - [Master Integrations Index](./integrations/0000_MASTER_INTEGRATIONS.md) - Complete list of all integration documents
 - [Master Tasks Index](./tasks/0000_MASTER_TASKS.md) - Complete list of all task documents
+- [Master UX Index](./ux/0000_MASTER_UX.md) - Complete list of all UX documents
 
 ## Implementation Plan
 

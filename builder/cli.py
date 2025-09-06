@@ -26,7 +26,8 @@ def _update_master_file(doc_type, doc_id, title, status="draft", domain=""):
         'exec': 'docs/exec/0000_MASTER_EXEC.md',
         'impl': 'docs/impl/0000_MASTER_IMPL.md',
         'integrations': 'docs/integrations/0000_MASTER_INTEGRATIONS.md',
-        'tasks': 'docs/tasks/0000_MASTER_TASKS.md'
+        'tasks': 'docs/tasks/0000_MASTER_TASKS.md',
+        'ux': 'docs/ux/0000_MASTER_UX.md'
     }
     
     master_file = master_files.get(doc_type)
