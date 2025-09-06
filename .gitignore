@@ -35,25 +35,25 @@ builder/cache/
 # Discovery cache (exclude discovery subdirectory)
 builder/cache/discovery/
 
-# Test files (temporary development files)
-.testfiles/
+# Test files (temporary development files) - now consolidated in tests/
+# .testfiles/ (removed - consolidated to tests/data/)
 
-# Test results (evaluation outputs and test artifacts)
-.testresults/
+# Test results (evaluation outputs and test artifacts) - now consolidated in tests/
+# .testresults/ (removed - consolidated to tests/results/)
 
-# Don’t commit compiled outputs under src/test
+# Don't commit compiled outputs under src/test
 src/**/*.js
 src/**/*.mjs
 src/**/*.cjs
 src/**/*.map
 src/**/*.d.ts
 src/**/*.d.mts
-test/**/*.js
-test/**/*.mjs
-test/**/*.cjs
-test/**/*.map
-test/**/*.d.ts
-test/**/*.d.mts
+tests/**/*.js
+tests/**/*.mjs
+tests/**/*.cjs
+tests/**/*.map
+tests/**/*.d.ts
+tests/**/*.d.mts
 
 # Root-level compiled configs & maps (keep the TS sources)
 *.map
@@ -64,9 +64,9 @@ test/**/*.d.mts
 src/**/*.js
 src/**/*.mjs
 src/**/*.cjs
-test/**/*.js
-test/**/*.mjs
-test/**/*.cjs
+tests/**/*.js
+tests/**/*.mjs
+tests/**/*.cjs
 dist/**/*.js
 dist/**/*.mjs
 dist/**/*.cjs
