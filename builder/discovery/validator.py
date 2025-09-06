@@ -7,23 +7,31 @@ data integrity and consistency across all phases.
 
 from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
+import re
+import hashlib
 
 
 class DiscoveryValidator:
     """Validates discovery results and ensures data integrity."""
     
-    def __init__(self, strict_mode: bool = True, min_features: int = 3, min_idea_words: int = 10):
+    def __init__(self, strict_mode: bool = True, min_features: int = 3, min_idea_words: int = 10, 
+                 enable_pii_detection: bool = True, redact_pii: bool = False):
         """Initialize the discovery validator.
         
         Args:
             strict_mode: Enable strict validation rules
             min_features: Minimum number of features required
             min_idea_words: Minimum number of words in product idea
+            enable_pii_detection: Enable PII detection and warnings
+            redact_pii: Enable automatic PII redaction
         """
         self.strict_mode = strict_mode
         self.min_features = min_features
         self.min_idea_words = min_idea_words
+        self.enable_pii_detection = enable_pii_detection
+        self.redact_pii = redact_pii
         self.validation_rules = self._load_validation_rules()
+        self.pii_patterns = self._load_pii_patterns()
     
     def validate(self, generation_data: Dict[str, Any], synthesis_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Validate discovery generation data.
@@ -45,6 +53,20 @@ class DiscoveryValidator:
             'consistency': self._check_consistency(generation_data),
             'quality_metrics': self._validate_quality_metrics(generation_data)
         }
+        
+        # Add PII detection if enabled
+        if self.enable_pii_detection:
+            pii_results = self._detect_pii(generation_data)
+            validation_data['pii_detection'] = pii_results
+            
+            # Add PII warnings to validation results
+            if pii_results['pii_found']:
+                validation_data['warnings'].extend(pii_results['warnings'])
+                
+            # Redact PII if enabled
+            if self.redact_pii and pii_results['pii_found']:
+                generation_data = self._redact_pii(generation_data, pii_results['detected_pii'])
+                validation_data['pii_redacted'] = True
         
         # Add synthesis meta validation if available
         if synthesis_data and 'meta' in synthesis_data:
@@ -937,3 +959,210 @@ class DiscoveryValidator:
             features.extend(questions['key_features'])
         
         return features
+    
+    def _load_pii_patterns(self) -> Dict[str, List[str]]:
+        """Load PII detection patterns."""
+        return {
+            'email': [
+                r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',
+                r'[a-zA-Z0-9._%+-]+\+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+            ],
+            'phone': [
+                r'\+?1?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}(?![0-9])',
+                r'\+?[0-9]{1,3}[-.\s]?[0-9]{1,4}[-.\s]?[0-9]{1,4}[-.\s]?[0-9]{1,4}(?![0-9])'
+            ],
+            'api_key': [
+                r'sk-[a-zA-Z0-9]{20,}',
+                r'pk_[a-zA-Z0-9]{20,}',
+                r'Bearer [a-zA-Z0-9._-]+',
+                r'Basic [a-zA-Z0-9+/=]+',
+                r'\b[a-zA-Z0-9]{32,}\b'
+            ],
+            'db_connection': [
+                r'postgresql://[^:]+:[^@]+@[^/]+/[^\s]+',
+                r'mysql://[^:]+:[^@]+@[^/]+/[^\s]+',
+                r'mongodb://[^:]+:[^@]+@[^/]+/[^\s]+',
+                r'redis://[^:]+:[^@]+@[^/]+/[^\s]+'
+            ],
+            'credit_card': [
+                r'[0-9]{4}[-\s]?[0-9]{4}[-\s]?[0-9]{4}[-\s]?[0-9]{4}',
+                r'[0-9]{13,19}'
+            ],
+            'ssn': [
+                r'\b[0-9]{3}-[0-9]{2}-[0-9]{4}\b',
+                r'\b[0-9]{9}\b'
+            ],
+            'private_key': [
+                r'-----BEGIN PRIVATE KEY-----',
+                r'-----BEGIN RSA PRIVATE KEY-----',
+                r'-----BEGIN EC PRIVATE KEY-----'
+            ],
+            'password': [
+                r'password\s*[:=]\s*["\']?[^"\'\s]+["\']?',
+                r'passwd\s*[:=]\s*["\']?[^"\'\s]+["\']?',
+                r'pwd\s*[:=]\s*["\']?[^"\'\s]+["\']?'
+            ]
+        }
+    
+    def _detect_pii(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Detect PII in discovery data.
+        
+        Args:
+            data: Discovery data to scan
+            
+        Returns:
+            PII detection results
+        """
+        pii_results = {
+            'pii_found': False,
+            'detected_pii': {},
+            'warnings': [],
+            'total_matches': 0
+        }
+        
+        # Convert data to string for pattern matching
+        data_str = str(data)
+        
+        for pii_type, patterns in self.pii_patterns.items():
+            matches = []
+            for pattern in patterns:
+                try:
+                    found_matches = re.findall(pattern, data_str, re.IGNORECASE)
+                    if found_matches:
+                        matches.extend(found_matches)
+                except re.error:
+                    # Skip invalid patterns
+                    continue
+            
+            if matches:
+                pii_results['pii_found'] = True
+                pii_results['detected_pii'][pii_type] = list(set(matches))  # Remove duplicates
+                pii_results['total_matches'] += len(matches)
+                
+                # Add warning for this PII type
+                pii_results['warnings'].append(
+                    f"⚠️  PII detected: {pii_type.upper()} ({len(matches)} matches) - "
+                    f"Consider redacting sensitive information before sharing discovery context"
+                )
+        
+        return pii_results
+    
+    def _redact_pii(self, data: Dict[str, Any], detected_pii: Dict[str, List[str]]) -> Dict[str, Any]:
+        """Redact PII from discovery data.
+        
+        Args:
+            data: Discovery data to redact
+            detected_pii: Detected PII patterns and matches
+            
+        Returns:
+            Data with PII redacted
+        """
+        # Convert to string for redaction
+        data_str = str(data)
+        
+        # Redact each PII type
+        for pii_type, matches in detected_pii.items():
+            for match in matches:
+                if pii_type == 'email':
+                    redacted = '[REDACTED-EMAIL]'
+                elif pii_type == 'phone':
+                    redacted = '[REDACTED-PHONE]'
+                elif pii_type == 'api_key':
+                    redacted = '[REDACTED-API-KEY]'
+                elif pii_type == 'db_connection':
+                    redacted = '[REDACTED-DB-CONNECTION]'
+                elif pii_type == 'credit_card':
+                    redacted = '[REDACTED-CREDIT-CARD]'
+                elif pii_type == 'ssn':
+                    redacted = '[REDACTED-SSN]'
+                elif pii_type == 'private_key':
+                    redacted = '[REDACTED-PRIVATE-KEY]'
+                elif pii_type == 'password':
+                    redacted = '[REDACTED-PASSWORD]'
+                else:
+                    redacted = '[REDACTED-PII]'
+                
+                # Replace the match with redacted version
+                data_str = data_str.replace(match, redacted)
+        
+        # Convert back to dictionary (this is a simplified approach)
+        # In a real implementation, you'd want to properly reconstruct the data structure
+        try:
+            import ast
+            return ast.literal_eval(data_str)
+        except:
+            # If conversion fails, return the redacted string
+            return {'redacted_content': data_str}
+    
+    def validate_pii_only(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate PII detection only.
+        
+        Args:
+            data: Data to validate for PII
+            
+        Returns:
+            PII validation results
+        """
+        if not self.enable_pii_detection:
+            return {'pii_detection_enabled': False}
+        
+        pii_results = self._detect_pii(data)
+        
+        return {
+            'pii_detection_enabled': True,
+            'pii_found': pii_results['pii_found'],
+            'detected_pii': pii_results['detected_pii'],
+            'total_matches': pii_results['total_matches'],
+            'warnings': pii_results['warnings'],
+            'recommendations': self._get_pii_recommendations(pii_results)
+        }
+    
+    def _get_pii_recommendations(self, pii_results: Dict[str, Any]) -> List[str]:
+        """Get recommendations for handling detected PII.
+        
+        Args:
+            pii_results: PII detection results
+            
+        Returns:
+            List of recommendations
+        """
+        recommendations = []
+        
+        if not pii_results['pii_found']:
+            recommendations.append("✅ No PII detected - discovery context is safe to share")
+            return recommendations
+        
+        recommendations.append("🔒 PII detected - consider the following actions:")
+        
+        if 'email' in pii_results['detected_pii']:
+            recommendations.append("- Replace email addresses with [REDACTED-EMAIL] or generic examples")
+        
+        if 'phone' in pii_results['detected_pii']:
+            recommendations.append("- Replace phone numbers with [REDACTED-PHONE] or generic examples")
+        
+        if 'api_key' in pii_results['detected_pii']:
+            recommendations.append("- Replace API keys with [REDACTED-API-KEY] or environment variable references")
+        
+        if 'db_connection' in pii_results['detected_pii']:
+            recommendations.append("- Replace database connection strings with [REDACTED-DB-CONNECTION] or config references")
+        
+        if 'credit_card' in pii_results['detected_pii']:
+            recommendations.append("- Replace credit card numbers with [REDACTED-CREDIT-CARD] or test numbers")
+        
+        if 'ssn' in pii_results['detected_pii']:
+            recommendations.append("- Replace SSNs with [REDACTED-SSN] or test numbers")
+        
+        if 'private_key' in pii_results['detected_pii']:
+            recommendations.append("- Replace private keys with [REDACTED-PRIVATE-KEY] or file references")
+        
+        if 'password' in pii_results['detected_pii']:
+            recommendations.append("- Replace passwords with [REDACTED-PASSWORD] or environment variable references")
+        
+        recommendations.extend([
+            "- Use environment variables for sensitive configuration",
+            "- Implement proper secrets management",
+            "- Review discovery context before sharing publicly",
+            "- Consider using test data for examples"
+        ])
+        
+        return recommendations
