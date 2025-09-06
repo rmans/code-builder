@@ -157,7 +157,7 @@ This task is part of a larger workflow:
     def open_cursor_chat(self, session: CursorChatSession) -> bool:
         """Open Cursor with the task chat session."""
         try:
-            # Create a script to open Cursor with the task context
+            # Create a script that opens Cursor and provides instructions for creating a new chat
             script_file = self.sessions_dir / f"{session.task_id}_open_cursor.sh"
             
             script_content = f"""#!/bin/bash
@@ -165,18 +165,26 @@ This task is part of a larger workflow:
 cd "{session.working_directory}"
 
 # Display task information
-echo "🤖 Opening Cursor chat for task: {session.task_id}"
+echo "🤖 Opening Cursor for task: {session.task_id}"
 echo "📁 Working Directory: {session.working_directory}"
 echo "💬 Chat ID: {session.chat_id}"
 echo ""
 echo "📋 Task Instructions:"
+echo "===================="
 cat "{self.sessions_dir}/{session.task_id}_instructions.md"
 echo ""
 echo "🚀 Starting Cursor..."
 echo ""
+echo "💡 INSTRUCTIONS:"
+echo "1. Cursor will open in a new window"
+echo "2. Press Ctrl+T to create a new chat"
+echo "3. Copy and paste the task instructions above into the chat"
+echo "4. Work through the task with the Cursor agent"
+echo "5. When complete, run: touch {self.sessions_dir}/{session.task_id}_completed"
+echo ""
 
-            # Open Cursor (this will open a new Cursor window)
-            cursor .
+# Open Cursor
+cursor .
 """
             
             with open(script_file, 'w') as f:
@@ -185,29 +193,23 @@ echo ""
             # Make script executable
             script_file.chmod(0o755)
             
-            # Open Cursor directly (simpler approach)
+            # Open Cursor directly
             try:
-                # Try to open Cursor directly
                 subprocess.Popen([self.cursor_executable, session.working_directory])
                 print(f"🚀 Opened Cursor for task: {session.task_id}")
+                print(f"   Working Directory: {session.working_directory}")
+                print(f"   Instructions: {self.sessions_dir}/{session.task_id}_instructions.md")
+                print("")
+                print("💡 Next steps:")
+                print("1. Press Ctrl+T in Cursor to create a new chat")
+                print("2. Copy the task instructions from the terminal output above")
+                print("3. Paste them into the new chat")
+                print("4. Work through the task with the Cursor agent")
+                print(f"5. When complete, run: touch {self.sessions_dir}/{session.task_id}_completed")
                 return True
             except Exception as e:
                 print(f"Error opening Cursor directly: {e}")
-                # Fallback to terminal approach
-                if os.name == 'nt':  # Windows
-                    subprocess.Popen(['start', 'cmd', '/k', str(script_file)], shell=True)
-                else:  # Linux/Mac
-                    try:
-                        subprocess.Popen(['gnome-terminal', '--', 'bash', str(script_file)])
-                    except FileNotFoundError:
-                        # Fallback to xterm or just run the script
-                        subprocess.Popen(['xterm', '-e', 'bash', str(script_file)])
-            
-            print(f"🚀 Opened Cursor chat for task: {session.task_id}")
-            print(f"   Script: {script_file}")
-            print(f"   Chat ID: {session.chat_id}")
-            
-            return True
+                return False
             
         except Exception as e:
             print(f"Error opening Cursor chat: {e}")

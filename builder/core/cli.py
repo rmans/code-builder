@@ -5672,6 +5672,91 @@ def orchestrator_cursor_status():
         raise click.Abort()
 
 
+@cli.command("orchestrator:cursor-workflow")
+@click.option("--tasks-dir", default="docs/tasks", help="Directory containing TASK-*.md files")
+@click.option("--create-guide", is_flag=True, help="Create a workflow guide file")
+def orchestrator_cursor_workflow(tasks_dir, create_guide):
+    """Create a workflow guide for using Cursor chats with tasks."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.cursor_automation import CursorAutomation
+        from utils.task_parser import TaskFileParser
+        
+        # Load tasks
+        parser = TaskFileParser(tasks_dir)
+        orchestrator_tasks = parser.load_tasks_from_files()
+        
+        if not orchestrator_tasks:
+            click.echo(f"❌ No tasks found in {tasks_dir}")
+            return
+        
+        click.echo("🎯 Cursor Task Workflow")
+        click.echo("=" * 50)
+        click.echo(f"📋 Found {len(orchestrator_tasks)} tasks")
+        click.echo("")
+        
+        # Show execution order
+        from utils.task_orchestrator import TaskOrchestrator
+        orchestrator = TaskOrchestrator()
+        for task in orchestrator_tasks:
+            orchestrator.add_task(task)
+        
+        execution_order = orchestrator.get_execution_order()
+        if execution_order:
+            click.echo("📋 Execution Order:")
+            for level, task_ids in enumerate(execution_order, 1):
+                click.echo(f"\nLevel {level} (can run in parallel):")
+                for task_id in task_ids:
+                    if task_id in orchestrator.tasks:
+                        task = orchestrator.tasks[task_id]
+                        click.echo(f"   • {task.name} ({task.agent_type})")
+        
+        click.echo("\n💡 How to Execute with Cursor:")
+        click.echo("=" * 50)
+        
+        for i, task in enumerate(orchestrator_tasks, 1):
+            click.echo(f"\n{i}. {task.name}")
+            click.echo(f"   Task ID: {task.task_id}")
+            click.echo(f"   Agent Type: {task.agent_type}")
+            click.echo(f"   Command: {task.command}")
+            click.echo(f"   Working Directory: {task.working_directory}")
+            
+            # Create chat session
+            from utils.cursor_chat_manager import CursorChatManager
+            chat_manager = CursorChatManager()
+            session = chat_manager.create_task_chat(task)
+            
+            if session:
+                click.echo(f"   Chat ID: {session.chat_id}")
+                click.echo(f"   Instructions: {chat_manager.sessions_dir}/{task.task_id}_instructions.md")
+                
+                click.echo(f"\n   🚀 To start this task:")
+                click.echo(f"   1. cd {task.working_directory}")
+                click.echo(f"   2. cursor .")
+                click.echo(f"   3. Press Ctrl+T to create a new chat")
+                click.echo(f"   4. Copy instructions from: {chat_manager.sessions_dir}/{task.task_id}_instructions.md")
+                click.echo(f"   5. Paste into the chat and work with the Cursor agent")
+                click.echo(f"   6. When complete: touch {chat_manager.sessions_dir}/{task.task_id}_completed")
+        
+        if create_guide:
+            # Create workflow guide
+            automation = CursorAutomation()
+            guide_file = automation.create_workflow_guide(orchestrator_tasks)
+            click.echo(f"\n📖 Created workflow guide: {guide_file}")
+        
+        click.echo(f"\n🔍 Monitor progress:")
+        click.echo(f"   python3 builder/core/cli.py orchestrator:cursor-chat-status")
+        click.echo(f"   python3 builder/core/cli.py orchestrator:status")
+        
+    except Exception as e:
+        click.echo(f"❌ Error creating workflow: {e}")
+        raise click.Abort()
+
+
 @cli.command("discover:validate")
 @click.argument("context_file")
 @click.option("--strict", is_flag=True, help="Use strict validation mode")
