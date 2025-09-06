@@ -1530,7 +1530,7 @@ def eval_prepare(path, server):
         # Import prompt builder
         import sys
         sys.path.append(os.path.join(ROOT, "builder"))
-        from prompts.evaluation_prompt import build_single_eval_prompt
+        from config.prompts.evaluation_prompt import build_single_eval_prompt
         from evaluators.artifact_detector import detect_artifact_type
         
         # Generate prompt
@@ -1693,7 +1693,7 @@ def iter_cursor(target_path, rounds):
         
         # Build ABC comparison prompt
         click.echo("Building ABC comparison prompt...")
-        from prompts.evaluation_prompt import build_abc_eval_prompt
+        from config.prompts.evaluation_prompt import build_abc_eval_prompt
         
         prompt = build_abc_eval_prompt(variant_paths, objective_scores)
         
