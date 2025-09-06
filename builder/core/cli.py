@@ -5141,6 +5141,267 @@ def orchestrator_reset(confirm):
         raise click.Abort()
 
 
+@cli.command("orchestrator:load-tasks")
+@click.option("--tasks-dir", default="docs/tasks", help="Directory containing TASK-*.md files")
+@click.option("--dry-run", is_flag=True, help="Show what would be loaded without actually loading")
+def orchestrator_load_tasks(tasks_dir, dry_run):
+    """Load tasks from TASK-*.md files into the orchestrator."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.task_orchestrator import TaskOrchestrator
+        from utils.task_parser import TaskFileParser
+        
+        parser = TaskFileParser(tasks_dir)
+        orchestrator = TaskOrchestrator()
+        
+        # Find task files
+        task_files = parser.find_task_files()
+        if not task_files:
+            click.echo(f"❌ No TASK-*.md files found in {tasks_dir}")
+            return
+        
+        click.echo(f"📋 Found {len(task_files)} task files:")
+        for file_path in task_files:
+            click.echo(f"   • {file_path.name}")
+        
+        if dry_run:
+            click.echo("\n🔍 Dry run - parsing task files...")
+            for file_path in task_files:
+                task_file = parser.parse_task_file(file_path)
+                if task_file:
+                    click.echo(f"\n📄 {task_file.task_id}: {task_file.title}")
+                    click.echo(f"   Status: {task_file.status}")
+                    click.echo(f"   Domain: {task_file.domain}")
+                    click.echo(f"   Tags: {', '.join(task_file.tags)}")
+                    
+                    # Show what would be extracted
+                    command = parser.extract_command_from_content(task_file.content)
+                    dependencies = parser.extract_dependencies_from_content(task_file.content, task_file.links)
+                    estimated_duration = parser.extract_estimated_duration(task_file.content)
+                    priority = parser.extract_priority(task_file.content, task_file.tags)
+                    agent_type = parser.extract_agent_type(task_file.content, task_file.tags, task_file.domain)
+                    
+                    click.echo(f"   Command: {command}")
+                    click.echo(f"   Dependencies: {', '.join(dependencies) if dependencies else 'None'}")
+                    click.echo(f"   Duration: {estimated_duration} minutes")
+                    click.echo(f"   Priority: {priority}")
+                    click.echo(f"   Agent Type: {agent_type}")
+            
+            click.echo("\n💡 Use without --dry-run to actually load tasks")
+            return
+        
+        # Load tasks
+        click.echo("\n🔄 Loading tasks into orchestrator...")
+        orchestrator_tasks = parser.load_tasks_from_files()
+        
+        # Add tasks to orchestrator
+        loaded_count = 0
+        for task in orchestrator_tasks:
+            orchestrator.add_task(task)
+            loaded_count += 1
+            click.echo(f"   ✅ Loaded: {task.task_id} - {task.name}")
+        
+        click.echo(f"\n✅ Successfully loaded {loaded_count} tasks")
+        
+        # Show summary
+        summary = orchestrator.get_status_summary()
+        click.echo(f"📊 Total tasks: {summary['tasks']['total']}")
+        click.echo(f"📊 Ready tasks: {summary['ready_tasks']}")
+        click.echo(f"📊 Available agents: {summary['available_agents']}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error loading tasks: {e}")
+        raise click.Abort()
+
+
+@cli.command("orchestrator:execute-tasks")
+@click.option("--tasks-dir", default="docs/tasks", help="Directory containing TASK-*.md files")
+@click.option("--max-cycles", type=int, help="Maximum number of orchestration cycles")
+@click.option("--cycle-delay", default=5.0, help="Delay between cycles in seconds")
+@click.option("--auto-load", is_flag=True, help="Automatically load tasks from files before executing")
+def orchestrator_execute_tasks(tasks_dir, max_cycles, cycle_delay, auto_load):
+    """Execute tasks from TASK-*.md files using the orchestrator."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.task_orchestrator import TaskOrchestrator
+        from utils.task_parser import TaskFileParser
+        
+        orchestrator = TaskOrchestrator()
+        
+        if auto_load:
+            click.echo("🔄 Auto-loading tasks from files...")
+            parser = TaskFileParser(tasks_dir)
+            orchestrator_tasks = parser.load_tasks_from_files()
+            
+            for task in orchestrator_tasks:
+                orchestrator.add_task(task)
+            
+            click.echo(f"✅ Loaded {len(orchestrator_tasks)} tasks")
+        
+        # Check if we have tasks
+        if not orchestrator.tasks:
+            click.echo("❌ No tasks found. Use --auto-load to load from files or add tasks manually.")
+            return
+        
+        # Check for circular dependencies
+        cycles = orchestrator.detect_cycles()
+        if cycles:
+            click.echo(f"❌ Circular dependencies detected: {cycles}")
+            return
+        
+        # Show execution order
+        execution_order = orchestrator.get_execution_order()
+        if execution_order:
+            click.echo("\n📋 Execution Order:")
+            for level, task_ids in enumerate(execution_order, 1):
+                click.echo(f"\nLevel {level} (can run in parallel):")
+                for task_id in task_ids:
+                    if task_id in orchestrator.tasks:
+                        task = orchestrator.tasks[task_id]
+                        click.echo(f"   • {task.name} ({task.agent_type})")
+        
+        # Run orchestration
+        click.echo(f"\n🚀 Starting task execution...")
+        cycles_run = orchestrator.run_continuous(max_cycles, cycle_delay)
+        click.echo(f"✅ Task execution complete after {cycles_run} cycles")
+        
+        # Show final status
+        summary = orchestrator.get_status_summary()
+        click.echo(f"\n📊 Final Status:")
+        for status, count in summary['tasks']['by_status'].items():
+            if count > 0:
+                emoji = {
+                    'pending': '⏳',
+                    'ready': '🟢',
+                    'running': '🏃',
+                    'completed': '✅',
+                    'failed': '❌',
+                    'blocked': '🚫',
+                    'cancelled': '🚫'
+                }.get(status, '❓')
+                click.echo(f"   {emoji} {status.title()}: {count}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error executing tasks: {e}")
+        raise click.Abort()
+
+
+@cli.command("orchestrator:create-task-template")
+@click.option("--task-id", required=True, help="Task ID (e.g., TASK-2025-01-15-feature-auth)")
+@click.option("--title", required=True, help="Task title")
+@click.option("--domain", default="", help="Task domain")
+@click.option("--owner", default="", help="Task owner")
+@click.option("--tags", multiple=True, help="Task tags")
+@click.option("--dependencies", multiple=True, help="Task dependencies (TASK-IDs)")
+@click.option("--output-dir", default="docs/tasks", help="Output directory for task file")
+def orchestrator_create_task_template(task_id, title, domain, owner, tags, dependencies, output_dir):
+    """Create a TASK-*.md template file."""
+    try:
+        import sys
+        import os
+        from datetime import datetime
+        
+        # Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Generate task file content
+        now = datetime.now().strftime('%Y-%m-%d')
+        
+        frontmatter = {
+            'id': task_id,
+            'title': title,
+            'status': 'draft',
+            'date': now,
+            'tags': list(tags) if tags else [],
+            'type': 'tasks',
+            'owner': owner if owner else 'unassigned',
+            'created': now,
+            'links': {
+                'prd': [],
+                'adr': [],
+                'arch': [],
+                'exec': [],
+                'impl': [],
+                'integrations': [],
+                'tasks': list(dependencies) if dependencies else [],
+                'ux': []
+            }
+        }
+        
+        # Create task file content
+        content = f"""---
+id: {task_id}
+title: {title}
+status: draft
+date: {now}
+tags:
+{chr(10).join(f"- {tag}" for tag in (tags if tags else []))}
+type: tasks
+owner: {owner if owner else 'unassigned'}
+created: '{now}'
+links:
+  prd: []
+  adr: []
+  arch: []
+  exec: []
+  impl: []
+  integrations: []
+  tasks: {list(dependencies) if dependencies else []}
+  ux: []
+---
+
+# {title}
+
+## Description
+<!-- Describe what this task accomplishes -->
+
+## Acceptance Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+- [ ] Criterion 3
+
+## Implementation Details
+<!-- Describe how to implement this task -->
+
+## Command to Execute
+```bash
+# Add the command(s) to execute this task
+echo "Task: {title}"
+```
+
+## Dependencies
+{chr(10).join(f"- {dep}" for dep in (dependencies if dependencies else []))}
+
+## Notes
+<!-- Additional notes, considerations, or context -->
+"""
+        
+        # Write task file
+        output_file = os.path.join(output_dir, f"{task_id}.md")
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        click.echo(f"✅ Created task template: {output_file}")
+        click.echo(f"   Task ID: {task_id}")
+        click.echo(f"   Title: {title}")
+        click.echo(f"   Domain: {domain or 'Not specified'}")
+        click.echo(f"   Owner: {owner or 'unassigned'}")
+        click.echo(f"   Tags: {', '.join(tags) if tags else 'None'}")
+        click.echo(f"   Dependencies: {', '.join(dependencies) if dependencies else 'None'}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error creating task template: {e}")
+        raise click.Abort()
+
+
 @cli.command("discover:validate")
 @click.argument("context_file")
 @click.option("--strict", is_flag=True, help="Use strict validation mode")
