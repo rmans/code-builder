@@ -182,7 +182,7 @@ jobs:
             exit(1)
         
         # Check for acceptance criteria (always required)
-        acceptance = data.get('acceptance', [])
+        acceptance = data.get('acceptance_criteria', [])
         if not acceptance or len(acceptance) == 0:
             print('❌ ERROR: Missing acceptance criteria')
             exit(1)
