@@ -14,6 +14,175 @@ CACHE = os.path.join(ROOT, "builder", "cache")
 
 def _today(): return datetime.date.today().isoformat()
 
+def _run_doc_index_hook():
+    """Run doc:index automatically and return the count of documents indexed."""
+    try:
+        import yaml
+        from collections import defaultdict
+        
+        # Document type configurations
+        doc_types = {
+            'prd': {'name': 'Product Requirements', 'icon': '📋', 'description': 'Product requirements and specifications'},
+            'arch': {'name': 'Architecture', 'icon': '🏗️', 'description': 'Architectural decisions and designs'},
+            'integrations': {'name': 'Integrations', 'icon': '🔗', 'description': 'Integration specifications and APIs'},
+            'ux': {'name': 'User Experience', 'icon': '🎨', 'description': 'UX designs and user research'},
+            'impl': {'name': 'Implementation', 'icon': '⚙️', 'description': 'Implementation details and technical specs'},
+            'exec': {'name': 'Executive', 'icon': '📊', 'description': 'Executive summaries and business documents'},
+            'tasks': {'name': 'Tasks', 'icon': '✅', 'description': 'Task definitions and work items'}
+        }
+        
+        # Scan for documents
+        documents = defaultdict(list)
+        all_doc_ids = set()
+        
+        for doc_type in doc_types.keys():
+            doc_dir = os.path.join(DOCS, doc_type)
+            if os.path.exists(doc_dir):
+                for filename in os.listdir(doc_dir):
+                    if filename.endswith('.md') and not filename.startswith('.'):
+                        filepath = os.path.join(doc_dir, filename)
+                        doc_id = filename.replace('.md', '')
+                        all_doc_ids.add(doc_id)
+                        
+                        # Try to parse front-matter for metadata
+                        metadata = {}
+                        try:
+                            with open(filepath, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                                if content.startswith('---'):
+                                    parts = content.split('---', 2)
+                                    if len(parts) >= 3:
+                                        yaml_content = parts[1].strip()
+                                        metadata = yaml.safe_load(yaml_content) or {}
+                        except Exception:
+                            pass
+                        
+                        # Ensure links is always a dict
+                        links = metadata.get('links', {})
+                        if isinstance(links, list):
+                            parsed_links = {}
+                            for link_item in links:
+                                if isinstance(link_item, dict):
+                                    parsed_links.update(link_item)
+                            links = parsed_links
+                        
+                        documents[doc_type].append({
+                            'id': doc_id,
+                            'filename': filename,
+                            'path': filepath,
+                            'title': metadata.get('title', doc_id),
+                            'status': metadata.get('status', 'unknown'),
+                            'owner': metadata.get('owner', 'TBD'),
+                            'created': metadata.get('created', 'unknown'),
+                            'links': links
+                        })
+        
+        # Count total documents
+        total_docs = sum(len(docs) for docs in documents.values())
+        
+        # Generate README content
+        readme_content = """# Documentation Layer
+
+This repo uses docs to drive codegen, decisions, and evaluation.
+
+---
+
+## Document Index
+
+"""
+        
+        # Add document sections
+        for doc_type, config in doc_types.items():
+            docs = documents[doc_type]
+            if docs:
+                readme_content += f"### {config['icon']} {config['name']}\n"
+                readme_content += f"*{config['description']}*\n\n"
+                
+                for doc in sorted(docs, key=lambda x: str(x['created']), reverse=True):
+                    status_emoji = {
+                        'draft': '📝',
+                        'review': '👀', 
+                        'approved': '✅',
+                        'archived': '📦',
+                        'unknown': '❓'
+                    }.get(doc['status'], '❓')
+                    
+                    readme_content += f"- {status_emoji} **{doc['title']}** (`{doc['id']}`)\n"
+                    readme_content += f"  - Owner: {doc['owner']} | Created: {doc['created']}\n"
+                    
+                    # Show links if any
+                    has_links = any(links for links in doc['links'].values() if links)
+                    if has_links:
+                        readme_content += "  - Links: "
+                        link_parts = []
+                        for link_type, link_ids in doc['links'].items():
+                            if link_ids:
+                                link_parts.append(f"{link_type}:{', '.join(link_ids)}")
+                        readme_content += " | ".join(link_parts) + "\n"
+                    
+                    readme_content += "\n"
+            else:
+                readme_content += f"### {config['icon']} {config['name']}\n"
+                readme_content += f"*{config['description']}*\n"
+                readme_content += f"*No documents found*\n\n"
+        
+        # Add existing sections
+        readme_content += """---
+
+## ADRs (docs/adrs/)
+- `0000_MASTER_ADR.md` = index of all decisions
+- Sub ADRs like `ADR-0001.md` created by `builder:adr:new`
+- Each ADR records context, decision, consequences, alternatives
+
+---
+
+## Templates (docs/templates/)
+- Jinja2 templates for ADRs and specs
+- Used by CLI to render files
+
+---
+
+## Rules (docs/rules/)
+- `00-global.md`, `10-project.md` = global + project-wide rules
+- `stack/` (e.g. typescript, react, http-client)
+- `feature/` (auth, content-engine, etc.)
+- `guardrails.json` = forbidden patterns + hints
+
+---
+
+## Evaluation (docs/eval/)
+- `config.yaml` = evaluation weights and configuration
+- Defines objective vs subjective weight distribution
+- Configures tool paths and scoring weights
+
+---
+
+## Usage Guides
+- `USAGE-Cursor-Evaluation.md` = Complete evaluation workflow guide
+- `CURSOR-Custom-Commands.md` = Cursor integration setup
+
+---
+
+## Usage
+- When editing a file, run `plan:auto <file>` → context.json merges rules + ADRs  
+- Cursor/AI gets that context and generates compliant code
+- Run `eval:objective <file>` → measure code quality objectively
+- Use `--server` flag for interactive Cursor evaluation
+- Use `doc:new <type> --title "Title"` → create new documents
+- Use `doc:index` → update this index
+"""
+        
+        # Write the README
+        readme_path = os.path.join(DOCS, "README.md")
+        with open(readme_path, "w", encoding="utf-8") as f:
+            f.write(readme_content)
+        
+        return total_docs
+        
+    except Exception as e:
+        click.echo(f"⚠️  Warning: Could not run doc:index hook: {e}")
+        return 0
+
 def _render(path, ctx):
     with open(path, "r", encoding="utf-8") as f:
         return Template(f.read()).render(**ctx)
@@ -1672,6 +1841,12 @@ def doc_new(dtype, title, owner, links, prd, arch, adr, impl, exec_, ux):
         # Update master file
         _update_master_file(dtype, doc_id, title, "draft", "")
         
+        # F1: Run doc:index hook automatically after document creation
+        click.echo(f"\n📚 Running doc:index hook...")
+        docs_indexed = _run_doc_index_hook()
+        if docs_indexed > 0:
+            click.echo(f"✅ {docs_indexed} docs indexed")
+        
     except Exception as e:
         click.echo(f"Error writing file: {e}")
         raise SystemExit(1)
@@ -1773,7 +1948,7 @@ This repo uses docs to drive codegen, decisions, and evaluation.
             readme_content += f"### {config['icon']} {config['name']}\n"
             readme_content += f"*{config['description']}*\n\n"
             
-            for doc in sorted(docs, key=lambda x: x['created'], reverse=True):
+            for doc in sorted(docs, key=lambda x: str(x['created']), reverse=True):
                 status_emoji = {
                     'draft': '📝',
                     'review': '👀', 
@@ -1847,6 +2022,9 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 - Use `doc:index` → update this index
 """
     
+    # Count total documents
+    total_docs = sum(len(docs) for docs in documents.values())
+    
     # Write the README
     readme_path = os.path.join(DOCS, "README.md")
     try:
@@ -1865,6 +2043,11 @@ This repo uses docs to drive codegen, decisions, and evaluation.
         click.echo(f"\nTotal warnings: {len(warnings)}")
     else:
         click.echo("✅ No warnings found")
+    
+    # Print document count
+    click.echo(f"📚 {total_docs} docs indexed")
+    
+    return total_docs
 
 # -------------------- CONTEXT BUILDER --------------------
 @cli.command("ctx:build")
@@ -4673,6 +4856,12 @@ def discover_regenerate(batch, reports, docs, diagrams, all, input, output_dir):
         click.echo(f"2. Share reports with stakeholders")
         click.echo(f"3. Update discovery context based on findings")
         click.echo(f"4. Run: python builder/cli.py discover:analyze --repo-root (to re-analyze)")
+        
+        # F1: Run doc:index hook automatically after generation
+        click.echo(f"\n📚 Running doc:index hook...")
+        docs_indexed = _run_doc_index_hook()
+        if docs_indexed > 0:
+            click.echo(f"✅ {docs_indexed} docs indexed")
         
     except Exception as e:
         click.echo(f"❌ Error: {e}")
