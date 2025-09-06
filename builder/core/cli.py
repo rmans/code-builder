@@ -5402,6 +5402,160 @@ echo "Task: {title}"
         raise click.Abort()
 
 
+@cli.command("orchestrator:cursor-execute")
+@click.option("--tasks-dir", default="docs/tasks", help="Directory containing TASK-*.md files")
+@click.option("--max-cycles", type=int, help="Maximum number of orchestration cycles")
+@click.option("--cycle-delay", default=10.0, help="Delay between cycles in seconds (longer for Cursor agents)")
+@click.option("--auto-load", is_flag=True, help="Automatically load tasks from files before executing")
+@click.option("--cursor-executable", default="cursor", help="Path to Cursor executable")
+def orchestrator_cursor_execute(tasks_dir, max_cycles, cycle_delay, auto_load, cursor_executable):
+    """Execute tasks using Cursor agents instead of shell commands."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.cursor_agent_integration import CursorAgentOrchestrator
+        from utils.task_parser import TaskFileParser
+        
+        orchestrator = CursorAgentOrchestrator()
+        
+        if auto_load:
+            click.echo("🔄 Auto-loading tasks from files...")
+            parser = TaskFileParser(tasks_dir)
+            orchestrator_tasks = parser.load_tasks_from_files()
+            
+            for task in orchestrator_tasks:
+                orchestrator.base_orchestrator.add_task(task)
+            
+            click.echo(f"✅ Loaded {len(orchestrator_tasks)} tasks")
+        
+        # Check if we have tasks
+        if not orchestrator.base_orchestrator.tasks:
+            click.echo("❌ No tasks found. Use --auto-load to load from files or add tasks manually.")
+            return
+        
+        # Add Cursor agents for different types
+        click.echo("🤖 Setting up Cursor agents...")
+        orchestrator.add_cursor_agent("cursor-setup-agent", "setup", ["project-setup", "configuration"])
+        orchestrator.add_cursor_agent("cursor-backend-agent", "backend", ["api-development", "database-design"])
+        orchestrator.add_cursor_agent("cursor-frontend-agent", "frontend", ["react", "ui-design", "responsive-layout"])
+        orchestrator.add_cursor_agent("cursor-testing-agent", "testing", ["unit-testing", "integration-testing"])
+        orchestrator.add_cursor_agent("cursor-docs-agent", "docs", ["technical-writing", "api-documentation"])
+        orchestrator.add_cursor_agent("cursor-deployment-agent", "deployment", ["docker", "kubernetes", "ci-cd"])
+        
+        click.echo("✅ Cursor agents configured")
+        
+        # Check for circular dependencies
+        cycles = orchestrator.base_orchestrator.detect_cycles()
+        if cycles:
+            click.echo(f"❌ Circular dependencies detected: {cycles}")
+            return
+        
+        # Show execution order
+        execution_order = orchestrator.base_orchestrator.get_execution_order()
+        if execution_order:
+            click.echo("\n📋 Execution Order (using Cursor agents):")
+            for level, task_ids in enumerate(execution_order, 1):
+                click.echo(f"\nLevel {level} (can run in parallel):")
+                for task_id in task_ids:
+                    if task_id in orchestrator.base_orchestrator.tasks:
+                        task = orchestrator.base_orchestrator.tasks[task_id]
+                        click.echo(f"   • {task.name} ({task.agent_type}) → Cursor agent")
+        
+        # Run Cursor orchestration
+        click.echo(f"\n🚀 Starting Cursor agent orchestration...")
+        click.echo("💡 Cursor agents will receive task instructions and execute them intelligently")
+        
+        cycles_run = orchestrator.run_continuous_cursor_orchestration(max_cycles, cycle_delay)
+        click.echo(f"✅ Cursor orchestration complete after {cycles_run} cycles")
+        
+        # Show final status
+        summary = orchestrator.base_orchestrator.get_status_summary()
+        click.echo(f"\n📊 Final Status:")
+        for status, count in summary['tasks']['by_status'].items():
+            if count > 0:
+                emoji = {
+                    'pending': '⏳',
+                    'ready': '🟢',
+                    'running': '🏃',
+                    'completed': '✅',
+                    'failed': '❌',
+                    'blocked': '🚫',
+                    'cancelled': '🚫'
+                }.get(status, '❓')
+                click.echo(f"   {emoji} {status.title()}: {count}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error executing with Cursor agents: {e}")
+        raise click.Abort()
+
+
+@cli.command("orchestrator:cursor-status")
+def orchestrator_cursor_status():
+    """Show status of Cursor agent orchestration."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.cursor_agent_integration import CursorAgentOrchestrator
+        
+        orchestrator = CursorAgentOrchestrator()
+        
+        click.echo("🤖 Cursor Agent Orchestration Status")
+        click.echo("=" * 50)
+        
+        # Show base orchestrator status
+        summary = orchestrator.base_orchestrator.get_status_summary()
+        
+        # Task summary
+        click.echo(f"📋 Tasks: {summary['tasks']['total']}")
+        for status, count in summary['tasks']['by_status'].items():
+            if count > 0:
+                emoji = {
+                    'pending': '⏳',
+                    'ready': '🟢',
+                    'running': '🏃',
+                    'completed': '✅',
+                    'failed': '❌',
+                    'blocked': '🚫',
+                    'cancelled': '🚫'
+                }.get(status, '❓')
+                click.echo(f"   {emoji} {status.title()}: {count}")
+        
+        # Agent summary
+        click.echo(f"\n🤖 Cursor Agents: {summary['agents']['total']}")
+        for status, count in summary['agents']['by_status'].items():
+            if count > 0:
+                emoji = {
+                    'idle': '🟢',
+                    'busy': '🏃',
+                    'offline': '🔴'
+                }.get(status, '❓')
+                click.echo(f"   {emoji} {status.title()}: {count}")
+        
+        # Active Cursor sessions
+        active_sessions = len(orchestrator.active_cursor_sessions)
+        click.echo(f"\n🔄 Active Cursor Sessions: {active_sessions}")
+        
+        if orchestrator.active_cursor_sessions:
+            click.echo("   Active sessions:")
+            for task_id, session_id in orchestrator.active_cursor_sessions.items():
+                click.echo(f"   • {task_id} → {session_id}")
+        
+        # Additional info
+        click.echo(f"\n📊 Ready Tasks: {summary['ready_tasks']}")
+        click.echo(f"📊 Available Agents: {summary['available_agents']}")
+        click.echo(f"📊 Circular Dependencies: {summary['cycles_detected']}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error getting Cursor status: {e}")
+        raise click.Abort()
+
+
 @cli.command("discover:validate")
 @click.argument("context_file")
 @click.option("--strict", is_flag=True, help="Use strict validation mode")
