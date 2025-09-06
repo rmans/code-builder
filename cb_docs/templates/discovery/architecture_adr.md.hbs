@@ -1,0 +1,236 @@
+---
+title: "ADR-{{adr_number | default('XXXX')}}: {{product | default('Product')}} Architecture"
+type: "adr"
+status: "{{status | default('draft')}}"
+created: "{{created_date | default('2024-01-01')}}"
+updated: "{{updated_date | default(created_date)}}"
+parent: "{{parent | default('ADR-0000')}}"
+related_files:
+  - "builder/cache/discovery_context.yml"
+  - "{{prd | default('')}}"
+  - "{{tech_stack_adr | default('')}}"
+  - "{{impl | default('')}}"
+  - "{{exec | default('')}}"
+tags:
+  - adr
+  - architecture
+  - design
+  - "{{product | lower | default('product')}}"
+  - discovery
+---
+
+# ADR-{{adr_number | default('XXXX')}}: {{product | default('Product')}} Architecture
+
+**Status:** {{status | default('draft')}}  
+**Date:** {{created_date | default('2024-01-01')}}  
+**Deciders:** {{deciders | default('Architecture Team')}}  
+**Consulted:** {{consulted | default('Technical Team, Product Owner')}}  
+**Informed:** {{informed | default('Development Team, Operations Team')}}
+
+## Context
+
+{{context | default('We need to define the system architecture for ' + (product | default('the product')) + ' based on discovery analysis and requirements.')}}
+
+### Discovery Insights
+{{#each discovery_insights}}
+- {{this}}
+{{/each}}
+
+### Requirements
+{{#each requirements}}
+- {{this}}
+{{/each}}
+
+### Constraints
+{{#each constraints}}
+- {{this}}
+{{/each}}
+
+### Quality Attributes
+{{#each quality_attributes}}
+- **{{attribute | default('Attribute')}}**: {{description | default('Description')}} - {{priority | default('Priority')}}
+{{/each}}
+
+## Decision
+
+We will implement the following architecture for {{product | default('the product')}}:
+
+### Architectural Style
+{{architectural_style | default('Primary architectural style (e.g., Microservices, Monolith, Serverless)')}}
+
+### High-Level Architecture
+{{high_level_architecture | default('Description of the overall system architecture.')}}
+
+### System Components
+{{#each system_components}}
+#### {{name | default('Component Name')}}
+- **Purpose**: {{purpose | default('Component purpose')}}
+- **Responsibilities**: {{responsibilities | default('Key responsibilities')}}
+- **Interfaces**: {{interfaces | default('External interfaces')}}
+- **Dependencies**: {{dependencies | default('Component dependencies')}}
+{{/each}}
+
+### Data Flow
+{{data_flow | default('Description of how data flows through the system.')}}
+
+### Integration Points
+{{#each integration_points}}
+- **{{name | default('Integration')}}**: {{description | default('Description')}} - {{protocol | default('Protocol')}}
+{{/each}}
+
+## Rationale
+
+### Why This Architecture?
+{{rationale | default('Explanation of why this particular architecture was chosen.')}}
+
+### Benefits
+{{#each benefits}}
+- {{this}}
+{{/each}}
+
+### Trade-offs
+{{#each trade_offs}}
+- {{this}}
+{{/each}}
+
+### Alternatives Considered
+{{#each alternatives}}
+#### {{name | default('Alternative')}}
+- **Description**: {{description | default('Description of the alternative')}}
+- **Pros**: {{pros | default('Advantages')}}
+- **Cons**: {{cons | default('Disadvantages')}}
+- **Why Not Chosen**: {{why_not | default('Reason for rejection')}}
+{{/each}}
+
+## Consequences
+
+### Positive
+{{#each positive_consequences}}
+- {{this}}
+{{/each}}
+
+### Negative
+{{#each negative_consequences}}
+- {{this}}
+{{/each}}
+
+### Risks
+{{#each risks}}
+- **{{risk | default('Risk')}}**: {{impact | default('Impact')}} - {{mitigation | default('Mitigation strategy')}}
+{{/each}}
+
+### Technical Debt
+{{#each technical_debt}}
+- {{this}}
+{{/each}}
+
+## Implementation
+
+### Architecture Patterns
+{{#each architecture_patterns}}
+- **{{pattern | default('Pattern')}}**: {{description | default('Description')}} - {{usage | default('How it will be used')}}
+{{/each}}
+
+### Design Principles
+{{#each design_principles}}
+- {{this}}
+{{/each}}
+
+### Implementation Strategy
+{{implementation_strategy | default('How to implement this architecture.')}}
+
+### Migration Path
+{{#each migration_phases}}
+- **{{phase | default('Phase')}}**: {{duration | default('Duration')}} - {{description | default('Description')}}
+{{/each}}
+
+### Dependencies
+{{#each implementation_dependencies}}
+- {{this}}
+{{/each}}
+
+## Quality Attributes
+
+### Performance
+{{#each performance_requirements}}
+- **{{requirement | default('Requirement')}}**: {{target | default('Target')}} - {{measurement | default('Measurement')}}
+{{/each}}
+
+### Scalability
+{{#each scalability_requirements}}
+- **{{requirement | default('Requirement')}}**: {{target | default('Target')}} - {{strategy | default('Strategy')}}
+{{/each}}
+
+### Security
+{{#each security_requirements}}
+- **{{requirement | default('Requirement')}}**: {{description | default('Description')}} - {{implementation | default('Implementation')}}
+{{/each}}
+
+### Maintainability
+{{#each maintainability_requirements}}
+- **{{requirement | default('Requirement')}}**: {{description | default('Description')}} - {{strategy | default('Strategy')}}
+{{/each}}
+
+### Reliability
+{{#each reliability_requirements}}
+- **{{requirement | default('Requirement')}}**: {{target | default('Target')}} - {{strategy | default('Strategy')}}
+{{/each}}
+
+## Monitoring and Review
+
+### Architecture Metrics
+{{#each architecture_metrics}}
+- **{{metric | default('Metric')}}**: {{target | default('Target')}} - {{measurement | default('Measurement')}}
+{{/each}}
+
+### Review Schedule
+{{review_schedule | default('When and how often to review this architecture.')}}
+
+### Decision Review Triggers
+{{#each review_triggers}}
+- {{this}}
+{{/each}}
+
+## Discovery Context
+
+This ADR was informed by discovery analysis. Key findings include:
+
+### Architectural Insights
+{{#each architectural_insights}}
+- {{this}}
+{{/each}}
+
+### Complexity Analysis
+{{#each complexity_insights}}
+- {{this}}
+{{/each}}
+
+### Performance Insights
+{{#each performance_insights}}
+- {{this}}
+{{/each}}
+
+### Security Insights
+{{#each security_insights}}
+- {{this}}
+{{/each}}
+
+## References
+
+### Discovery Analysis
+- Discovery Context: `builder/cache/discovery_context.yml`
+- Analysis Results: `builder/cache/discovery_analysis.json`
+
+### Related Documents
+{{#each related_documents}}
+- {{this}}
+{{/each}}
+
+### External References
+{{#each external_references}}
+- {{this}}
+{{/each}}
+
+---
+
+*This ADR should be reviewed and updated as the architecture evolves or new requirements emerge.*

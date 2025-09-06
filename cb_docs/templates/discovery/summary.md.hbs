@@ -1,0 +1,47 @@
+---
+title: "Discovery Summary: {{target_name}}"
+type: "discovery-summary"
+status: "{{status | default('draft')}}"
+created: "{{created_date}}"
+target: "{{target_path}}"
+tags:
+  - discovery
+  - summary
+  - "{{target_type | default('code')}}"
+---
+
+# Discovery Summary: {{target_name}}
+
+**Target:** `{{target_path}}`  
+**Generated:** {{created_date}}
+
+## Quick Overview
+
+{{summary | default('This is a summary of the discovery analysis results.')}}
+
+### Metrics
+- **Size:** {{metrics.lines_of_code | default(0)}} lines
+- **Complexity:** {{metrics.complexity_level | default('unknown')}}
+- **Quality:** {{metrics.quality_score | default(0)}}/100
+
+## Top Insights
+
+{{#each top_insights}}
+{{@index | add 1}}. {{this}}
+{{/each}}
+
+## Priority Actions
+
+{{#each priority_actions}}
+{{@index | add 1}}. {{this}}
+{{/each}}
+
+## Quick Wins
+
+{{#each quick_wins}}
+{{@index | add 1}}. {{this}}
+{{/each}}
+
+---
+
+*For detailed analysis, see the full discovery report.*

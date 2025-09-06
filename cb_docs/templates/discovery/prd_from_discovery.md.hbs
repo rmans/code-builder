@@ -1,0 +1,211 @@
+---
+title: "{{ product | default('Product') }} - Product Requirements Document"
+type: "prd"
+status: "{{ status | default('draft') }}"
+created: "{{ created_date | default('2024-01-01') }}"
+updated: "{{ updated_date | default(created_date) }}"
+owner: "{{ owner | default('Product Owner') }}"
+related_files:
+  - "builder/cache/discovery_context.yml"
+  - "{{ prd | default('') }}"
+  - "{{ arch | default('') }}"
+  - "{{ adr | default('') }}"
+  - "{{ impl | default('') }}"
+  - "{{ exec | default('') }}"
+  - "{{ ux | default('') }}"
+tags:
+  - prd
+  - product
+  - requirements
+  - "{{ product | lower | default('product') }}"
+  - discovery
+---
+
+# {{ product | default('Product') }} - Product Requirements Document
+
+**Product:** {{ product | default('Product') }}  
+**Idea:** {{ idea | default('Product concept') }}  
+**Status:** {{ status | default('draft') }}  
+**Owner:** {{ owner | default('Product Owner') }}  
+**Created:** {{ created_date | default('2024-01-01') }}  
+**Last Updated:** {{ updated_date | default(created_date) }}
+
+## Executive Summary
+
+{{summary | default('This PRD defines the requirements for ' + (product | default('the product')) + ' based on discovery analysis.')}}
+
+### Key Objectives
+{{#each objectives}}
+- {{this}}
+{{/each}}
+
+### Success Metrics
+{{#each success_metrics}}
+- **{{metric | default('Metric')}}**: {{value | default('Target value')}} - {{description | default('Description')}}
+{{/each}}
+
+## Problem Statement
+
+### Current State
+{{current_state | default('Describe the current state and pain points that this product addresses.')}}
+
+### Pain Points
+{{#each pain_points}}
+- {{this}}
+{{/each}}
+
+### Opportunity
+{{opportunity | default('Describe the opportunity and potential impact of solving these problems.')}}
+
+## Solution Overview
+
+### Product Vision
+{{vision | default('Clear, inspiring vision statement for the product.')}}
+
+### Core Value Proposition
+{{value_proposition | default('What unique value does this product provide to users?')}}
+
+### Key Features
+{{#each key_features}}
+- **{{name | default('Feature Name')}}**: {{description | default('Feature description')}}
+  - Priority: {{priority | default('High')}}
+  - Effort: {{effort | default('Medium')}}
+{{/each}}
+
+## User Stories
+
+### Primary Users
+{{#each primary_users}}
+- **{{role | default('User Role')}}**: {{description | default('User description and needs')}}
+{{/each}}
+
+### User Stories
+{{#each user_stories}}
+- **As a** {{user | default('user')}}, **I want** {{action | default('to perform an action')}} **so that** {{benefit | default('I can achieve a benefit')}}
+{{/each}}
+
+## Functional Requirements
+
+### Core Features
+{{#each core_features}}
+#### {{name | default('Feature Name')}}
+{{description | default('Detailed feature description')}}
+
+**Acceptance Criteria:**
+{{#each acceptance_criteria}}
+- {{this}}
+{{/each}}
+
+**Dependencies:**
+{{#each dependencies}}
+- {{this}}
+{{/each}}
+{{/each}}
+
+### Non-Functional Requirements
+{{#each non_functional_requirements}}
+- **{{category | default('Category')}}**: {{requirement | default('Requirement description')}}
+{{/each}}
+
+## Technical Requirements
+
+### Technology Stack
+{{#each tech_stack}}
+- **{{category | default('Category')}}**: {{technologies | default('Technologies')}}
+{{/each}}
+
+### Performance Requirements
+{{#each performance_requirements}}
+- **{{metric | default('Metric')}}**: {{value | default('Target value')}} - {{description | default('Description')}}
+{{/each}}
+
+### Security Requirements
+{{#each security_requirements}}
+- {{this}}
+{{/each}}
+
+### Integration Requirements
+{{#each integration_requirements}}
+- {{this}}
+{{/each}}
+
+## Business Requirements
+
+### Market Analysis
+{{market_analysis | default('Analysis of target market, competitors, and market opportunity.')}}
+
+### Business Model
+{{business_model | default('How the product will generate value and revenue.')}}
+
+### Success Criteria
+{{#each success_criteria}}
+- **{{criteria | default('Criteria')}}**: {{measurement | default('How it will be measured')}}
+{{/each}}
+
+## Timeline and Milestones
+
+### Development Phases
+{{#each development_phases}}
+#### {{phase | default('Phase')}} - {{name | default('Phase Name')}}
+- **Duration**: {{duration | default('X weeks')}}
+- **Deliverables**: {{deliverables | default('Key deliverables')}}
+- **Success Criteria**: {{success_criteria | default('Phase success criteria')}}
+{{/each}}
+
+### Key Milestones
+{{#each milestones}}
+- **{{date | default('Date')}}**: {{milestone | default('Milestone description')}}
+{{/each}}
+
+## Risk Assessment
+
+### Technical Risks
+{{#each technical_risks}}
+- **{{risk | default('Risk')}}**: {{impact | default('Impact')}} - {{mitigation | default('Mitigation strategy')}}
+{{/each}}
+
+### Business Risks
+{{#each business_risks}}
+- **{{risk | default('Risk')}}**: {{impact | default('Impact')}} - {{mitigation | default('Mitigation strategy')}}
+{{/each}}
+
+### Dependencies
+{{#each dependencies}}
+- **{{dependency | default('Dependency')}}**: {{description | default('Description')}} - {{owner | default('Owner')}}
+{{/each}}
+
+## Discovery Insights
+
+### Key Findings
+{{#each discovery_insights}}
+- {{this}}
+{{/each}}
+
+### Recommendations
+{{#each discovery_recommendations}}
+- {{this}}
+{{/each}}
+
+### Next Steps
+{{#each next_steps}}
+- {{this}}
+{{/each}}
+
+## Appendices
+
+### Glossary
+{{#each glossary}}
+- **{{term | default('Term')}}**: {{definition | default('Definition')}}
+{{/each}}
+
+### References
+{{#each references}}
+- {{this}}
+{{/each}}
+
+### Discovery Context
+This PRD was generated from discovery analysis. See `builder/cache/discovery_context.yml` for the complete discovery context and analysis results.
+
+---
+
+*This PRD is a living document that should be updated as the product evolves and new requirements are discovered.*
