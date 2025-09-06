@@ -1273,7 +1273,7 @@ def plan_auto(path, stacks):
         
         # 2. Select context using graph
         selector = ContextSelector(ROOT)
-        context_selection = selector.select_context(path, feature, top_k=10)
+        context_selection = selector.select_context(path, feature, max_items=10)
         
         if not context_selection:
             click.echo("❌ No context found for target path")
@@ -2966,7 +2966,7 @@ def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit, force
         # Step 2: Select context using graph
         click.echo("🎯 Selecting relevant context...")
         selector = ContextSelector(ROOT)
-        context_selection = selector.select_context(target_path, feature, top_k=10)
+        context_selection = selector.select_context(target_path, feature, max_items=10)
         
         if not context_selection:
             click.echo("❌ No context found for target path")
@@ -2975,7 +2975,46 @@ def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit, force
         # Step 3: Apply budget constraints
         click.echo("💰 Applying token budget...")
         budget_manager = ContextBudgetManager(total_budget=token_limit)
-        budget_items = budget_manager.create_budget_items(context_selection)
+        
+        # Convert ContextItem list to dictionary format expected by budget manager
+        context_dict = {}
+        for item in context_selection:
+            item_type = item.node.node_type
+            if item_type not in context_dict:
+                context_dict[item_type] = []
+            
+            # Load content from file if available
+            content = ''
+            if item.node.file_path and os.path.exists(item.node.file_path):
+                try:
+                    with open(item.node.file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                except Exception:
+                    content = ''
+            
+            # Convert ContextItem to dictionary format expected by budget manager
+            item_dict = {
+                'id': item.node.id,
+                'type': item.node.node_type,
+                'title': item.node.properties.get('title', 'Unknown'),
+                'content': content,
+                'file_path': item.node.file_path or '',
+                'score': item.score,
+                'reasons': item.reasons,
+                'properties': item.node.properties,
+                'metadata': item.node.metadata,
+                'node': {
+                    'id': item.node.id,
+                    'type': item.node.node_type,
+                    'title': item.node.properties.get('title', 'Unknown'),
+                    'file_path': item.node.file_path or '',
+                    'properties': item.node.properties,
+                    'metadata': item.node.metadata
+                }
+            }
+            context_dict[item_type].append(item_dict)
+        
+        budget_items = budget_manager.create_budget_items(context_dict)
         selected_items, overflow_items, budget_summary = budget_manager.apply_budget(budget_items)
         
         # Step 4: Load rules
@@ -4128,7 +4167,7 @@ def ctx_select(target_path, feature, top_k, output):
             click.echo(f"📋 Feature: {feature}")
         
         selector = ContextSelector(ROOT)
-        context = selector.select_context(target_path, feature, top_k)
+        context = selector.select_context(target_path, feature, max_items=top_k)
         
         if not context:
             click.echo("❌ No context found for target path")
@@ -4175,7 +4214,7 @@ def ctx_budget(target_path, feature, budget, output, report):
         
         # Get context selection
         selector = ContextSelector(ROOT)
-        context = selector.select_context(target_path, feature, top_k=10)  # Get more items for budgeting
+        context = selector.select_context(target_path, feature, max_items=10)  # Get more items for budgeting
         
         if not context:
             click.echo("❌ No context found for target path")
