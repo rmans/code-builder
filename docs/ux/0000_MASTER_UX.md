@@ -25,3 +25,4 @@ links:
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
 | UX-2025-09-06-test-ux-document | Test UX Document | draft |  | ./UX-2025-09-06-test-ux-document.md |
+| UX-2025-09-06-test-ux-with-react-a | Test UX with React and TypeScript | draft |  | ./UX-2025-09-06-test-ux-with-react-a.md |

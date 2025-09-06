@@ -14,12 +14,13 @@ links:
   integrations: []
   tasks: []
   ux: []
+related_adrs: []
 ---
 
 # Product Requirements Document: Unknown Product
 
 **PRD ID:** PRD-2025-09-06-unknownproduct  
-**Generated:** 2025-09-06 01:48:47  
+**Generated:** 2025-09-06 07:32:42  
 **Status:** Draft
 
 ## Problem

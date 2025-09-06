@@ -3,8 +3,10 @@ import os, json, datetime, glob, re, fnmatch, subprocess
 import click
 from jinja2 import Template
 from pathlib import Path as PPath
+from pathlib import Path
 from typing import Dict
 import requests
+import yaml
 
 ROOT  = os.path.dirname(os.path.dirname(__file__))
 DOCS  = os.path.join(ROOT, "docs")
@@ -337,7 +339,6 @@ links:
             content = front_matter + content
         
         # Parse existing front-matter
-        import re
         import yaml
         
         match = re.search(r'^---\n(.*?)\n---\n', content, flags=re.S)
@@ -393,7 +394,6 @@ def _extract_target_from_prd(prd_file) -> str:
         
         # Look for target information in PRD content
         # This could be in a "Target Path" or "Source" section
-        import re
         
         # Try to find target path patterns
         target_patterns = [
@@ -423,7 +423,6 @@ def _extract_batch_kwargs_from_prd(prd_file) -> dict:
             content = f.read()
         
         # Extract key information from PRD content
-        import re
         
         batch_kwargs = {}
         
@@ -510,7 +509,6 @@ def _refresh_prd_context(prd_id: str, question_set: str, pack: bool, force: bool
     from discovery.validator import DiscoveryValidator
     from discovery.generators import DiscoveryGenerators
     import yaml
-    from pathlib import Path
     
     # Load the PRD cache file
     prd_cache_file = Path("builder/cache/discovery") / f"{prd_id}.yml"
@@ -567,7 +565,6 @@ def _adapt_results_for_prd(results, target_prd_id, prd_file):
     """Adapt discovery results to match a specific PRD ID"""
     import yaml
     import hashlib
-    from pathlib import Path
     
     try:
         # Extract information from the PRD file
@@ -637,7 +634,6 @@ def _extract_target_from_doc(doc_file):
             content = f.read()
         
         # Look for target information in document content
-        import re
         
         # Try to find target path patterns
         target_patterns = [
@@ -669,7 +665,6 @@ def _extract_batch_kwargs_from_doc(doc_file):
             content = f.read()
         
         # Extract key information from document content
-        import re
         
         batch_kwargs = {}
         
@@ -757,7 +752,6 @@ def _update_doc_content_hash(doc_id, doc_file):
     """Update content hash for non-PRD documents"""
     import yaml
     import hashlib
-    from pathlib import Path
     from datetime import datetime
     
     try:
@@ -800,7 +794,6 @@ def _generate_targeted_discovery_context(doc_id, doc_file, doc_type):
     """Generate targeted discovery context for ARCH and IMPL documents"""
     import yaml
     import hashlib
-    from pathlib import Path
     from discovery.engine import DiscoveryEngine
     from datetime import datetime
     
@@ -853,7 +846,6 @@ def _generate_lightweight_discovery_context(doc_id, doc_file, doc_type):
     """Generate lightweight discovery context for ADR, EXEC, and UX documents"""
     import yaml
     import hashlib
-    from pathlib import Path
     from datetime import datetime
     
     try:
@@ -952,7 +944,6 @@ def _analyze_adr_context(doc_file):
             content = f.read()
         
         # Extract ADR-specific information
-        import re
         
         adr_analysis = {
             'decision_rationale': _extract_section(content, '## Decision'),
@@ -1009,20 +1000,17 @@ def _analyze_ux_context(doc_file):
 
 def _extract_section(content, section_header):
     """Extract content from a specific section"""
-    import re
     pattern = f"{re.escape(section_header)}\\s*\\n\\s*(.+?)(?=\\n##|\\Z)"
     match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
     return match.group(1).strip() if match else ""
 
 def _extract_status(content):
     """Extract status from document content"""
-    import re
     status_match = re.search(r'status[:\s]+(.+)', content, re.IGNORECASE)
     return status_match.group(1).strip() if status_match else "draft"
 
 def _extract_related_decisions(content):
     """Extract related decisions from ADR content"""
-    import re
     related_match = re.search(r'related[:\s]+(.+)', content, re.IGNORECASE)
     if related_match:
         return [d.strip() for d in related_match.group(1).split(',')]
@@ -1069,7 +1057,6 @@ def _refresh_targeted_context(doc_id, doc_file, doc_type, pack, force=False):
     """Refresh targeted discovery context for ARCH and IMPL documents"""
     import yaml
     import hashlib
-    from pathlib import Path
     from datetime import datetime
     
     try:
@@ -1118,7 +1105,6 @@ def _refresh_lightweight_context(doc_id, doc_file, doc_type, force=False):
     """Refresh lightweight discovery context for ADR, EXEC, and UX documents"""
     import yaml
     import hashlib
-    from pathlib import Path
     from datetime import datetime
     
     try:
@@ -1203,8 +1189,6 @@ def _load_rules(feature, stacks):
     return merge_context_rules(feature or None, [s.strip() for s in stacks.split(",") if s.strip()])
 
 # -------------------- DOCUMENT HELPERS --------------------
-import re, yaml
-from pathlib import Path
 
 def _doc_load_front_matter(path):
     txt = Path(path).read_text(encoding="utf-8")
@@ -2170,8 +2154,6 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 def ctx_build(target_path, purpose, feature, stacks, token_limit, prd):
     """Build context package for a target path"""
     import yaml
-    import re
-    from pathlib import Path
     
     # Ensure cache directory exists
     os.makedirs(CACHE, exist_ok=True)
@@ -3121,7 +3103,6 @@ def ctx_explain(input, selection):
     """Explain why specific context items were selected with ranked table"""
     try:
         import json
-        from pathlib import Path
         from datetime import datetime
         
         # Check if files exist
@@ -3311,7 +3292,6 @@ def _generate_cache_key(target_path, purpose, feature, stacks, token_limit):
     """Generate cache key based on inputs and file hashes"""
     import hashlib
     import os
-    from pathlib import Path
     
     # Pack schema version (increment when structure changes)
     PACK_SCHEMA_VERSION = "1.0"
@@ -4717,7 +4697,6 @@ def discover_validate(context_file, strict, lenient, min_features, min_idea_word
         from discovery.validator import DiscoveryValidator
         import json
         import yaml
-        from pathlib import Path
         
         click.echo(f"🔍 Validating: {context_file}")
         
@@ -4862,7 +4841,6 @@ def discover_validate(context_file, strict, lenient, min_features, min_idea_word
 def discover_refresh(prd, regenerate_docs, regenerate_pack, question_set, force):
     """Refresh a single PRD by re-running analysis and synthesis"""
     import yaml
-    from pathlib import Path
     from discovery.engine import DiscoveryEngine
     from discovery.analyzer import CodeAnalyzer
     from discovery.synthesizer import DiscoverySynthesizer
@@ -4964,7 +4942,6 @@ def discover_scan(auto_generate, pack, question_set, type, force):
     """Scan all documents and refresh stale or missing contexts"""
     import yaml
     import hashlib
-    from pathlib import Path
     from discovery.engine import DiscoveryEngine
     
     try:
@@ -5128,7 +5105,6 @@ def discover_regenerate(batch, reports, docs, diagrams, all, input, output_dir):
     try:
         from discovery.generators import DiscoveryGenerators
         import json
-        from pathlib import Path
         
         # Determine what to generate
         if all:
