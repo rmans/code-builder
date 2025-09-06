@@ -172,7 +172,7 @@ def _is_prd_stale(prd_file, cache_file) -> bool:
     except Exception:
         return True  # Error means stale
 
-def _refresh_prd_context(prd_id: str, question_set: str, pack: bool) -> None:
+def _refresh_prd_context(prd_id: str, question_set: str, pack: bool, force: bool = False) -> None:
     """Refresh a single PRD context using existing refresh logic"""
     from discovery.engine import DiscoveryEngine
     from discovery.analyzer import CodeAnalyzer
@@ -735,7 +735,7 @@ def _analyze_code_quality(target):
         'maintainability': 'High'
     }
 
-def _refresh_targeted_context(doc_id, doc_file, doc_type, pack):
+def _refresh_targeted_context(doc_id, doc_file, doc_type, pack, force=False):
     """Refresh targeted discovery context for ARCH and IMPL documents"""
     import yaml
     import hashlib
@@ -784,7 +784,7 @@ def _refresh_targeted_context(doc_id, doc_file, doc_type, pack):
     except Exception as e:
         raise Exception(f"Failed to refresh targeted context for {doc_id}: {e}")
 
-def _refresh_lightweight_context(doc_id, doc_file, doc_type):
+def _refresh_lightweight_context(doc_id, doc_file, doc_type, force=False):
     """Refresh lightweight discovery context for ADR, EXEC, and UX documents"""
     import yaml
     import hashlib
@@ -4167,7 +4167,8 @@ def discover_validate(context_file, strict, output):
 @click.option("--regenerate-docs", is_flag=True, help="Regenerate documentation after refresh")
 @click.option("--regenerate-pack", is_flag=True, help="Regenerate context pack after refresh")
 @click.option("--question-set", default="comprehensive", help="Question set to use for refresh")
-def discover_refresh(prd, regenerate_docs, regenerate_pack, question_set):
+@click.option("--force", is_flag=True, help="Force regeneration even if cache is valid")
+def discover_refresh(prd, regenerate_docs, regenerate_pack, question_set, force):
     """Refresh a single PRD by re-running analysis and synthesis"""
     import yaml
     from pathlib import Path
@@ -4201,6 +4202,13 @@ def discover_refresh(prd, regenerate_docs, regenerate_pack, question_set):
         
         # Initialize discovery engine
         engine = DiscoveryEngine(question_set=question_set)
+        
+        # Check if we need to force refresh or if cache is invalid
+        if not force:
+            # Check if cache is still valid
+            if engine._is_cache_valid(Path(original_target), {'question_set': question_set}, force):
+                click.echo("✅ Cache is still valid, skipping refresh")
+                return
         
         # Re-run analysis
         click.echo("🔍 Re-running analysis...")
@@ -4260,7 +4268,8 @@ def discover_refresh(prd, regenerate_docs, regenerate_pack, question_set):
 @click.option("--pack", is_flag=True, help="Generate context packs for refreshed documents")
 @click.option("--question-set", default="comprehensive", help="Question set to use for refresh")
 @click.option("--type", default="all", help="Document type to scan (prd, adr, arch, exec, impl, integrations, tasks, ux, all)")
-def discover_scan(auto_generate, pack, question_set, type):
+@click.option("--force", is_flag=True, help="Force regeneration even if cache is valid")
+def discover_scan(auto_generate, pack, question_set, type, force):
     """Scan all documents and refresh stale or missing contexts"""
     import yaml
     import hashlib
@@ -4286,6 +4295,9 @@ def discover_scan(auto_generate, pack, question_set, type):
             elif doc_type == "integrations":
                 # Integrations use different pattern
                 pattern = "INTEGRATIONS-*.md"
+            elif doc_type == "adrs":
+                # ADRs use ADR-*.md pattern
+                pattern = "ADR-*.md"
             else:
                 # Other types use TYPE-*.md pattern
                 pattern = f"{doc_type.upper()}-*.md"
@@ -4327,7 +4339,7 @@ def discover_scan(auto_generate, pack, question_set, type):
                         try:
                             target = _extract_target_from_doc(doc_file) or "."
                             batch_kwargs = _extract_batch_kwargs_from_doc(doc_file)
-                            results = engine.discover(target, batch_kwargs=batch_kwargs)
+                            results = engine.discover(target, batch_kwargs=batch_kwargs, force=force)
                             
                             generated_prd_id = results.get('prd_id')
                             if generated_prd_id == doc_id:
@@ -4381,13 +4393,13 @@ def discover_scan(auto_generate, pack, question_set, type):
                     
                     if discovery_tier == "full":
                         # Tier 1: Full discovery refresh (PRD)
-                        _refresh_prd_context(doc_id, question_set, pack)
+                        _refresh_prd_context(doc_id, question_set, pack, force)
                     elif discovery_tier == "targeted":
                         # Tier 2: Targeted discovery refresh (ARCH, IMPL)
-                        _refresh_targeted_context(doc_id, doc_file, doc_type, pack)
+                        _refresh_targeted_context(doc_id, doc_file, doc_type, pack, force)
                     elif discovery_tier == "lightweight":
                         # Tier 3: Lightweight discovery refresh (ADR, EXEC, UX)
-                        _refresh_lightweight_context(doc_id, doc_file, doc_type)
+                        _refresh_lightweight_context(doc_id, doc_file, doc_type, force)
                     else:
                         # Tier 4: Content hash only (TASKS, INTEGRATIONS)
                         _update_doc_content_hash(doc_id, doc_file)

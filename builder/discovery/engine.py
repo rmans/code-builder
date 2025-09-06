@@ -43,13 +43,14 @@ class DiscoveryEngine:
         self.results: Dict[str, Any] = {}
         self.cache_key: Optional[str] = None
     
-    def discover(self, target_path: str, options: Optional[Dict] = None, batch_kwargs: Optional[Dict] = None) -> Dict[str, Any]:
+    def discover(self, target_path: str, options: Optional[Dict] = None, batch_kwargs: Optional[Dict] = None, force: bool = False) -> Dict[str, Any]:
         """Run the complete discovery process for a target file or directory.
         
         Args:
             target_path: Path to analyze (file or directory)
             options: Optional configuration options
             batch_kwargs: Optional batch input data for interview
+            force: Force regeneration even if cache is valid
             
         Returns:
             Dictionary containing discovery results
@@ -65,10 +66,15 @@ class DiscoveryEngine:
             options['batch_kwargs'] = batch_kwargs
         self.cache_key = self._generate_cache_key(target, options)
         
-        # Check cache first
-        cached_result = self._load_from_cache()
-        if cached_result:
-            return cached_result
+        # Check cache validity first
+        if not force and self._is_cache_valid(target, options, force):
+            cached_result = self._load_from_cache()
+            if cached_result:
+                return cached_result
+        
+        # If force or cache invalid, clear any existing cache
+        if force or not self._is_cache_valid(target, options, force):
+            self._clear_cache()
         
         # Run discovery pipeline
         try:
@@ -151,18 +157,174 @@ class DiscoveryEngine:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
     
     def _generate_cache_key(self, target: Path, options: Dict) -> str:
-        """Generate a cache key based on target and options."""
+        """Generate a comprehensive cache key based on all relevant inputs."""
         import hashlib
+        import yaml
+        from datetime import datetime
         
-        # Include target path, modification time, and options
+        # Start with basic target and options
         key_data = {
             'target': str(target),
-            'mtime': target.stat().st_mtime if target.exists() else 0,
-            'options': options
+            'target_mtime': target.stat().st_mtime if target.exists() else 0,
+            'options': options,
+            'question_set': self.question_set
         }
         
+        # Add patterns.yml hash
+        patterns_file = self.root_path / "builder" / "discovery" / "patterns.yml"
+        if patterns_file.exists():
+            key_data['patterns_mtime'] = patterns_file.stat().st_mtime
+            try:
+                with open(patterns_file, 'r', encoding='utf-8') as f:
+                    patterns_content = f.read()
+                key_data['patterns_hash'] = hashlib.md5(patterns_content.encode()).hexdigest()
+            except Exception:
+                key_data['patterns_hash'] = 'error'
+        else:
+            key_data['patterns_mtime'] = 0
+            key_data['patterns_hash'] = 'missing'
+        
+        # Add questions.yml hash
+        questions_file = self.root_path / "builder" / "discovery" / "questions.yml"
+        if questions_file.exists():
+            key_data['questions_mtime'] = questions_file.stat().st_mtime
+            try:
+                with open(questions_file, 'r', encoding='utf-8') as f:
+                    questions_content = f.read()
+                key_data['questions_hash'] = hashlib.md5(questions_content.encode()).hexdigest()
+            except Exception:
+                key_data['questions_hash'] = 'error'
+        else:
+            key_data['questions_mtime'] = 0
+            key_data['questions_hash'] = 'missing'
+        
+        # Add PRD documents hash (if any exist)
+        prd_dir = self.root_path / "docs" / "prd"
+        if prd_dir.exists():
+            prd_files = list(prd_dir.glob("PRD-*.md"))
+            prd_hashes = {}
+            for prd_file in prd_files:
+                try:
+                    with open(prd_file, 'r', encoding='utf-8') as f:
+                        prd_content = f.read()
+                    prd_hashes[str(prd_file.name)] = {
+                        'mtime': prd_file.stat().st_mtime,
+                        'hash': hashlib.md5(prd_content.encode()).hexdigest()
+                    }
+                except Exception:
+                    prd_hashes[str(prd_file.name)] = {'mtime': 0, 'hash': 'error'}
+            key_data['prd_files'] = prd_hashes
+        else:
+            key_data['prd_files'] = {}
+        
+        # Add linked documents hash (ADRs, ARCH, EXEC, IMPL, etc.)
+        linked_docs = {}
+        for doc_type in ['adrs', 'arch', 'exec', 'impl', 'integrations', 'tasks', 'ux']:
+            doc_dir = self.root_path / "docs" / doc_type
+            if doc_dir.exists():
+                doc_files = list(doc_dir.glob(f"{doc_type.upper()}-*.md"))
+                type_hashes = {}
+                for doc_file in doc_files:
+                    try:
+                        with open(doc_file, 'r', encoding='utf-8') as f:
+                            doc_content = f.read()
+                        type_hashes[str(doc_file.name)] = {
+                            'mtime': doc_file.stat().st_mtime,
+                            'hash': hashlib.md5(doc_content.encode()).hexdigest()
+                        }
+                    except Exception:
+                        type_hashes[str(doc_file.name)] = {'mtime': 0, 'hash': 'error'}
+                linked_docs[doc_type] = type_hashes
+            else:
+                linked_docs[doc_type] = {}
+        key_data['linked_docs'] = linked_docs
+        
+        # Add key source file mtimes (important source files)
+        key_source_files = self._find_key_source_files(target)
+        source_mtimes = {}
+        for source_file in key_source_files:
+            try:
+                source_mtimes[str(source_file)] = source_file.stat().st_mtime
+            except Exception:
+                source_mtimes[str(source_file)] = 0
+        key_data['key_source_files'] = source_mtimes
+        
+        # Add feature map hash (if exists in results)
+        if hasattr(self, 'results') and 'synthesis' in self.results:
+            feature_map = self.results.get('synthesis', {}).get('feature_map', {})
+            key_data['feature_map_hash'] = hashlib.md5(json.dumps(feature_map, sort_keys=True).encode()).hexdigest()
+        else:
+            key_data['feature_map_hash'] = 'not_available'
+        
+        # Generate final hash
         key_string = json.dumps(key_data, sort_keys=True)
         return hashlib.sha256(key_string.encode()).hexdigest()[:16]
+    
+    def _find_key_source_files(self, target: Path) -> List[Path]:
+        """Find key source files that should invalidate cache when changed."""
+        key_files = []
+        
+        # Always include the target file/directory
+        if target.exists():
+            if target.is_file():
+                key_files.append(target)
+            else:
+                # For directories, include key files
+                key_files.extend(self._find_important_files_in_dir(target))
+        
+        # Add common important files from project root
+        important_patterns = [
+            "package.json", "package-lock.json", "pnpm-lock.yaml",
+            "tsconfig.json", "tsconfig.*.json",
+            "requirements.txt", "pyproject.toml", "setup.py",
+            "go.mod", "go.sum",
+            "Dockerfile", "docker-compose.yml",
+            "README.md", "CHANGELOG.md",
+            ".github/workflows/*.yml", ".github/workflows/*.yaml"
+        ]
+        
+        for pattern in important_patterns:
+            if "*" in pattern:
+                # Handle glob patterns
+                matches = list(self.root_path.glob(pattern))
+                key_files.extend(matches)
+            else:
+                # Handle single files
+                file_path = self.root_path / pattern
+                if file_path.exists():
+                    key_files.append(file_path)
+        
+        # Add source files from common directories
+        source_dirs = ["src", "lib", "app", "components", "pages", "api"]
+        for src_dir in source_dirs:
+            src_path = self.root_path / src_dir
+            if src_path.exists() and src_path.is_dir():
+                key_files.extend(self._find_important_files_in_dir(src_path))
+        
+        # Remove duplicates and return
+        return list(set(key_files))
+    
+    def _find_important_files_in_dir(self, directory: Path) -> List[Path]:
+        """Find important files in a directory (limit to avoid too many files)."""
+        important_files = []
+        important_extensions = {'.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.java', '.cs'}
+        
+        try:
+            for file_path in directory.rglob("*"):
+                if file_path.is_file():
+                    # Include files with important extensions
+                    if file_path.suffix in important_extensions:
+                        important_files.append(file_path)
+                    # Include configuration files
+                    elif file_path.name in ['package.json', 'tsconfig.json', 'requirements.txt', 'go.mod']:
+                        important_files.append(file_path)
+                    # Limit to prevent too many files
+                    if len(important_files) > 50:  # Reasonable limit
+                        break
+        except Exception:
+            pass  # Silently handle permission errors
+        
+        return important_files
     
     def _load_from_cache(self) -> Optional[Dict]:
         """Load results from cache if available."""
@@ -177,6 +339,41 @@ class DiscoveryEngine:
             except (json.JSONDecodeError, IOError):
                 return None
         return None
+    
+    def _is_cache_valid(self, target: Path, options: Dict, force: bool = False) -> bool:
+        """Check if the current cache is still valid based on comprehensive hash comparison."""
+        if force:
+            return False
+        
+        if not self.cache_key:
+            return False
+        
+        # Generate current cache key
+        current_cache_key = self._generate_cache_key(target, options)
+        
+        # Compare with stored cache key
+        return current_cache_key == self.cache_key
+    
+    def _get_cache_info(self) -> Dict[str, Any]:
+        """Get information about the current cache state."""
+        if not self.cache_key:
+            return {'status': 'no_cache', 'cache_key': None}
+        
+        cache_file = self.cache_dir / f"{self.cache_key}.json"
+        if not cache_file.exists():
+            return {'status': 'missing', 'cache_key': self.cache_key}
+        
+        try:
+            stat = cache_file.stat()
+            return {
+                'status': 'exists',
+                'cache_key': self.cache_key,
+                'size': stat.st_size,
+                'mtime': stat.st_mtime,
+                'path': str(cache_file)
+            }
+        except Exception:
+            return {'status': 'error', 'cache_key': self.cache_key}
     
     def _save_to_cache(self) -> None:
         """Save results to cache."""
