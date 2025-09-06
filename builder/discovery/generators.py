@@ -610,9 +610,9 @@ class DiscoveryGenerators:
 
 This PRD references the following Architecture Decision Records (ADRs):
 
-- [ADR-0001: Technology Stack Selection](./adr/0001-technology-stack.md)
-- [ADR-0002: System Architecture](./adr/0002-system-architecture.md)
-- [ADR-0003: Data Model Design](./adr/0003-data-model.md)
+- [ADR-0001: Technology Stack Selection](./adrs/ADR-0001.md)
+- [ADR-0002: System Architecture](./adrs/ADR-0002.md)
+- [ADR-0003: Data Model Design](./adrs/ADR-0003.md)
 
 ## Implementation Plan
 
@@ -676,12 +676,12 @@ This PRD references the following Architecture Decision Records (ADRs):
         adr_links = []
         
         try:
-            # Look for ADR files in docs/adr directory
-            adr_dir = Path('docs/adr')
+            # Look for ADR files in docs/adrs directory (existing system)
+            adr_dir = Path('docs/adrs')
             if adr_dir.exists():
                 for adr_file in adr_dir.glob('*.md'):
-                    # Check for proper ADR format: 0001-title.md
-                    if adr_file.name[0:4].isdigit() and adr_file.name[4] == '-':
+                    # Check for existing ADR format: ADR-XXXX.md
+                    if adr_file.name.startswith('ADR-') and adr_file.name != '0000_MASTER_ADR.md':
                         # Extract ADR number and title
                         adr_number = adr_file.stem
                         title = self._extract_adr_title(adr_file)
@@ -693,7 +693,7 @@ This PRD references the following Architecture Decision Records (ADRs):
                         })
             
             # Sort by ADR number (numeric sort)
-            adr_links.sort(key=lambda x: int(x['number'].split('-')[0]))
+            adr_links.sort(key=lambda x: int(x['number'].split('ADR-')[1]))
             
         except OSError:
             # Handle file operation errors gracefully
@@ -753,8 +753,8 @@ This document contains links to Architecture Decision Records (ADRs) referenced 
 
 When creating new ADRs:
 
-1. Use the format: `000X-title.md` (4-digit zero-padded number)
-2. Include proper ADR structure: Context, Decision, Consequences
+1. Use the existing ADR system: `python builder/cli.py adr:new --title "Your Title"`
+2. This will create ADR-XXXX.md files in docs/adrs/
 3. Reference the PRD ID: {prd_id}
 4. Update this links file
 
