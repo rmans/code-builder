@@ -518,15 +518,8 @@ class DiscoveryGenerators:
             
             prd_artifacts[f"{prd_id}.md"] = prd_content
             
-            # Link existing ADRs
-            adr_links = self._find_existing_adrs()
-            if adr_links:
-                prd_artifacts['adr_links.md'] = self._generate_adr_links_content(adr_links, prd_id)
-                
-                # Create ADR links file
-                adr_links_file = prd_dir / f"{prd_id}-adr-links.md"
-                with open(adr_links_file, 'w', encoding='utf-8') as f:
-                    f.write(prd_artifacts['adr_links.md'])
+            # Note: ADR linking is handled by the existing master ADR system
+            # No need to create separate ADR-link files
             
         except OSError as e:
             # Handle file operation errors gracefully
@@ -610,9 +603,12 @@ class DiscoveryGenerators:
 
 This PRD references the following Architecture Decision Records (ADRs):
 
+- [Master ADR Index](./adrs/0000_MASTER_ADR.md) - Complete list of all ADRs
 - [ADR-0001: Technology Stack Selection](./adrs/ADR-0001.md)
 - [ADR-0002: System Architecture](./adrs/ADR-0002.md)
 - [ADR-0003: Data Model Design](./adrs/ADR-0003.md)
+
+*Note: Use `python builder/cli.py adr:new --title "Your Title"` to create new ADRs.*
 
 ## Implementation Plan
 
@@ -667,100 +663,3 @@ This PRD references the following Architecture Decision Records (ADRs):
         
         return content
     
-    def _find_existing_adrs(self) -> List[Dict[str, str]]:
-        """Find existing ADR files and extract their information.
-        
-        Returns:
-            List of ADR information dictionaries
-        """
-        adr_links = []
-        
-        try:
-            # Look for ADR files in docs/adrs directory (existing system)
-            adr_dir = Path('docs/adrs')
-            if adr_dir.exists():
-                for adr_file in adr_dir.glob('*.md'):
-                    # Check for existing ADR format: ADR-XXXX.md
-                    if adr_file.name.startswith('ADR-') and adr_file.name != '0000_MASTER_ADR.md':
-                        # Extract ADR number and title
-                        adr_number = adr_file.stem
-                        title = self._extract_adr_title(adr_file)
-                        adr_links.append({
-                            'file': adr_file.name,
-                            'number': adr_number,
-                            'title': title,
-                            'path': str(adr_file.relative_to(Path('docs')))
-                        })
-            
-            # Sort by ADR number (numeric sort)
-            adr_links.sort(key=lambda x: int(x['number'].split('ADR-')[1]))
-            
-        except OSError:
-            # Handle file operation errors gracefully
-            pass
-        
-        return adr_links
-    
-    def _extract_adr_title(self, adr_file: Path) -> str:
-        """Extract title from ADR file.
-        
-        Args:
-            adr_file: Path to ADR file
-            
-        Returns:
-            Extracted title or filename
-        """
-        try:
-            with open(adr_file, 'r', encoding='utf-8') as f:
-                first_line = f.readline().strip()
-                if first_line.startswith('# '):
-                    return first_line[2:]
-        except OSError:
-            pass
-        
-        return adr_file.stem
-    
-    def _generate_adr_links_content(self, adr_links: List[Dict[str, str]], prd_id: str) -> str:
-        """Generate ADR links content.
-        
-        Args:
-            adr_links: List of ADR information
-            prd_id: PRD ID
-            
-        Returns:
-            ADR links content as string
-        """
-        content = f"""# ADR Links for {prd_id}
-
-This document contains links to Architecture Decision Records (ADRs) referenced in the PRD.
-
-## Available ADRs
-
-"""
-        
-        for adr in adr_links:
-            content += f"- **{adr['number']}:** [{adr['title']}](./{adr['path']})\n"
-        
-        content += f"""
-## How to Use
-
-1. Review the ADRs listed above
-2. Ensure they align with the PRD requirements
-3. Update ADRs if necessary to reflect current decisions
-4. Link new ADRs as they are created
-
-## Creating New ADRs
-
-When creating new ADRs:
-
-1. Use the existing ADR system: `python builder/cli.py adr:new --title "Your Title"`
-2. This will create ADR-XXXX.md files in docs/adrs/
-3. Reference the PRD ID: {prd_id}
-4. Update this links file
-
----
-
-*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
-"""
-        
-        return content
