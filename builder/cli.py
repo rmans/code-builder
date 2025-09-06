@@ -187,6 +187,87 @@ def _render(path, ctx):
     with open(path, "r", encoding="utf-8") as f:
         return Template(f.read()).render(**ctx)
 
+def _find_prd_discovery_file(prd_id):
+    """Find and load PRD discovery file for the given PRD ID."""
+    if not prd_id:
+        return None, None
+    
+    # Look for discovery files in builder/cache/discovery_outputs/
+    discovery_outputs_dir = os.path.join(ROOT, "builder", "cache", "discovery_outputs")
+    if os.path.exists(discovery_outputs_dir):
+        # Look for files matching PRD-*.yml pattern
+        for filename in os.listdir(discovery_outputs_dir):
+            if filename.startswith(prd_id) and filename.endswith('.yml'):
+                discovery_file_path = os.path.join(discovery_outputs_dir, filename)
+                try:
+                    with open(discovery_file_path, 'r', encoding='utf-8') as f:
+                        discovery_data = yaml.safe_load(f)
+                        return discovery_data, discovery_file_path
+                except Exception as e:
+                    click.echo(f"⚠️  Warning: Could not load discovery file {filename}: {e}")
+                    continue
+    
+    # Also look in builder/cache/ for discovery context files
+    cache_dir = os.path.join(ROOT, "builder", "cache")
+    if os.path.exists(cache_dir):
+        for filename in os.listdir(cache_dir):
+            if filename.startswith(prd_id) and filename.endswith('.yml'):
+                discovery_file_path = os.path.join(cache_dir, filename)
+                try:
+                    with open(discovery_file_path, 'r', encoding='utf-8') as f:
+                        discovery_data = yaml.safe_load(f)
+                        return discovery_data, discovery_file_path
+                except Exception as e:
+                    click.echo(f"⚠️  Warning: Could not load discovery file {filename}: {e}")
+                    continue
+    
+    return None, None
+
+def _format_discovery_context(discovery_data):
+    """Format discovery data for display in context.md"""
+    if not discovery_data:
+        return "No discovery data available"
+    
+    formatted = []
+    
+    # Add basic discovery info
+    if 'product' in discovery_data:
+        formatted.append(f"**Product**: {discovery_data['product']}")
+    if 'idea' in discovery_data:
+        formatted.append(f"**Idea**: {discovery_data['idea']}")
+    if 'created' in discovery_data:
+        formatted.append(f"**Created**: {discovery_data['created']}")
+    
+    # Add key features if available
+    if 'key_features' in discovery_data:
+        features = discovery_data['key_features']
+        if isinstance(features, list):
+            formatted.append(f"**Key Features**: {', '.join(features)}")
+        else:
+            formatted.append(f"**Key Features**: {features}")
+    
+    # Add success metrics if available
+    if 'success_metrics' in discovery_data:
+        formatted.append(f"**Success Metrics**: {discovery_data['success_metrics']}")
+    
+    # Add target users if available
+    if 'target_users' in discovery_data:
+        formatted.append(f"**Target Users**: {discovery_data['target_users']}")
+    
+    # Add insights if available
+    if 'insights' in discovery_data and discovery_data['insights']:
+        formatted.append("\n**Insights**:")
+        for insight in discovery_data['insights']:
+            formatted.append(f"- {insight}")
+    
+    # Add next steps if available
+    if 'next_steps' in discovery_data and discovery_data['next_steps']:
+        formatted.append("\n**Next Steps**:")
+        for step in discovery_data['next_steps']:
+            formatted.append(f"- {step}")
+    
+    return '\n'.join(formatted) if formatted else "Discovery data available but no key information found"
+
 def _update_master_file(doc_type, doc_id, title, status="draft", domain=""):
     """Update the master index file for a document type"""
     master_files = {
@@ -2056,7 +2137,8 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 @click.option("--feature", default="", help="Feature name for rules")
 @click.option("--stacks", default="typescript,react", help="Comma-separated stack names")
 @click.option("--token-limit", default=8000, help="Token budget limit")
-def ctx_build(target_path, purpose, feature, stacks, token_limit):
+@click.option("--prd", default="", help="PRD document ID (e.g., PRD-YYYY-MM-DD-slug) for discovery context")
+def ctx_build(target_path, purpose, feature, stacks, token_limit, prd):
     """Build context package for a target path"""
     import yaml
     import re
@@ -2068,38 +2150,55 @@ def ctx_build(target_path, purpose, feature, stacks, token_limit):
     # Load rules
     rules = _load_rules(feature, stacks)
     
-    # Find nearest PRD
+    # Find PRD content and metadata
     prd_content = ""
     prd_metadata = {}
     adr_contents = []
+    discovery_data = None
+    discovery_file_path = None
     
-    # Look for PRD in same directory or parent directories
-    target_dir = os.path.dirname(target_path)
-    prd_found = False
+    if prd:
+        # F2: Use specific PRD discovery file when --prd flag is provided
+        click.echo(f"🔍 Looking for PRD discovery file: {prd}")
+        discovery_data, discovery_file_path = _find_prd_discovery_file(prd)
+        
+        if discovery_data:
+            click.echo(f"✅ Found discovery file: {discovery_file_path}")
+            # Extract PRD content from discovery data
+            prd_content = discovery_data.get('prd_content', '')
+            prd_metadata = discovery_data.get('prd_metadata', {})
+        else:
+            click.echo(f"⚠️  Warning: No discovery file found for PRD {prd}")
     
-    # Search for PRD files
-    for root, dirs, files in os.walk(DOCS):
-        if root.startswith(os.path.join(DOCS, "prd")):
-            for file in files:
-                if file.endswith('.md'):
-                    prd_path = os.path.join(root, file)
-                    try:
-                        with open(prd_path, 'r', encoding='utf-8') as f:
-                            content = f.read()
-                            if content.startswith('---'):
-                                parts = content.split('---', 2)
-                                if len(parts) >= 3:
-                                    yaml_content = parts[1].strip()
-                                    metadata = yaml.safe_load(yaml_content) or {}
-                                    if metadata.get('type') == 'prd':
-                                        prd_content = content
-                                        prd_metadata = metadata
-                                        prd_found = True
-                                        break
-                    except Exception:
-                        continue
-        if prd_found:
-            break
+    # If no PRD specified or discovery file not found, look for nearest PRD
+    if not prd_content:
+        # Look for PRD in same directory or parent directories
+        target_dir = os.path.dirname(target_path)
+        prd_found = False
+        
+        # Search for PRD files
+        for root, dirs, files in os.walk(DOCS):
+            if root.startswith(os.path.join(DOCS, "prd")):
+                for file in files:
+                    if file.endswith('.md'):
+                        prd_path = os.path.join(root, file)
+                        try:
+                            with open(prd_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                                if content.startswith('---'):
+                                    parts = content.split('---', 2)
+                                    if len(parts) >= 3:
+                                        yaml_content = parts[1].strip()
+                                        metadata = yaml.safe_load(yaml_content) or {}
+                                        if metadata.get('type') == 'prd':
+                                            prd_content = content
+                                            prd_metadata = metadata
+                                            prd_found = True
+                                            break
+                        except Exception:
+                            continue
+            if prd_found:
+                break
     
     # Extract ADR references from PRD
     if prd_content:
@@ -2152,10 +2251,20 @@ def ctx_build(target_path, purpose, feature, stacks, token_limit):
         except Exception:
             pass
     
-    # Extract acceptance criteria from PRD
+    # Extract acceptance criteria from PRD or discovery data
     acceptance_criteria = []
-    if prd_content:
-        # Look for acceptance criteria section
+    if discovery_data:
+        # F2: Prefer discovery data for acceptance criteria
+        click.echo("📋 Using discovery data for acceptance criteria")
+        # Extract from discovery data structure
+        if 'acceptance_criteria' in discovery_data:
+            acceptance_criteria = discovery_data['acceptance_criteria']
+        elif 'prd_acceptance_criteria' in discovery_data:
+            acceptance_criteria = discovery_data['prd_acceptance_criteria']
+        elif 'requirements' in discovery_data and 'acceptance' in discovery_data['requirements']:
+            acceptance_criteria = discovery_data['requirements']['acceptance']
+    elif prd_content:
+        # Fallback to parsing PRD content
         lines = prd_content.split('\n')
         in_acceptance = False
         for line in lines:
@@ -2184,6 +2293,26 @@ def ctx_build(target_path, purpose, feature, stacks, token_limit):
         'acceptance_criteria': acceptance_criteria,
         'generated_at': _today()
     }
+    
+    # F2: Add discovery data and enrich selection reasons
+    if discovery_data:
+        context_package['discovery'] = {
+            'data': discovery_data,
+            'file_path': discovery_file_path,
+            'prd_id': prd
+        }
+        # Enrich selection reasons with discovery context
+        context_package['selection_reasons'] = [
+            f"PRD discovery file: {prd}",
+            f"Discovery source: {discovery_file_path}",
+            "Discovery context preferred for acceptance criteria",
+            "Discovery context preferred for rules"
+        ]
+    else:
+        context_package['selection_reasons'] = [
+            "Standard PRD lookup",
+            "No discovery file specified"
+        ]
     
     # Ensure all values are JSON serializable
     def make_serializable(obj):
@@ -2219,6 +2348,12 @@ def ctx_build(target_path, purpose, feature, stacks, token_limit):
 
 ---
 
+## Selection Reasons
+
+{chr(10).join([f"- {reason}" for reason in context_package.get('selection_reasons', [])])}
+
+---
+
 ## Rules
 
 {rules.get('rules_markdown', 'No rules found')}
@@ -2228,6 +2363,12 @@ def ctx_build(target_path, purpose, feature, stacks, token_limit):
 ## PRD
 
 {prd_content if prd_content else 'No PRD found'}
+
+---
+
+## Discovery Context
+
+{_format_discovery_context(discovery_data) if discovery_data else 'No discovery context found'}
 
 ---
 
@@ -2281,11 +2422,21 @@ def ctx_build(target_path, purpose, feature, stacks, token_limit):
     click.echo(f"\n📦 Context Package Summary:")
     click.echo(f"  Rules: {len(rules.get('rules_markdown', '').split())} words")
     click.echo(f"  PRD: {'Found' if prd_content else 'Not found'}")
+    if discovery_data:
+        click.echo(f"  Discovery: Found ({prd})")
+    else:
+        click.echo(f"  Discovery: Not found")
     click.echo(f"  ADRs: {len(adr_contents)}")
     click.echo(f"  Code excerpts: {len(code_excerpts)}")
     click.echo(f"  Test excerpts: {len(test_excerpts)}")
     click.echo(f"  Acceptance criteria: {len(acceptance_criteria)}")
     click.echo(f"  Estimated tokens: {total_tokens}/{token_limit}")
+    
+    # F2: Show selection reasons
+    if context_package.get('selection_reasons'):
+        click.echo(f"\n🎯 Selection Reasons:")
+        for reason in context_package['selection_reasons']:
+            click.echo(f"  - {reason}")
     
     if total_tokens > token_limit:
         click.echo(f"⚠️  Token budget exceeded! Consider reducing content or increasing --token-limit")
