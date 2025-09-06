@@ -37,7 +37,7 @@ Run these commands after cloning:
     pnpm run build      # build TypeScript
     pnpm run test:all   # run all tests (TypeScript + Python)
     pnpm run docs:all   # validate documentation
-    pnpm run rules:check "test/**/*.ts" --feature auth --stacks typescript,react
+    pnpm run rules:check "tests/**/*.ts" --feature auth --stacks typescript,react
 
 ## Discovery System
 
@@ -101,7 +101,7 @@ All document types now automatically discover and link related ADRs:
 
        pnpm run docs:all          # validate documentation
        pnpm run test:all          # run all tests
-       pnpm run rules:check "test/**/*.ts" --feature auth --stacks typescript,react
+       pnpm run rules:check "tests/**/*.ts" --feature auth --stacks typescript,react
 
 4. **Create Pull Request**
 
@@ -187,8 +187,9 @@ python3 builder/cli.py ctx:graph:stats
         objective.py        # Core evaluation logic
         artifact_detector.py # File type detection
         doc_schema.py       # Documentation validation
-      prompts/      # Evaluation prompt generation
-        evaluation_prompt.py
+      config/
+        prompts/    # Evaluation prompt generation
+          evaluation_prompt.py
       scripts/      # Utility scripts
         cursor_server.py    # Flask bridge server
       test_data/    # Sample files for testing
@@ -196,13 +197,20 @@ python3 builder/cli.py ctx:graph:stats
       cache/        # Generated reports, evaluations, context packs
         packs/      # Cached context packs
         prompt/     # Generated prompt blocks
-    test/
-      auth/         # Authentication module
-        login.ts    # Login functionality
-      utils/http.ts # Shared HTTP client
-      hello.ts      # Example module
-    test/
-      hello.test.ts # Vitest tests
+    tests/          # Consolidated test directory
+      data/         # Test files and fixtures
+        hello.test.ts # Vitest tests
+        hello_bad.ts  # Test fixtures
+        hello_good.ts # Test fixtures
+        hello_ugly.ts # Test fixtures
+        invalid-prd.md # Test data
+      results/      # Test output and reports
+        budget_report.md
+        coverage-final.json
+        vitest.json
+      integration/  # Integration tests
+      scripts/      # Test scripts
+      unit/         # Unit tests
     .github/
       workflows/
         ci.yml        # CI with evaluation jobs
@@ -306,7 +314,20 @@ python3 builder/cli.py iter:finish src/hello.ts --winner B --scores-file cursor_
 - **PR comments** with evaluation summaries
 - **Non-blocking** - evaluation doesn't fail CI
 
-### New Features
+### Recent Updates
+
+### Test Directory Consolidation
+- **Consolidated test structure**: All test files now organized under `tests/` directory
+- **Test data**: Moved from `.testfiles/` to `tests/data/` for better organization
+- **Test results**: Moved from `.testresults/` to `tests/results/` for output files
+- **Updated .gitignore**: Reflects new consolidated test directory structure
+
+### Import Path Fixes
+- **Fixed evaluation imports**: Corrected import paths for `evaluation_prompt` and `artifact_detector`
+- **Updated directory structure**: `builder/config/prompts/` for evaluation prompts
+- **Improved reliability**: All CLI commands now work correctly with proper imports
+
+## New Features
 
 #### Documentation Management
 - **Document creation**: `python3 builder/cli.py doc:new <type> --title "Title"`

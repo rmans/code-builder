@@ -211,7 +211,7 @@ Outputs `builder/cache/pack_context.json` and `context.md` with:
 
 - `rules:check`
 
-      python3 builder/cli.py rules:check "src/**/*.ts" --feature auth --stacks typescript,react
+      python3 builder/cli.py rules:check "tests/**/*.ts" --feature auth --stacks typescript,react
 
   Fails if any forbidden patterns found.
 
