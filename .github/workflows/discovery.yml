@@ -1,0 +1,167 @@
+name: Discovery CI
+
+on:
+  pull_request:
+    paths:
+      - "docs/prd/**"
+      - "src/**"
+      - ".github/workflows/discovery.yml"
+
+jobs:
+  discovery-scan:
+    runs-on: ubuntu-latest
+    continue-on-error: true  # G1: Warn-only mode, don't fail builds initially
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for discovery analysis
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml click jinja2 requests
+
+      - name: Run discovery scan
+        run: |
+          echo "🔍 Running discovery scan with auto-generation..."
+          python builder/cli.py discover:scan --auto-generate || {
+            echo "⚠️ Discovery scan completed with warnings (non-blocking)"
+            exit 0
+          }
+
+      - name: Prepare discovery artifacts
+        run: |
+          echo "📦 Preparing discovery artifacts..."
+          mkdir -p discovery-artifacts
+          
+          # Copy discovery cache directory
+          if [ -d "builder/cache/discovery" ]; then
+            cp -r builder/cache/discovery discovery-artifacts/
+            echo "✅ Copied builder/cache/discovery/"
+          else
+            echo "⚠️ No builder/cache/discovery/ directory found"
+          fi
+          
+          # Copy discovery context files
+          if [ -f "builder/cache/discovery_context.yml" ]; then
+            cp builder/cache/discovery_context.yml discovery-artifacts/
+            echo "✅ Copied discovery_context.yml"
+          else
+            echo "⚠️ No discovery_context.yml found"
+          fi
+          
+          # Copy generated docs from discovery outputs
+          if [ -d "builder/cache/discovery_outputs" ]; then
+            cp -r builder/cache/discovery_outputs discovery-artifacts/
+            echo "✅ Copied discovery outputs"
+          else
+            echo "⚠️ No discovery outputs found"
+          fi
+          
+          # Create summary
+          echo "📊 Discovery Artifacts Summary" > discovery-artifacts/SUMMARY.md
+          echo "===============================" >> discovery-artifacts/SUMMARY.md
+          echo "" >> discovery-artifacts/SUMMARY.md
+          echo "Generated on: $(date)" >> discovery-artifacts/SUMMARY.md
+          echo "PR: ${{ github.event.pull_request.html_url }}" >> discovery-artifacts/SUMMARY.md
+          echo "" >> discovery-artifacts/SUMMARY.md
+          
+          # List PRD files
+          echo "## PRD Files Found:" >> discovery-artifacts/SUMMARY.md
+          if [ -d "docs/prd" ]; then
+            find docs/prd -name "*.md" -not -name "0000_MASTER_*" | while read file; do
+              echo "- \`$file\`" >> discovery-artifacts/SUMMARY.md
+            done
+          else
+            echo "- No PRD files found" >> discovery-artifacts/SUMMARY.md
+          fi
+          
+          echo "" >> discovery-artifacts/SUMMARY.md
+          echo "## Discovery Context Files:" >> discovery-artifacts/SUMMARY.md
+          if [ -f "discovery-artifacts/discovery_context.yml" ]; then
+            echo "- \`discovery_context.yml\`" >> discovery-artifacts/SUMMARY.md
+          fi
+          
+          echo "" >> discovery-artifacts/SUMMARY.md
+          echo "## Generated Documentation:" >> discovery-artifacts/SUMMARY.md
+          if [ -d "discovery-artifacts/discovery_outputs" ]; then
+            find discovery-artifacts/discovery_outputs -name "*.md" | while read file; do
+              echo "- \`$(basename "$file")\`" >> discovery-artifacts/SUMMARY.md
+            done
+          fi
+          
+          echo "" >> discovery-artifacts/SUMMARY.md
+          echo "## Per-PRD YAML Files:" >> discovery-artifacts/SUMMARY.md
+          if [ -d "discovery-artifacts/discovery" ]; then
+            find discovery-artifacts/discovery -name "PRD-*.yml" | while read file; do
+              echo "- \`$(basename "$file")\`" >> discovery-artifacts/SUMMARY.md
+            done
+          fi
+          
+          echo "✅ Discovery artifacts prepared"
+
+      - name: Upload Discovery Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery-artifacts
+          path: discovery-artifacts/
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read summary if it exists
+            let summary = '## 🔍 Discovery Artifacts Generated\n\n';
+            summary += 'Discovery scan completed for this PR. Artifacts have been uploaded and are available in the Actions tab.\n\n';
+            
+            try {
+              const summaryPath = 'discovery-artifacts/SUMMARY.md';
+              if (fs.existsSync(summaryPath)) {
+                const summaryContent = fs.readFileSync(summaryPath, 'utf8');
+                summary += '```\n' + summaryContent + '\n```\n';
+              }
+            } catch (error) {
+              summary += '⚠️ Could not read summary file\n';
+            }
+            
+            summary += '\n📁 **Download artifacts** from the Actions tab to review the generated discovery context and documentation.';
+            
+            // Create or update comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Discovery Artifacts Generated')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: summary
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: summary
+              });
+            }
