@@ -1,14 +1,20 @@
 {
 	"type": "module",
 	"devDependencies": {
-		"@eslint/js": "^9.34.0",
+		"@cspell/cspell-json-reporter": "^9.2.1",
+		"@eslint/js": "^9.35.0",
+		"@types/bcryptjs": "^2.4.6",
+		"@types/jsonwebtoken": "^9.0.10",
 		"@types/node": "^24.3.1",
 		"@typescript-eslint/eslint-plugin": "^8.42.0",
 		"@typescript-eslint/parser": "^8.42.0",
 		"@vitest/coverage-v8": "3.2.4",
-		"cspell": "^8.0.0",
-		"eslint": "^9.34.0",
-		"markdownlint-cli2": "^0.12.0",
+		"cspell": "^8.19.4",
+		"eslint": "^9.35.0",
+		"globby": "^14.1.0",
+		"markdownlint": "^0.33.0",
+		"markdownlint-cli": "^0.45.0",
+		"markdownlint-cli2": "^0.12.1",
 		"npm-run-all": "^4.1.5",
 		"typescript": "^5.9.2",
 		"vitest": "^3.2.4"
@@ -19,6 +25,8 @@
 		"builder:iter": ".venv/bin/python builder/cli.py iter:run",
 		"test": "vitest run",
 		"test:watch": "vitest",
+		"test:python": ".venv/bin/python -m pytest builder/tests/test_golden_checks.py -v",
+		"test:all": "npm run test && npm run test:python",
 		"build": "tsc -p tsconfig.build.json",
 		"spec:hello": ".venv/bin/python builder/gen_spec.py",
 		"rules:show": ".venv/bin/python builder/cli.py rules:show",
@@ -30,9 +38,14 @@
 		"reports:lint": "eslint -f json -o builder/cache/eslint.json 'src/**/*.{ts,tsx}' || true",
 		"reports:docs": "markdownlint-cli2 'docs/**/*.md' > builder/cache/markdownlint.json 2>&1 || true",
 		"reports:spell": "cspell 'src/**/*.{ts,tsx}' 'docs/**/*.md' --reporter json > builder/cache/cspell.json || true",
-		"reports:all": "npm-run-all reports:tests reports:lint reports:docs reports:spell"
+		"reports:all": "npm-run-all reports:tests reports:lint reports:docs reports:spell",
+		"docs:markdown": "markdownlint 'docs/**/*.md' --json > builder/cache/markdownlint.json || true",
+		"docs:spell": "cspell --no-progress 'docs/**/*.md'",
+		"docs:all": "pnpm -s run docs:markdown && pnpm -s run docs:spell || true"
 	},
 	"dependencies": {
-		"axios": "^1.11.0"
+		"axios": "^1.11.0",
+		"bcryptjs": "^2.4.3",
+		"jsonwebtoken": "^9.0.2"
 	}
 }

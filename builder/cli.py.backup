@@ -110,60 +110,202 @@ def plan_auto(path, stacks):
     
     click.echo(f"🔍 Detected feature: '{feature or 'none'}' for path: {path}")
     
-    # Call ctx:build-enhanced after feature detection
+    # Call ctx:build after feature detection
     try:
-        click.echo("🔧 Building enhanced context package...")
+        click.echo("🔧 Building context package...")
         
-        # Import the enhanced context building modules
-        from context_graph import ContextGraphBuilder
-        from context_select import ContextSelector
-        from context_budget import ContextBudgetManager
+        # Import ctx_build function logic
+        import yaml
+        import re
+        from pathlib import Path
         
-        # 1. Build context graph
-        graph_builder = ContextGraphBuilder(ROOT)
-        graph = graph_builder.build()
+        # Ensure cache directory exists
+        os.makedirs(CACHE, exist_ok=True)
         
-        # 2. Select context using graph
-        selector = ContextSelector(ROOT)
-        context_selection = selector.select_context(path, feature, top_k=10)
-        
-        if not context_selection:
-            click.echo("❌ No context found for target path")
-            return
-        
-        # 3. Apply budget constraints
-        budget_manager = ContextBudgetManager(total_budget=8000)
-        budget_items = budget_manager.create_budget_items(context_selection)
-        selected_items, overflow_items, budget_summary = budget_manager.apply_budget(budget_items)
-        
-        # 4. Load rules
+        # Load rules
         rules = _load_rules(feature, stacks)
         
-        # 5. Build enhanced context package
-        context_package = _build_enhanced_context_package(
-            path, 'implement', feature, stacks, 8000,
-            selected_items, overflow_items, budget_summary, rules
-        )
+        # Find nearest PRD
+        prd_content = ""
+        prd_metadata = {}
+        adr_contents = []
         
-        # 6. Write pack_context.json
+        # Look for PRD in same directory or parent directories
+        target_dir = os.path.dirname(path)
+        prd_found = False
+        
+        # Search for PRD files
+        for root, dirs, files in os.walk(DOCS):
+            for file in files:
+                if file.endswith('.md') and 'prd' in file.lower():
+                    prd_path = os.path.join(root, file)
+                    try:
+                        with open(prd_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                            # Try to parse front-matter for metadata
+                            metadata = {}
+                            try:
+                                with open(prd_path, 'r', encoding='utf-8') as f:
+                                    content = f.read()
+                                    if content.startswith('---'):
+                                        parts = content.split('---', 2)
+                                        if len(parts) >= 3:
+                                            front_matter = parts[1]
+                                            metadata = yaml.safe_load(front_matter) or {}
+                                            prd_content = parts[2]
+                                    else:
+                                        prd_content = content
+                                
+                                prd_metadata = {
+                                    'type': metadata.get('type', 'prd'),
+                                    'id': metadata.get('id', file.replace('.md', '')),
+                                    'title': metadata.get('title', file.replace('.md', '')),
+                                    'status': metadata.get('status', 'draft'),
+                                    'owner': metadata.get('owner', 'TBD'),
+                                    'created': metadata.get('created', _today()),
+                                    'links': metadata.get('links', [])
+                                }
+                                prd_found = True
+                                break
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+            if prd_found:
+                break
+        
+        # Find ADRs
+        for root, dirs, files in os.walk(ADRS):
+            for file in files:
+                if file.endswith('.md') and file.startswith('ADR-'):
+                    adr_path = os.path.join(root, file)
+                    try:
+                        with open(adr_path, 'r', encoding='utf-8') as f:
+                            adr_contents.append(f.read())
+                    except Exception:
+                        pass
+        
+        # Get code excerpts
+        code_excerpts = []
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    lines = content.split('\n')
+                    excerpt = '\n'.join(lines[:30])
+                    if len(lines) > 30:
+                        excerpt += '\n... (truncated)'
+                    code_excerpts.append({
+                        'path': path,
+                        'excerpt': excerpt,
+                        'line_count': len(lines)
+                    })
+            except Exception:
+                pass
+        
+        # Get test excerpts
+        test_excerpts = []
+        test_path = path.replace('.ts', '.test.ts').replace('.js', '.test.js')
+        if os.path.exists(test_path):
+            try:
+                with open(test_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    lines = content.split('\n')
+                    excerpt = '\n'.join(lines[:30])
+                    if len(lines) > 30:
+                        excerpt += '\n... (truncated)'
+                    test_excerpts.append({
+                        'path': test_path,
+                        'excerpt': excerpt,
+                        'line_count': len(lines)
+                    })
+            except Exception:
+                pass
+        
+        # Extract acceptance criteria from PRD
+        acceptance_criteria = []
+        if prd_content:
+            # Look for acceptance criteria section
+            lines = prd_content.split('\n')
+            in_acceptance = False
+            for line in lines:
+                if 'acceptance criteria' in line.lower() or 'acceptance' in line.lower():
+                    in_acceptance = True
+                    continue
+                if in_acceptance and line.strip().startswith('#'):
+                    break
+                if in_acceptance and line.strip().startswith('-'):
+                    acceptance_criteria.append(line.strip())
+        
+        # Build context package
+        context_package = {
+            'target_path': path,
+            'purpose': 'implement',
+            'feature': feature,
+            'stacks': stacks.split(',') if stacks else [],
+            'rules': rules,
+            'prd': {
+                'content': prd_content,
+                'metadata': prd_metadata
+            },
+            'adrs': adr_contents,
+            'code_excerpts': code_excerpts,
+            'test_excerpts': test_excerpts,
+            'acceptance_criteria': acceptance_criteria,
+            'generated_at': _today()
+        }
+        
+        # Ensure all values are JSON serializable
+        def make_serializable(obj):
+            if isinstance(obj, dict):
+                return {k: make_serializable(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [make_serializable(item) for item in obj]
+            elif hasattr(obj, 'isoformat'):  # datetime objects
+                return obj.isoformat()
+            else:
+                return obj
+        
+        context_package = make_serializable(context_package)
+        
+        # Write pack_context.json
         pack_context_path = os.path.join(CACHE, "pack_context.json")
-        with open(pack_context_path, "w", encoding="utf-8") as f:
-            json.dump(context_package, f, indent=2, ensure_ascii=False)
-        click.echo(f"✅ Created {pack_context_path}")
+        try:
+            with open(pack_context_path, "w", encoding="utf-8") as f:
+                json.dump(context_package, f, indent=2, ensure_ascii=False)
+            click.echo(f"✅ Created {pack_context_path}")
+        except Exception as e:
+            click.echo(f"Error writing pack_context.json: {e}")
+            raise SystemExit(1)
         
-        # 7. Generate enhanced context.md
-        context_md = _generate_enhanced_context_md(context_package)
-        context_md_path = os.path.join(CACHE, "context.md")
-        with open(context_md_path, "w", encoding="utf-8") as f:
-            f.write(context_md)
-        click.echo(f"✅ Created {context_md_path}")
+        # Generate summary
+        click.echo(f"\n📊 Context Summary:")
+        click.echo(f"  Target: {path}")
+        click.echo(f"  Feature: {feature or 'none'}")
+        click.echo(f"  Purpose: implement")
+        click.echo(f"  Stacks: {', '.join(stacks.split(','))}")
+        click.echo(f"  PRD: {'Found' if prd_content else 'Not found'}")
+        click.echo(f"  ADRs: {len(adr_contents)}")
+        click.echo(f"  Code files: {len(code_excerpts)}")
+        click.echo(f"  Test files: {len(test_excerpts)}")
+        click.echo(f"  Acceptance criteria: {len(acceptance_criteria)}")
         
-        # 8. Generate 1-line summary with counts per type and budget
-        _show_plan_auto_summary(context_package, budget_summary, 8000)
+        # Legacy context.json for backward compatibility
+        ctx = {
+            "trace": {"prd":"PRD#TBD","arch":"ARCH#TBD","ux":"UX#TBD","integration":"INT#TBD","adrs":[]},
+            "acceptance": ["compiles","tests pass"],
+            "goal": "Scaffolded by plan:auto",
+            "name": "Scaffold",
+            "feature": feature,
+            "rules": rules
+        }
+        with open(os.path.join(CACHE,"context.json"),"w",encoding="utf-8") as f:
+            json.dump(ctx, f, indent=2)
+        click.echo(f"✅ Also wrote builder/cache/context.json")
         
     except Exception as e:
-        click.echo(f"❌ Error building enhanced context: {e}")
-        # Fallback to basic context.json for backward compatibility
+        click.echo(f"❌ Error building context: {e}")
+        # Fallback to original behavior
         os.makedirs(CACHE, exist_ok=True)
         rules = _load_rules(feature, stacks)
         ctx = {
@@ -683,13 +825,7 @@ def iter_finish(target_path, winner, scores_file):
 @click.option("--title", required=True, help="Document title")
 @click.option("--owner", default="", help="Document owner")
 @click.option("--links", multiple=True, help="Links to other documents (format: type:id)")
-@click.option("--prd", default="", help="Link to PRD document")
-@click.option("--arch", default="", help="Link to Architecture document")
-@click.option("--adr", default="", help="Link to ADR document")
-@click.option("--impl", default="", help="Link to Implementation document")
-@click.option("--exec", "exec_", default="", help="Link to Execution document")
-@click.option("--ux", default="", help="Link to UX document")
-def doc_new(dtype, title, owner, links, prd, arch, adr, impl, exec_, ux):
+def doc_new(dtype, title, owner, links):
     """Create a new document from template"""
     # Validate required title
     if not title or not title.strip():
@@ -705,7 +841,7 @@ def doc_new(dtype, title, owner, links, prd, arch, adr, impl, exec_, ux):
     if not owner:
         owner = "TBD"
     
-    # Parse links from --links option
+    # Parse links
     parsed_links = {}
     for link in links:
         if ':' in link:
@@ -713,21 +849,6 @@ def doc_new(dtype, title, owner, links, prd, arch, adr, impl, exec_, ux):
             if link_type not in parsed_links:
                 parsed_links[link_type] = []
             parsed_links[link_type].append(link_id)
-    
-    # Add individual link flags
-    individual_links = {
-        'prd': prd,
-        'arch': arch,
-        'adr': adr,
-        'impl': impl,
-        'exec': exec_,
-        'ux': ux
-    }
-    
-    for link_type, link_id in individual_links.items():
-        if link_id and link_id.strip():
-            # For individual flags, we want to set the link directly, not as an array
-            parsed_links[link_type] = link_id.strip()
     
     # Create context for template rendering
     ctx = {
@@ -1290,9 +1411,7 @@ def _build_enhanced_context_package(target_path, purpose, feature, stacks, token
         'constraints': {
             'rules_md': rules.get('rules_markdown', ''),
             'token_limit': token_limit,
-            'budget_summary': budget_summary,
-            'conflicts': rules.get('conflicts', []),
-            'sources': rules.get('sources', [])
+            'budget_summary': budget_summary
         },
         'acceptance': acceptance,
         'decisions': decisions,
@@ -1597,6 +1716,84 @@ def doc_check(output, fail_fast):
     ROOT = os.path.dirname(os.path.dirname(__file__))
     rc = subprocess.call([sys.executable, os.path.join(ROOT,"builder","evaluators","doc_schema.py")])
     sys.exit(rc)
+    
+    # Ensure output directory exists
+    os.makedirs(os.path.dirname(output), exist_ok=True)
+    
+    if os.path.isfile(path):
+        # Validate single file
+        click.echo(f"🔍 Validating single file: {path}")
+        result = validate_document_file(path)
+        
+        if result['valid']:
+            click.echo(f"✅ {path} is valid")
+            if result['warnings']:
+                click.echo("⚠️  Warnings:")
+                for warning in result['warnings']:
+                    click.echo(f"  - {warning}")
+        else:
+            click.echo(f"❌ {path} is invalid")
+            click.echo("Errors:")
+            for error in result['errors']:
+                click.echo(f"  - {error}")
+            if fail_fast:
+                raise SystemExit(1)
+        
+        # Save single file report
+        report = {
+            'summary': {
+                'total_files': 1,
+                'valid_files': 1 if result['valid'] else 0,
+                'invalid_files': 0 if result['valid'] else 1,
+                'validation_rate': 1.0 if result['valid'] else 0.0
+            },
+            'results': [result]
+        }
+        
+    elif os.path.isdir(path):
+        # Validate directory
+        click.echo(f"🔍 Validating directory: {path}")
+        report = validate_documents_in_directory(path)
+        
+        # Show summary
+        summary = report['summary']
+        click.echo(f"\n📊 Validation Summary:")
+        click.echo(f"  Total files: {summary['total_files']}")
+        click.echo(f"  Valid files: {summary['valid_files']}")
+        click.echo(f"  Invalid files: {summary['invalid_files']}")
+        click.echo(f"  Validation rate: {summary['validation_rate']:.1%}")
+        
+        # Show errors for invalid files
+        invalid_files = [r for r in report['results'] if not r['valid']]
+        if invalid_files:
+            click.echo(f"\n❌ Invalid files:")
+            for result in invalid_files:
+                click.echo(f"  {result['file_path']}:")
+                for error in result['errors']:
+                    click.echo(f"    - {error}")
+            if fail_fast:
+                raise SystemExit(1)
+        
+        # Show warnings
+        files_with_warnings = [r for r in report['results'] if r['warnings']]
+        if files_with_warnings:
+            click.echo(f"\n⚠️  Files with warnings:")
+            for result in files_with_warnings:
+                click.echo(f"  {result['file_path']}:")
+                for warning in result['warnings']:
+                    click.echo(f"    - {warning}")
+    
+    else:
+        click.echo(f"❌ Path not found: {path}")
+        raise SystemExit(1)
+    
+    # Save report
+    try:
+        save_schema_report(report, output)
+        click.echo(f"\n✅ Report saved to: {output}")
+    except Exception as e:
+        click.echo(f"❌ Error saving report: {e}")
+        raise SystemExit(1)
 
 # -------------------- CONTEXT GRAPH --------------------
 @cli.command("context:scan")
@@ -1639,8 +1836,7 @@ def context_scan(output, stats_only):
 @click.option("--feature", default="", help="Feature name for rules")
 @click.option("--stacks", default="typescript,react", help="Comma-separated stack names")
 @click.option("--token-limit", default=8000, help="Token budget limit")
-@click.option("--force", is_flag=True, help="Force rebuild, bypass cache")
-def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit, force):
+def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit):
     """Build enhanced context package using graph + selection + budget"""
     try:
         from context_graph import ContextGraphBuilder
@@ -1653,40 +1849,6 @@ def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit, force
         click.echo(f"🔍 Building enhanced context for: {target_path}")
         click.echo(f"📋 Purpose: {purpose}, Feature: {feature or 'None'}")
         click.echo(f"💰 Token budget: {token_limit}")
-        
-        # Generate cache key
-        cache_key, cache_key_string = _generate_cache_key(target_path, purpose, feature, stacks, token_limit)
-        cache_path = _get_cache_path(cache_key)
-        
-        # Check cache first (unless force is specified)
-        if not force and os.path.exists(cache_path):
-            click.echo("💾 Loading from cache...")
-            context_package = _load_from_cache(cache_path)
-            if context_package:
-                click.echo(f"✅ Cache hit: {cache_key[:8]}...")
-                
-                # Write to standard output locations
-                pack_context_path = os.path.join(CACHE, "pack_context.json")
-                with open(pack_context_path, "w", encoding="utf-8") as f:
-                    json.dump(context_package, f, indent=2, ensure_ascii=False)
-                click.echo(f"✅ Created {pack_context_path}")
-                
-                # Generate context.md from cached data
-                context_md = _generate_enhanced_context_md(context_package)
-                context_md_path = os.path.join(CACHE, "context.md")
-                with open(context_md_path, "w", encoding="utf-8") as f:
-                    f.write(context_md)
-                click.echo(f"✅ Created {context_md_path}")
-                
-                # Show summary
-                budget_summary = context_package.get('constraints', {}).get('budget_summary', {})
-                _show_context_summary(context_package, budget_summary, token_limit)
-                return
-        
-        if force:
-            click.echo("🔄 Force rebuild: bypassing cache")
-        else:
-            click.echo("💾 Cache miss: building fresh context")
         
         # Step 1: Build context graph
         click.echo("📊 Building context graph...")
@@ -1717,60 +1879,22 @@ def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit, force
             selected_items, overflow_items, budget_summary, rules
         )
         
-        # Step 6: Save to cache
-        if _save_to_cache(cache_path, context_package):
-            click.echo(f"💾 Cached: {cache_key[:8]}...")
-        else:
-            click.echo("⚠️  Warning: Failed to save to cache")
-        
-        # Step 7: Write pack_context.json
+        # Step 6: Write pack_context.json
         pack_context_path = os.path.join(CACHE, "pack_context.json")
         with open(pack_context_path, "w", encoding="utf-8") as f:
             json.dump(context_package, f, indent=2, ensure_ascii=False)
         click.echo(f"✅ Created {pack_context_path}")
         
-        # Step 8: Generate enhanced context.md
+        # Step 7: Generate enhanced context.md
         context_md = _generate_enhanced_context_md(context_package)
         context_md_path = os.path.join(CACHE, "context.md")
         with open(context_md_path, "w", encoding="utf-8") as f:
             f.write(context_md)
         click.echo(f"✅ Created {context_md_path}")
         
-        # Step 9: Show summary
+        # Step 8: Show summary
         _show_context_summary(context_package, budget_summary, token_limit)
         
-    except Exception as e:
-        click.echo(f"❌ Error: {e}")
-        raise SystemExit(1)
-
-# -------------------- CONTEXT DIFF --------------------
-@cli.command("ctx:diff")
-@click.argument("old_pack")
-@click.argument("new_pack")
-@click.option("--output", default="", help="Output file path (prints to stdout if not specified)")
-def ctx_diff(old_pack, new_pack, output):
-    """Show differences between two context packs (added/removed items, weight changes, budget changes)"""
-    try:
-        import json
-        from collections import defaultdict
-        
-        # Load both packs
-        with open(old_pack, 'r', encoding='utf-8') as f:
-            old_data = json.load(f)
-        with open(new_pack, 'r', encoding='utf-8') as f:
-            new_data = json.load(f)
-        
-        # Generate diff report
-        diff_report = _generate_context_diff(old_data, new_data)
-        
-        # Output diff
-        if output:
-            with open(output, 'w', encoding='utf-8') as f:
-                f.write(diff_report)
-            click.echo(f"✅ Diff report written to {output}")
-        else:
-            click.echo(diff_report)
-            
     except Exception as e:
         click.echo(f"❌ Error: {e}")
         raise SystemExit(1)
@@ -1924,622 +2048,363 @@ def _get_last_modified(file_path):
         pass
     return "Unknown"
 
-def _show_plan_auto_summary(context_package, budget_summary, token_limit):
-    """Show 1-line summary with counts per type and budget used"""
-    # Check for rules presence
-    rules_present = bool(context_package.get('constraints', {}).get('rules_md', '').strip())
-    rules_status = "✓" if rules_present else "✗"
-    
-    # Check for acceptance criteria presence
-    acceptance_present = bool(context_package.get('acceptance', []))
-    acceptance_status = "✓" if acceptance_present else "✗"
-    
-    # Count items by type with specific abbreviations
-    type_counts = {}
-    type_abbrevs = {
-        'decisions': 'adr',
-        'integrations': 'integ', 
-        'architecture': 'arch',
-        'code': 'code'
-    }
-    
-    for section, abbrev in type_abbrevs.items():
-        items = context_package.get(section, [])
-        count = len(items)
-        if count > 0:
-            type_counts[abbrev] = count
-    
-    # Calculate budget percentage
-    total_used = sum(summary.get('used_tokens', 0) for summary in budget_summary.values())
-    budget_pct = int(total_used / token_limit * 100) if token_limit > 0 else 0
-    
-    # Build summary line in the required format
-    summary_parts = [
-        f"rules {rules_status}",
-        f"acceptance {acceptance_status}"
-    ]
-    
-    # Add type counts
-    for abbrev, count in type_counts.items():
-        summary_parts.append(f"{abbrev} {count}")
-    
-    # Add budget percentage
-    summary_parts.append(f"budget {budget_pct}%")
-    
-    summary_line = f"Context: {', '.join(summary_parts)}"
-    click.echo(summary_line)
-
-def _generate_cache_key(target_path, purpose, feature, stacks, token_limit):
-    """Generate cache key based on inputs and file hashes"""
-    import hashlib
-    import os
-    from pathlib import Path
-    
-    # Pack schema version (increment when structure changes)
-    PACK_SCHEMA_VERSION = "1.0"
-    
-    # Get file hashes for docs and src directories
-    def get_directory_hash(directory):
-        """Get combined hash of all files in directory"""
-        if not os.path.exists(directory):
-            return "no_dir"
-        
-        hashes = []
-        for root, dirs, files in os.walk(directory):
-            for file in files:
-                if file.endswith(('.md', '.ts', '.tsx', '.js', '.jsx', '.json')):
-                    file_path = os.path.join(root, file)
-                    try:
-                        with open(file_path, 'rb') as f:
-                            file_hash = hashlib.sha256(f.read()).hexdigest()[:16]
-                            hashes.append(f"{file}:{file_hash}")
-                    except Exception:
-                        continue
-        return hashlib.sha256('|'.join(sorted(hashes)).encode()).hexdigest()[:16]
-    
-    # Get rules hash
-    def get_rules_hash():
-        """Get hash of all rules files"""
-        rules_files = [
-            "docs/rules/00-global.md",
-            "docs/rules/10-project.md", 
-            "docs/rules/guardrails.json"
-        ]
-        
-        # Add feature-specific rules
-        if feature:
-            feature_rules = f"docs/rules/feature/30-{feature}.md"
-            if os.path.exists(feature_rules):
-                rules_files.append(feature_rules)
-        
-        # Add stack-specific rules
-        for stack in stacks.split(','):
-            stack_rules = f"docs/rules/stack/20-{stack.strip()}.md"
-            if os.path.exists(stack_rules):
-                rules_files.append(stack_rules)
-        
-        hashes = []
-        for rules_file in rules_files:
-            if os.path.exists(rules_file):
-                try:
-                    with open(rules_file, 'rb') as f:
-                        file_hash = hashlib.sha256(f.read()).hexdigest()[:16]
-                        hashes.append(f"{os.path.basename(rules_file)}:{file_hash}")
-                except Exception:
-                    continue
-        
-        return hashlib.sha256('|'.join(sorted(hashes)).encode()).hexdigest()[:16]
-    
-    # Build cache key components
-    docs_hash = get_directory_hash("docs")
-    src_hash = get_directory_hash("src")
-    rules_hash = get_rules_hash()
-    
-    # Create cache key string
-    cache_key_parts = [
-        f"feature:{feature or 'none'}",
-        f"purpose:{purpose}",
-        f"target:{target_path}",
-        f"docs:{docs_hash}",
-        f"src:{src_hash}",
-        f"rules:{rules_hash}",
-        f"stacks:{stacks}",
-        f"tokens:{token_limit}",
-        f"schema:{PACK_SCHEMA_VERSION}"
-    ]
-    
-    cache_key_string = '|'.join(cache_key_parts)
-    cache_key = hashlib.sha256(cache_key_string.encode()).hexdigest()[:32]
-    
-    return cache_key, cache_key_string
-
-def _get_cache_path(cache_key):
-    """Get cache file path for given cache key"""
-    cache_dir = os.path.join(CACHE, "packs")
-    os.makedirs(cache_dir, exist_ok=True)
-    return os.path.join(cache_dir, f"{cache_key}.json")
-
-def _load_from_cache(cache_path):
-    """Load context package from cache"""
-    try:
-        with open(cache_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except Exception:
-        return None
-
-def _save_to_cache(cache_path, context_package):
-    """Save context package to cache"""
-    try:
-        with open(cache_path, 'w', encoding='utf-8') as f:
-            json.dump(context_package, f, indent=2, ensure_ascii=False)
-        return True
-    except Exception:
-        return False
-
-def _generate_context_diff(old_data, new_data):
-    """Generate a comprehensive diff report between two context packs"""
-    from collections import defaultdict
-    
-    diff_lines = []
-    diff_lines.append("# Context Pack Diff Report")
-    diff_lines.append("")
-    from datetime import datetime
-    diff_lines.append(f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    diff_lines.append("")
-    
-    # Task comparison
-    old_task = old_data.get('task', {})
-    new_task = new_data.get('task', {})
-    diff_lines.append("## Task Changes")
-    diff_lines.append("")
-    
-    task_changes = []
-    for key in ['purpose', 'target_path', 'feature']:
-        old_val = old_task.get(key, '')
-        new_val = new_task.get(key, '')
-        if old_val != new_val:
-            task_changes.append(f"- **{key}**: `{old_val}` → `{new_val}`")
-    
-    if task_changes:
-        diff_lines.extend(task_changes)
-    else:
-        diff_lines.append("No task changes")
-    diff_lines.append("")
-    
-    # Budget comparison
-    old_budget = old_data.get('constraints', {}).get('budget_summary', {})
-    new_budget = new_data.get('constraints', {}).get('budget_summary', {})
-    
-    diff_lines.append("## Budget Changes")
-    diff_lines.append("")
-    
-    # Calculate total tokens
-    old_total = sum(cat.get('used_tokens', 0) for cat in old_budget.values())
-    new_total = sum(cat.get('used_tokens', 0) for cat in new_budget.values())
-    old_limit = old_data.get('constraints', {}).get('token_limit', 0)
-    new_limit = new_data.get('constraints', {}).get('token_limit', 0)
-    
-    diff_lines.append(f"**Total Tokens**: {old_total} → {new_total} ({new_total - old_total:+d})")
-    diff_lines.append(f"**Token Limit**: {old_limit} → {new_limit} ({new_limit - old_limit:+d})")
-    diff_lines.append(f"**Utilization**: {old_total/old_limit*100:.1f}% → {new_total/new_limit*100:.1f}%")
-    diff_lines.append("")
-    
-    # Category-level budget changes
-    all_categories = set(old_budget.keys()) | set(new_budget.keys())
-    for category in sorted(all_categories):
-        old_cat = old_budget.get(category, {})
-        new_cat = new_budget.get(category, {})
-        
-        old_tokens = old_cat.get('used_tokens', 0)
-        new_tokens = new_cat.get('used_tokens', 0)
-        old_items = old_cat.get('selected_items', 0)
-        new_items = new_cat.get('selected_items', 0)
-        
-        if old_tokens != new_tokens or old_items != new_items:
-            diff_lines.append(f"### {category.title()}")
-            diff_lines.append(f"- **Items**: {old_items} → {new_items} ({new_items - old_items:+d})")
-            diff_lines.append(f"- **Tokens**: {old_tokens} → {new_tokens} ({new_tokens - old_tokens:+d})")
-            diff_lines.append("")
-    
-    # Content section comparisons
-    content_sections = ['acceptance', 'decisions', 'integrations', 'architecture', 'ux', 'code']
-    
-    for section in content_sections:
-        old_items = old_data.get(section, [])
-        new_items = new_data.get(section, [])
-        
-        # Create item maps for comparison
-        old_map = {_get_item_key(item): item for item in old_items}
-        new_map = {_get_item_key(item): item for item in new_items}
-        
-        added_items = []
-        removed_items = []
-        changed_items = []
-        
-        # Find added items
-        for key, item in new_map.items():
-            if key not in old_map:
-                added_items.append(item)
-        
-        # Find removed items
-        for key, item in old_map.items():
-            if key not in new_map:
-                removed_items.append(item)
-        
-        # Find changed items (same key, different content)
-        for key in old_map.keys() & new_map.keys():
-            old_item = old_map[key]
-            new_item = new_map[key]
-            if _items_different(old_item, new_item):
-                changed_items.append((old_item, new_item))
-        
-        # Generate section diff
-        if added_items or removed_items or changed_items:
-            diff_lines.append(f"## {section.title()} Changes")
-            diff_lines.append("")
-            
-            if added_items:
-                diff_lines.append(f"### Added ({len(added_items)} items)")
-                for item in added_items[:5]:  # Limit to first 5
-                    title = item.get('title', 'Untitled')[:60]
-                    file_path = item.get('file_path', 'Unknown')
-                    diff_lines.append(f"- **{title}**")
-                    diff_lines.append(f"  - Source: `{file_path}`")
-                if len(added_items) > 5:
-                    diff_lines.append(f"- ... and {len(added_items) - 5} more")
-                diff_lines.append("")
-            
-            if removed_items:
-                diff_lines.append(f"### Removed ({len(removed_items)} items)")
-                for item in removed_items[:5]:  # Limit to first 5
-                    title = item.get('title', 'Untitled')[:60]
-                    file_path = item.get('file_path', 'Unknown')
-                    diff_lines.append(f"- **{title}**")
-                    diff_lines.append(f"  - Source: `{file_path}`")
-                if len(removed_items) > 5:
-                    diff_lines.append(f"- ... and {len(removed_items) - 5} more")
-                diff_lines.append("")
-            
-            if changed_items:
-                diff_lines.append(f"### Changed ({len(changed_items)} items)")
-                for old_item, new_item in changed_items[:3]:  # Limit to first 3
-                    title = old_item.get('title', 'Untitled')[:60]
-                    diff_lines.append(f"- **{title}**")
-                    # Show what changed
-                    changes = _get_item_changes(old_item, new_item)
-                    for change in changes:
-                        diff_lines.append(f"  - {change}")
-                if len(changed_items) > 3:
-                    diff_lines.append(f"- ... and {len(changed_items) - 3} more")
-                diff_lines.append("")
-    
-    # Summary
-    total_added = sum(len([item for item in new_data.get(section, []) 
-                          if _get_item_key(item) not in {_get_item_key(item) for item in old_data.get(section, [])}])
-                     for section in content_sections)
-    total_removed = sum(len([item for item in old_data.get(section, []) 
-                            if _get_item_key(item) not in {_get_item_key(item) for item in new_data.get(section, [])}])
-                       for section in content_sections)
-    
-    diff_lines.append("## Summary")
-    diff_lines.append("")
-    diff_lines.append(f"- **Items Added**: {total_added}")
-    diff_lines.append(f"- **Items Removed**: {total_removed}")
-    diff_lines.append(f"- **Token Change**: {new_total - old_total:+d}")
-    diff_lines.append(f"- **Utilization Change**: {new_total/new_limit*100 - old_total/old_limit*100:+.1f}%")
-    
-    return "\n".join(diff_lines)
-
-def _get_item_key(item):
-    """Get a unique key for an item based on title and file_path"""
-    title = item.get('title', '')
-    file_path = item.get('file_path', '')
-    return f"{title}|{file_path}"
-
-def _items_different(old_item, new_item):
-    """Check if two items are different (ignoring metadata)"""
-    # Compare key fields that matter for content
-    key_fields = ['title', 'content', 'file_path']
-    for field in key_fields:
-        if old_item.get(field) != new_item.get(field):
-            return True
-    return False
-
-def _get_item_changes(old_item, new_item):
-    """Get a list of changes between two items"""
-    changes = []
-    
-    if old_item.get('title') != new_item.get('title'):
-        changes.append(f"Title: '{old_item.get('title', '')}' → '{new_item.get('title', '')}'")
-    
-    if old_item.get('file_path') != new_item.get('file_path'):
-        changes.append(f"Source: '{old_item.get('file_path', '')}' → '{new_item.get('file_path', '')}'")
-    
-    old_content = old_item.get('content', '')
-    new_content = new_item.get('content', '')
-    if old_content != new_content:
-        old_len = len(old_content)
-        new_len = len(new_content)
-        changes.append(f"Content: {old_len} → {new_len} chars ({new_len - old_len:+d})")
-    
-    return changes
-
 # -------------------- CONTEXT BUDGET --------------------
+# @cli.command("context:budget")
+@click.argument("start_path", required=False)
+@click.option("--feature", help="Start from a specific feature")
+@click.option("--token-limit", default=8000, help="Total token budget limit")
+@click.option("--max-items", default=20, help="Maximum number of context items to consider")
+@click.option("--output", default="builder/cache/context_package.md", help="Output file path")
+def context_budget(start_path, feature, token_limit, max_items, output):
+    """Build a token-aware context package with budget management"""
+    try:
+        import sys
+        import os
+        sys.path.insert(0, os.path.dirname(__file__))
+        from context_budget import ContextBudgetManager
+        from context_select import ContextSelector
+        import json
+        
+        # Load context graph
+        context_graph_path = os.path.join(ROOT, "builder", "cache", "context_graph.json")
+        if not os.path.exists(context_graph_path):
+            click.echo("❌ Context graph not found. Run 'context:scan' first.")
+            raise SystemExit(1)
+            
+        # Load graph from JSON
+        with open(context_graph_path, 'r') as f:
+            graph_data = json.load(f)
+            
+        # Reconstruct graph
+        from context_graph import ContextGraph
+        graph = ContextGraph()
+        
+        for node_data in graph_data['nodes']:
+            node = GraphNode(
+                id=node_data['id'],
+                node_type=node_data['type'],
+                title=node_data['title'],
+                file_path=node_data['file_path'],
+                metadata=node_data['metadata'],
+                properties=node_data['properties']
+            )
+            graph.add_node(node)
+            
+        for edge_data in graph_data['edges']:
+            edge = GraphEdge(
+                source_id=edge_data['source'],
+                target_id=edge_data['target'],
+                edge_type=edge_data['type'],
+                weight=edge_data.get('weight', 1.0),
+                metadata=edge_data.get('metadata', {})
+            )
+            graph.add_edge(edge)
+            
+        # Create budget manager
+        budget_manager = ContextBudgetManager(token_limit)
+        
+        # Get context items
+        selector = ContextSelector(graph)
+        items = selector.select_context(start_path, feature, max_items)
+        
+        if not items:
+            click.echo("❌ No relevant context found")
+            return
+            
+        click.echo(f"🔍 Building context package with {len(items)} items")
+        click.echo(f"📊 Token limit: {token_limit}")
+        
+        # Build context package
+        context_package = budget_manager.build_context_package(items)
+        
+        # Print summary
+        summary = budget_manager.get_usage_summary()
+        click.echo(f"\n📈 Budget Usage Summary:")
+        click.echo(f"  Total used: {summary['total_used']}/{summary['total_allocated']}")
+        click.echo(f"  Over budget: {summary['is_over_budget']}")
+        click.echo()
+        
+        for category, cat_summary in summary['categories'].items():
+            status = "⚠️" if cat_summary['is_over_budget'] else "✅"
+            click.echo(f"  {status} {category}: {cat_summary['used']}/{cat_summary['allocated']} tokens ({cat_summary['item_count']} items)")
+            
+        # Save context package
+        os.makedirs(os.path.dirname(output), exist_ok=True)
+        with open(output, 'w') as f:
+            f.write(context_package)
+        click.echo(f"\n📁 Context package saved to: {output}")
+        
+    except ImportError as e:
+        click.echo(f"❌ Import error: {e}")
+        click.echo("Make sure context_budget.py exists in the builder directory")
+        raise SystemExit(1)
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
 
-# -------------------- CONTEXT EXPLAIN --------------------
+# @cli.command("ctx:explain")
+# @click.option("--target-path", default="", help="Target path to explain context for")
+# @click.option("--feature", default="", help="Feature name to explain context for")
+# @click.option("--max-items", default=20, help="Maximum number of items to show")
+# def ctx_explain(target_path, feature, max_items):
+    """Explain context selection with ranked table showing source, type, weight, reason, status, mtime."""
+    try:
+        from context_graph import ContextGraph
+        from context_select import ContextSelector
+        import json
+        from datetime import datetime
+        
+        # Load context graph
+        context_graph_path = os.path.join(CACHE, "context_graph.json")
+        if not os.path.exists(context_graph_path):
+            click.echo("❌ No context graph found. Run 'ctx:build' first.")
+            raise SystemExit(1)
+            
+        with open(context_graph_path, 'r') as f:
+            graph_data = json.load(f)
+        
+        # Reconstruct graph
+        graph = ContextGraph()
+        for node_data in graph_data['nodes']:
+            node = GraphNode(
+                id=node_data['id'],
+                node_type=node_data['type'],
+                title=node_data['title'],
+                file_path=node_data['file_path'],
+                metadata=node_data.get('metadata', {}),
+                properties=node_data.get('properties', {})
+            )
+            graph.add_node(node)
+        
+        for edge_data in graph_data['edges']:
+            edge = GraphEdge(
+                source_id=edge_data['source'],
+                target_id=edge_data['target'],
+                edge_type=edge_data.get('edge_type', 'informs'),
+                weight=edge_data.get('weight', 1.0),
+                metadata=edge_data.get('metadata', {})
+            )
+            graph.add_edge(edge)
+        
+        # Create context selector
+        selector = ContextSelector(graph)
+        
+        # Select context items
+        if target_path:
+            items = selector.select_context(start_path=target_path, max_items=max_items)
+        elif feature:
+            items = selector.select_context(start_feature=feature, max_items=max_items)
+        else:
+            # If no specific target, use the first available node as starting point
+            if not graph.nodes:
+                click.echo("❌ No nodes found in context graph.")
+                return
+            first_node = list(graph.nodes.values())[0]
+            items = selector.select_context(start_path=first_node.file_path, max_items=max_items)
+        
+        if not items:
+            click.echo("❌ No context items found.")
+            return
+        
+        # Display ranked table
+        click.echo("📊 Context Selection Explanation")
+        click.echo("=" * 80)
+        click.echo(f"{'Rank':<4} {'Source':<30} {'Type':<8} {'Weight':<8} {'Status':<10} {'MTime':<12} {'Reasons'}")
+        click.echo("-" * 80)
+        
+        for i, item in enumerate(items, 1):
+            # Get file modification time
+            mtime = "N/A"
+            if item.node.file_path and os.path.exists(item.node.file_path):
+                try:
+                    mtime = datetime.fromtimestamp(os.path.getmtime(item.node.file_path)).strftime("%Y-%m-%d")
+                except:
+                    mtime = "N/A"
+            
+            # Get status from metadata
+            status = item.node.metadata.get('status', 'unknown')
+            
+            # Get source (filename or title)
+            source = os.path.basename(item.node.file_path) if item.node.file_path else item.node.title
+            if len(source) > 28:
+                source = source[:25] + "..."
+            
+            # Format reasons
+            reasons = ", ".join(item.reasons) if item.reasons else "N/A"
+            if len(reasons) > 40:
+                reasons = reasons[:37] + "..."
+            
+            click.echo(f"{i:<4} {source:<30} {item.node.node_type:<8} {item.score:<8.1f} {status:<10} {mtime:<12} {reasons}")
+        
+        click.echo(f"\n📈 Total items: {len(items)}")
+        click.echo(f"🎯 Target: {target_path or feature or 'all items'}")
+        
+    except ImportError as e:
+        click.echo(f"❌ Import error: {e}")
+        click.echo("Make sure context modules exist in the builder directory")
+        raise SystemExit(1)
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
 
 @cli.command("ctx:pack")
 @click.option("--output", default="", help="Output file path (prints to stdout if not specified)")
-@click.option("--split", is_flag=True, help="Emit four separate files: system.txt, instructions.txt, user.txt, references.md")
-@click.option("--stdout", is_flag=True, help="Print in sequence with clear separators for copy/paste")
-def ctx_pack(output, split, stdout):
-    """Emit four blocks from pack_context.json: system, instructions, user, references"""
+def ctx_pack(output):
+    """Emit 4 blocks (system, instructions, user, references) from pack_context.json; respect budgets."""
     try:
         import json
         
         # Load pack_context.json
         pack_context_path = os.path.join(CACHE, "pack_context.json")
         if not os.path.exists(pack_context_path):
-            click.echo("❌ No pack_context.json found. Run 'ctx:build-enhanced' first.")
+            click.echo("❌ No pack_context.json found. Run 'ctx:build' first.")
             raise SystemExit(1)
             
-        with open(pack_context_path, 'r', encoding='utf-8') as f:
+        with open(pack_context_path, 'r') as f:
             context_package = json.load(f)
         
         # Build the 4 blocks
         blocks = []
         
-        # Block 1: SYSTEM - merged rules_md + "obey acceptance criteria" line
+        # Block 1: System (Rules and Guardrails - should lead)
         system_block = []
         system_block.append("## SYSTEM")
         system_block.append("")
         
-        # Add rules_md (highest priority)
-        rules_md = context_package.get('constraints', {}).get('rules_md', '')
-        if rules_md:
-            system_block.append(rules_md)
+        # Add rules (highest priority)
+        if context_package.get('rules', {}).get('rules_markdown'):
+            system_block.append("### Rules")
+            system_block.append("")
+            system_block.append(context_package['rules']['rules_markdown'])
             system_block.append("")
         
-        # Add acceptance criteria directive
-        system_block.append("**OBEY ACCEPTANCE CRITERIA** - All implementation must satisfy the acceptance criteria listed in the instructions block.")
-        system_block.append("")
+        # Add guardrails
+        if context_package.get('rules', {}).get('guardrails'):
+            guardrails = context_package['rules']['guardrails']
+            system_block.append("### Guardrails")
+            system_block.append("")
+            
+            if guardrails.get('forbiddenPatterns'):
+                system_block.append("#### Forbidden Patterns")
+                for pattern in guardrails['forbiddenPatterns']:
+                    system_block.append(f"- **Pattern**: `{pattern['pattern']}`")
+                    system_block.append(f"  **Message**: {pattern['message']}")
+                system_block.append("")
+            
+            if guardrails.get('hints'):
+                system_block.append("#### Hints")
+                for hint in guardrails['hints']:
+                    system_block.append(f"- **Pattern**: `{hint['pattern']}`")
+                    system_block.append(f"  **Message**: {hint['message']}")
+                system_block.append("")
         
         blocks.append("\n".join(system_block))
         
-        # Block 2: INSTRUCTIONS - goal, acceptance bullets, constraints (budgets/limits)
+        # Block 2: Instructions (Purpose, Feature, Stacks)
         instructions_block = []
         instructions_block.append("## INSTRUCTIONS")
         instructions_block.append("")
         
-        # Task information
-        task = context_package.get('task', {})
-        purpose = task.get('purpose', 'unknown')
-        target_path = task.get('target_path', '')
-        feature = task.get('feature', '')
-        
-        # Goal
-        instructions_block.append(f"**Goal**: {purpose} {target_path}")
-        if feature:
-            instructions_block.append(f"**Feature**: {feature}")
+        # Purpose
+        purpose = context_package.get('purpose', 'unknown')
+        instructions_block.append(f"**Purpose**: {purpose}")
         instructions_block.append("")
         
-        # Acceptance criteria (bulleted list)
-        acceptance_items = context_package.get('acceptance', [])
-        if acceptance_items:
-            instructions_block.append("**Acceptance Criteria**:")
-            instructions_block.append("")
-            for item in acceptance_items:
-                # Extract acceptance criteria from content
-                content = item.get('content', '')
-                if 'Acceptance Criteria' in content:
-                    # Find the acceptance criteria section
-                    lines = content.split('\n')
-                    in_criteria = False
-                    for line in lines:
-                        if 'Acceptance Criteria' in line:
-                            in_criteria = True
-                            continue
-                        elif in_criteria and line.strip() and not line.startswith('#'):
-                            if line.strip().startswith('-'):
-                                instructions_block.append(f"  {line.strip()}")
-                            elif line.strip():
-                                instructions_block.append(f"  - {line.strip()}")
-                        elif in_criteria and line.startswith('#'):
-                            break
+        # Feature
+        feature = context_package.get('feature', '')
+        if feature:
+            instructions_block.append(f"**Feature**: {feature}")
             instructions_block.append("")
         
-        # Constraints (budgets/limits)
-        constraints = context_package.get('constraints', {})
-        budget_summary = constraints.get('budget_summary', {})
-        if budget_summary:
-            instructions_block.append("**Constraints**:")
+        # Stacks
+        stacks = context_package.get('stacks', [])
+        if stacks:
+            instructions_block.append(f"**Technology Stack**: {', '.join(stacks)}")
             instructions_block.append("")
-            total_budget = sum(summary.get('budget_limit', 0) for summary in budget_summary.values())
-            used_budget = sum(summary.get('used_tokens', 0) for summary in budget_summary.values())
-            instructions_block.append(f"- Token budget: {used_budget}/{total_budget} tokens")
-            for budget_type, summary in budget_summary.items():
-                items_selected = summary.get('selected_items', 0)
-                items_total = summary.get('total_items', 0)
-                instructions_block.append(f"- {budget_type.title()}: {items_selected}/{items_total} items")
+        
+        # PRD content if available
+        if context_package.get('prd', {}).get('content'):
+            instructions_block.append("### Product Requirements")
+            instructions_block.append("")
+            instructions_block.append(context_package['prd']['content'])
             instructions_block.append("")
         
         blocks.append("\n".join(instructions_block))
         
-        # Block 3: USER - succinct restatement (derived from target path + feature)
+        # Block 3: User (Target Path and User Context)
         user_block = []
         user_block.append("## USER")
         user_block.append("")
         
-        # Succinct restatement
-        if target_path and feature:
-            user_block.append(f"Implement {feature} functionality in {target_path}")
-        elif target_path:
-            user_block.append(f"Implement functionality in {target_path}")
-        else:
-            user_block.append("Implement the requested functionality")
-        user_block.append("")
-        
-        # Add relevant code excerpts if available
-        code_items = context_package.get('code', [])
-        if code_items:
-            user_block.append("**Current Code**:")
+        # Target path
+        target_path = context_package.get('target_path', '')
+        if target_path:
+            user_block.append(f"**Target Path**: `{target_path}`")
             user_block.append("")
-            for item in code_items[:3]:  # Limit to 3 code items
-                title = item.get('title', 'Unknown')
-                content = item.get('content', '')
-                file_path = item.get('file_path', '')
-                if file_path:
-                    user_block.append(f"```typescript")
-                    user_block.append(f"// {file_path}")
-                    # Show first 20 lines of content
-                    lines = content.split('\n')[:20]
-                    user_block.append('\n'.join(lines))
-                    if len(content.split('\n')) > 20:
-                        user_block.append("// ... (truncated)")
-                    user_block.append("```")
-                    user_block.append("")
+        
+        # Code excerpts
+        code_excerpts = context_package.get('code_excerpts', [])
+        if code_excerpts:
+            user_block.append("### Current Code")
+            user_block.append("")
+            for excerpt in code_excerpts:
+                user_block.append(f"**File**: `{excerpt['path']}`")
+                user_block.append("```typescript")
+                user_block.append(excerpt['excerpt'])
+                user_block.append("```")
+                user_block.append("")
+        
+        # Test excerpts
+        test_excerpts = context_package.get('test_excerpts', [])
+        if test_excerpts:
+            user_block.append("### Current Tests")
+            user_block.append("")
+            for excerpt in test_excerpts:
+                user_block.append(f"**File**: `{excerpt['path']}`")
+                user_block.append("```typescript")
+                user_block.append(excerpt['excerpt'])
+                user_block.append("```")
+                user_block.append("")
         
         blocks.append("\n".join(user_block))
         
-        # Block 4: REFERENCES - bulleted list of included sources with anchors
+        # Block 4: References (ADRs, Acceptance Criteria)
         references_block = []
         references_block.append("## REFERENCES")
         references_block.append("")
         
-        # Acceptance items
-        if acceptance_items:
-            references_block.append("**Acceptance Sources**:")
-            for item in acceptance_items:
-                title = item.get('title', 'Unknown')
-                source_anchor = item.get('source_anchor', '')
-                if source_anchor:
-                    references_block.append(f"- {source_anchor}")
-                else:
-                    file_path = item.get('file_path', '')
-                    if file_path:
-                        references_block.append(f"- [{title}]({file_path})")
+        # Acceptance Criteria (should be present)
+        acceptance_criteria = context_package.get('acceptance_criteria', [])
+        if acceptance_criteria:
+            references_block.append("### Acceptance Criteria")
+            references_block.append("")
+            for criterion in acceptance_criteria:
+                references_block.append(f"- {criterion}")
             references_block.append("")
         
-        # Architecture items
-        arch_items = context_package.get('architecture', [])
-        if arch_items:
-            references_block.append("**Architecture Sources**:")
-            for item in arch_items:
-                title = item.get('title', 'Unknown')
-                source_anchor = item.get('source_anchor', '')
-                if source_anchor:
-                    references_block.append(f"- {source_anchor}")
-                else:
-                    file_path = item.get('file_path', '')
-                    if file_path:
-                        references_block.append(f"- [{title}]({file_path})")
+        # ADRs
+        adrs = context_package.get('adrs', [])
+        if adrs:
+            references_block.append("### Architecture Decision Records")
             references_block.append("")
-        
-        # Code items
-        if code_items:
-            references_block.append("**Code Sources**:")
-            for item in code_items:
-                title = item.get('title', 'Unknown')
-                source_anchor = item.get('source_anchor', '')
-                if source_anchor:
-                    references_block.append(f"- {source_anchor}")
-                else:
-                    file_path = item.get('file_path', '')
-                    if file_path:
-                        references_block.append(f"- [{title}]({file_path})")
-            references_block.append("")
-        
-        # Other sources
-        other_sections = ['decisions', 'integrations', 'ux']
-        for section in other_sections:
-            items = context_package.get(section, [])
-            if items:
-                references_block.append(f"**{section.title()} Sources**:")
-                for item in items:
-                    title = item.get('title', 'Unknown')
-                    source_anchor = item.get('source_anchor', '')
-                    if source_anchor:
-                        references_block.append(f"- {source_anchor}")
-                    else:
-                        file_path = item.get('file_path', '')
-                        if file_path:
-                            references_block.append(f"- [{title}]({file_path})")
+            for i, adr in enumerate(adrs, 1):
+                references_block.append(f"#### ADR {i}")
+                references_block.append("")
+                references_block.append(adr)
                 references_block.append("")
         
         blocks.append("\n".join(references_block))
         
-        # Handle different output modes
-        if split:
-            # Create prompt directory
-            prompt_dir = os.path.join(CACHE, "prompt")
-            os.makedirs(prompt_dir, exist_ok=True)
-            
-            # Write four separate files
-            files_written = []
-            
-            # System block
-            system_file = os.path.join(prompt_dir, "system.txt")
-            with open(system_file, 'w', encoding='utf-8') as f:
-                f.write(blocks[0])
-            files_written.append("system.txt")
-            
-            # Instructions block
-            instructions_file = os.path.join(prompt_dir, "instructions.txt")
-            with open(instructions_file, 'w', encoding='utf-8') as f:
-                f.write(blocks[1])
-            files_written.append("instructions.txt")
-            
-            # User block
-            user_file = os.path.join(prompt_dir, "user.txt")
-            with open(user_file, 'w', encoding='utf-8') as f:
-                f.write(blocks[2])
-            files_written.append("user.txt")
-            
-            # References block
-            references_file = os.path.join(prompt_dir, "references.md")
-            with open(references_file, 'w', encoding='utf-8') as f:
-                f.write(blocks[3])
-            files_written.append("references.md")
-            
-            click.echo(f"✅ Split context pack written to {prompt_dir}/")
-            for filename in files_written:
-                click.echo(f"  - {filename}")
-                
-        elif stdout:
-            # Print with clear separators for copy/paste
-            click.echo("=" * 80)
-            click.echo("SYSTEM BLOCK")
-            click.echo("=" * 80)
-            click.echo(blocks[0])
-            click.echo()
-            click.echo("=" * 80)
-            click.echo("INSTRUCTIONS BLOCK")
-            click.echo("=" * 80)
-            click.echo(blocks[1])
-            click.echo()
-            click.echo("=" * 80)
-            click.echo("USER BLOCK")
-            click.echo("=" * 80)
-            click.echo(blocks[2])
-            click.echo()
-            click.echo("=" * 80)
-            click.echo("REFERENCES BLOCK")
-            click.echo("=" * 80)
-            click.echo(blocks[3])
-            click.echo()
-            click.echo("=" * 80)
-            
+        # Combine all blocks
+        full_output = "\n\n".join(blocks)
+        
+        # Output to file or stdout
+        if output:
+            with open(output, 'w', encoding='utf-8') as f:
+                f.write(full_output)
+            click.echo(f"✅ Context pack saved to: {output}")
         else:
-            # Original behavior: combine all blocks
-            full_output = "\n\n".join(blocks)
-            
-            # Output to file or stdout
-            if output:
-                with open(output, 'w', encoding='utf-8') as f:
-                    f.write(full_output)
-                click.echo(f"✅ Context pack saved to: {output}")
-            else:
-                click.echo(full_output)
+            click.echo(full_output)
         
     except Exception as e:
         click.echo(f"❌ Error: {e}")

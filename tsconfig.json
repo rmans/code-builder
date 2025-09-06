@@ -10,6 +10,6 @@
     "types": ["vitest/globals"],
     "outDir": "dist"
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["dist", "node_modules"]
 }

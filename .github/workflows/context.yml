@@ -1,0 +1,200 @@
+name: Context Pack Generation
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "docs/**"
+      - "builder/**"
+      - ".github/workflows/context.yml"
+  push:
+    branches: [main, feat/doc-factory]
+    paths:
+      - "src/**"
+      - "docs/**"
+      - "builder/**"
+      - ".github/workflows/context.yml"
+
+jobs:
+  context-pack:
+    runs-on: ubuntu-latest
+    name: Generate Context Packs
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install click Jinja2 PyYAML requests
+        
+    - name: Set up pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 8
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+        
+    - name: Install Node dependencies
+      run: pnpm install --no-frozen-lockfile
+      
+    - name: Install Python test dependencies
+      run: |
+        pip install pytest
+      
+    - name: Run golden checks
+      run: |
+        python -m pytest builder/tests/test_golden_checks.py -v
+      
+    - name: Create cache directory
+      run: mkdir -p builder/cache
+      
+    - name: Generate context packs for representative paths
+      run: |
+        echo "Building context packs for representative paths..."
+        
+        # Build context for existing TypeScript files
+        echo "Building context for builder/test_data/hello_good.ts..."
+        python3 builder/cli.py ctx:build builder/test_data/hello_good.ts --purpose implement --feature typescript --stacks typescript --token-limit 8000
+        
+        # Build context for any changed files in this PR
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "Building context for changed files..."
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -E '\.(ts|tsx|js|jsx)$' | head -3)
+          for file in $CHANGED_FILES; do
+            if [ -f "$file" ]; then
+              echo "Building context for $file..."
+              python3 builder/cli.py ctx:build "$file" --purpose implement --stacks typescript --token-limit 6000
+            fi
+          done
+        fi
+        
+        # Build context for docs changes
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          CHANGED_DOCS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^docs/' | head -2)
+          for doc in $CHANGED_DOCS; do
+            if [ -f "$doc" ]; then
+              echo "Building context for $doc..."
+              python3 builder/cli.py ctx:build "$doc" --purpose review --stacks typescript --token-limit 4000
+            fi
+          done
+        fi
+        
+        # If no specific files, build context for builder directory
+        if [ ! -f "builder/cache/pack_context.json" ]; then
+          echo "Building context for builder directory..."
+          python3 builder/cli.py ctx:build builder --purpose implement --stacks typescript --token-limit 8000
+        fi
+        
+    - name: Validate context pack structure
+      run: |
+        echo "Validating context pack structure..."
+        
+        if [ ! -f "builder/cache/pack_context.json" ]; then
+          echo "❌ ERROR: pack_context.json not found"
+          exit 1
+        fi
+        
+        if [ ! -f "builder/cache/context.md" ]; then
+          echo "❌ ERROR: context.md not found"
+          exit 1
+        fi
+        
+        # Validate JSON structure first
+        echo "Validating JSON structure..."
+        python3 -c "
+        import json
+        with open('builder/cache/pack_context.json', 'r') as f:
+            data = json.load(f)
+        
+  # Check for rules_markdown (always required)
+  if 'rules_markdown' not in data.get('rules', {}):
+      print('❌ ERROR: Missing rules_markdown in rules')
+      exit(1)
+  
+  # Check for code_excerpts section (always required)
+  if 'code_excerpts' not in data or not data['code_excerpts']:
+      print('❌ ERROR: Missing code_excerpts section or empty code_excerpts')
+      exit(1)
+        
+        print('✅ Basic JSON structure validation passed')
+        "
+        
+        # Validate context.md has content
+        echo "Checking context.md content..."
+        if [ ! -s "builder/cache/context.md" ]; then
+          echo "❌ ERROR: context.md is empty"
+          exit 1
+        fi
+        
+        echo "✅ Context markdown file has content"
+        
+        echo "✅ Context pack validation passed"
+        
+    - name: Generate context pack summary
+      run: |
+        echo "## Context Pack Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f "builder/cache/pack_context.json" ]; then
+          echo "### Generated Files" >> $GITHUB_STEP_SUMMARY
+          echo "- \`pack_context.json\` - Structured context data" >> $GITHUB_STEP_SUMMARY
+          echo "- \`context.md\` - Human-readable context" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Show file sizes
+          echo "### File Sizes" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -lh builder/cache/pack_context.json builder/cache/context.md >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Show context stats
+          echo "### Context Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          python3 -c "
+          import json
+          with open('builder/cache/pack_context.json', 'r') as f:
+              data = json.load(f)
+          
+          print(f'Task: {data.get(\"task\", {}).get(\"purpose\", \"unknown\")} - {data.get(\"task\", {}).get(\"target_path\", \"unknown\")}')
+          print(f'Feature: {data.get(\"task\", {}).get(\"feature\", \"none\")}')
+          print(f'Token Limit: {data.get(\"constraints\", {}).get(\"token_limit\", \"unknown\")}')
+          print(f'Budget Summary: {data.get(\"constraints\", {}).get(\"budget_summary\", {}).get(\"total_tokens\", \"unknown\")} tokens')
+          print(f'Acceptance Criteria: {len(data.get(\"acceptance\", []))} items')
+          print(f'Architecture: {len(data.get(\"architecture\", []))} items')
+          print(f'Code: {len(data.get(\"code\", []))} items')
+          " >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ No context pack generated" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    - name: Upload context pack artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: context-pack
+        path: |
+          builder/cache/pack_context.json
+          builder/cache/context.md
+        retention-days: 30
+        
+    - name: Upload context selection data
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: context-selection
+        path: |
+          builder/cache/context_selection.json
+          builder/cache/context_graph.json
+        retention-days: 30
