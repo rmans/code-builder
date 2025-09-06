@@ -1185,7 +1185,7 @@ def adr_new(title, parent, related, tags):
 
 # -------------------- RULES LOADER --------------------
 def _load_rules(feature, stacks):
-    from context_rules import merge_context_rules
+    from .context_rules import merge_context_rules
     return merge_context_rules(feature or None, [s.strip() for s in stacks.split(",") if s.strip()])
 
 # -------------------- DOCUMENT HELPERS --------------------
@@ -1247,9 +1247,9 @@ def plan_auto(path, stacks):
         click.echo("🔧 Building enhanced context package...")
         
         # Import the enhanced context building modules
-        from context_graph import ContextGraphBuilder
-        from context_select import ContextSelector
-        from context_budget import ContextBudgetManager
+        from .context_graph import ContextGraphBuilder
+        from .context_select import ContextSelector
+        from .context_budget import ContextBudgetManager
         
         # 1. Build context graph
         graph_builder = ContextGraphBuilder(ROOT)
@@ -2886,7 +2886,7 @@ def doc_fix_master():
 def context_scan(output, stats_only):
     """Scan project and build context graph of nodes and relationships"""
     try:
-        from context_graph import ContextGraph
+        from .context_graph import ContextGraph
         
         click.echo("🔍 Scanning project for context graph...")
         
@@ -2924,9 +2924,9 @@ def context_scan(output, stats_only):
 def ctx_build_enhanced(target_path, purpose, feature, stacks, token_limit, force):
     """Build enhanced context package using graph + selection + budget"""
     try:
-        from context_graph import ContextGraphBuilder
-        from context_select import ContextSelector
-        from context_budget import ContextBudgetManager
+        from .context_graph import ContextGraphBuilder
+        from .context_select import ContextSelector
+        from .context_budget import ContextBudgetManager
         
         # Ensure cache directory exists
         os.makedirs(CACHE, exist_ok=True)
@@ -4078,7 +4078,7 @@ def ctx_trace(output, format):
 def ctx_graph_build(output):
     """Build context graph from docs and source code"""
     try:
-        from context_graph import ContextGraphBuilder
+        from .context_graph import ContextGraphBuilder
         
         click.echo("🔍 Building context graph...")
         builder = ContextGraphBuilder(ROOT)
@@ -4109,12 +4109,12 @@ def ctx_graph_build(output):
 def ctx_graph_stats():
     """Show context graph statistics"""
     try:
-        from context_graph import ContextGraphBuilder
+        from .context_graph import ContextGraphBuilder
         
         # Build or load graph
         graph_file = os.path.join(ROOT, "builder", "cache", "context_graph.json")
         if os.path.exists(graph_file):
-            from context_graph import ContextGraph
+            from .context_graph import ContextGraph
             graph = ContextGraph.load(graph_file)
             click.echo("📊 Context Graph Statistics (from cache):")
         else:
@@ -4169,7 +4169,7 @@ def ctx_graph_stats():
 def ctx_select(target_path, feature, top_k, output):
     """Select and rank context for a target path"""
     try:
-        from context_select import ContextSelector
+        from .context_select import ContextSelector
         
         click.echo(f"🔍 Selecting context for: {target_path}")
         if feature:
@@ -4213,8 +4213,8 @@ def ctx_select(target_path, feature, top_k, output):
 def ctx_budget(target_path, feature, budget, output, report):
     """Apply token budget to context selection"""
     try:
-        from context_select import ContextSelector
-        from context_budget import ContextBudgetManager
+        from .context_select import ContextSelector
+        from .context_budget import ContextBudgetManager
         
         click.echo(f"💰 Applying token budget to: {target_path}")
         click.echo(f"📊 Total budget: {budget} tokens")
