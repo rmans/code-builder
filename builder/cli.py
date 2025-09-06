@@ -1887,6 +1887,35 @@ def doc_new(dtype, title, owner, links, prd, arch, adr, impl, exec_, ux):
             # For individual flags, we want to set the link directly, not as an array
             parsed_links[link_type] = link_id.strip()
     
+    # Auto-discover related ADRs if not explicitly provided
+    if not adr:  # Only auto-discover if no ADR was explicitly provided
+        try:
+            from discovery.generators import DiscoveryGenerators
+            generator = DiscoveryGenerators()
+            
+            # Extract tech stack from title/content for better ADR matching
+            tech_stack = []
+            title_lower = title.lower()
+            common_tech = ['python', 'typescript', 'javascript', 'react', 'vue', 'angular', 'node', 'django', 'flask', 'express', 'mongodb', 'postgresql', 'mysql', 'redis', 'docker', 'kubernetes', 'aws', 'azure', 'gcp']
+            for tech in common_tech:
+                if tech in title_lower:
+                    tech_stack.append(tech)
+            
+            # Get related ADRs
+            related_adrs = generator.get_related_adrs_for_document(
+                document_type=dtype,
+                title=title,
+                content="",  # We don't have content yet
+                tech_stack=tech_stack
+            )
+            
+            if related_adrs:
+                parsed_links['adr'] = related_adrs
+                click.echo(f"🔗 Auto-discovered {len(related_adrs)} related ADRs: {', '.join(related_adrs)}")
+        except Exception as e:
+            # Silently fail ADR discovery - it's optional
+            pass
+    
     # Create context for template rendering
     ctx = {
         "id": doc_id,

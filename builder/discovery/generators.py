@@ -686,6 +686,44 @@ class DiscoveryGenerators:
         # Normalize score
         return score / total_weight if total_weight > 0 else 0.0
     
+    def get_related_adrs_for_document(self, document_type: str, title: str, content: str = "", tech_stack: List[str] = None) -> List[str]:
+        """Get related ADRs for any document type based on content analysis.
+        
+        Args:
+            document_type: Type of document (prd, arch, impl, exec, ux, etc.)
+            title: Document title
+            content: Document content (optional)
+            tech_stack: List of technologies used (optional)
+            
+        Returns:
+            List of related ADR IDs
+        """
+        # Discover existing ADRs
+        existing_adrs = self._discover_existing_adrs()
+        
+        if not existing_adrs:
+            return []
+        
+        # Create synthesis data for analysis
+        synthesis_data = {
+            'questions': {
+                'product_name': title,
+                'main_idea': content[:200] if content else title,  # Use first 200 chars as main idea
+                'tech_stack_preferences': ', '.join(tech_stack) if tech_stack else ''
+            },
+            'detected': {
+                'languages': tech_stack or [],
+                'frameworks': [],
+                'libraries': [],
+                'tools': []
+            }
+        }
+        
+        # Find related ADRs
+        related_adrs = self._find_related_adrs(synthesis_data, existing_adrs)
+        
+        return related_adrs
+    
     def _create_slug(self, text: str) -> str:
         """Create URL-safe slug from text.
         
@@ -826,7 +864,6 @@ links:
   integrations: []
   tasks: []
   ux: []
-related_adrs: {related_adrs}
 ---
 
 # Product Requirements Document: {product_name}
