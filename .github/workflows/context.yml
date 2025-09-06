@@ -63,18 +63,18 @@ jobs:
       run: |
         echo "Building context packs for representative paths..."
         
-        # Build context for auth feature (most comprehensive)
-        echo "Building context for src/auth/login.ts..."
-        python3 builder/cli.py ctx:build-enhanced src/auth/login.ts --purpose implement --feature auth --stacks typescript,react --token-limit 8000
+        # Build context for existing TypeScript files
+        echo "Building context for builder/test_data/hello_good.ts..."
+        python3 builder/cli.py ctx:build-enhanced builder/test_data/hello_good.ts --purpose implement --feature typescript --stacks typescript --token-limit 8000
         
-        # Build context for any changed src files in this PR
+        # Build context for any changed files in this PR
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           echo "Building context for changed files..."
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^src/' | head -3)
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -E '\.(ts|tsx|js|jsx)$' | head -3)
           for file in $CHANGED_FILES; do
             if [ -f "$file" ]; then
               echo "Building context for $file..."
-              python3 builder/cli.py ctx:build-enhanced "$file" --purpose implement --stacks typescript,react --token-limit 6000
+              python3 builder/cli.py ctx:build-enhanced "$file" --purpose implement --stacks typescript --token-limit 6000
             fi
           done
         fi
@@ -85,15 +85,15 @@ jobs:
           for doc in $CHANGED_DOCS; do
             if [ -f "$doc" ]; then
               echo "Building context for $doc..."
-              python3 builder/cli.py ctx:build-enhanced "$doc" --purpose review --stacks typescript,react --token-limit 4000
+              python3 builder/cli.py ctx:build-enhanced "$doc" --purpose review --stacks typescript --token-limit 4000
             fi
           done
         fi
         
-        # If no specific files, build context for main src directory
+        # If no specific files, build context for builder directory
         if [ ! -f "builder/cache/pack_context.json" ]; then
-          echo "Building context for src directory..."
-          python3 builder/cli.py ctx:build-enhanced src --purpose implement --stacks typescript,react --token-limit 8000
+          echo "Building context for builder directory..."
+          python3 builder/cli.py ctx:build-enhanced builder --purpose implement --stacks typescript --token-limit 8000
         fi
         
     - name: Validate context pack structure
