@@ -8,7 +8,7 @@ echo "================================="
 echo ""
 echo "Test 1: Auth context (documentation-connected)"
 echo "----------------------------------------------"
-python3 builder/cli.py ctx:build-enhanced src/auth/login.ts --purpose implement --feature auth --stacks typescript,react --token-limit 8000
+python3 -m builder ctx:build-enhanced src/auth/login.ts --purpose implement --feature auth --stacks typescript,react --token-limit 8000
 
 if [ -f "builder/cache/pack_context.json" ] && [ -f "builder/cache/context.md" ]; then
     echo "✅ Files generated successfully"
@@ -32,7 +32,7 @@ fi
 echo ""
 echo "Test 2: Code-only context"
 echo "-------------------------"
-python3 builder/cli.py ctx:build-enhanced src/index.ts --purpose implement --stacks typescript,react --token-limit 6000
+python3 -m builder ctx:build-enhanced src/index.ts --purpose implement --stacks typescript,react --token-limit 6000
 
 if [ -f "builder/cache/pack_context.json" ] && [ -f "builder/cache/context.md" ]; then
     echo "✅ Files generated successfully"

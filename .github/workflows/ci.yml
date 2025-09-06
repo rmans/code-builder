@@ -84,7 +84,7 @@ jobs:
           # Find all TypeScript files and evaluate them
           find src -name "*.ts" -o -name "*.tsx" | while read file; do
             echo "Evaluating $file..."
-            python builder/cli.py eval:objective "$file" || echo "Failed to evaluate $file"
+            python -m builder eval:objective "$file" || echo "Failed to evaluate $file"
           done
         continue-on-error: true  # Don't fail CI on evaluation errors
 

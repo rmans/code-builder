@@ -72,7 +72,7 @@ jobs:
           local token_limit="$5"
           
           echo "Building context for $target..."
-          if python3 builder/cli.py ctx:build "$target" --purpose "$purpose" --feature "$feature" --stacks "$stacks" --token-limit "$token_limit"; then
+          if python3 -m builder ctx:build "$target" --purpose "$purpose" --feature "$feature" --stacks "$stacks" --token-limit "$token_limit"; then
             echo "✅ Successfully built context for $target"
             return 0
           else

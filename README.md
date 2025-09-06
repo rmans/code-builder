@@ -194,13 +194,13 @@ The Discovery system helps you explore, understand, and document your codebase w
 ### Quick Discovery
 ```bash
 # Interactive discovery with guided prompts
-python3 builder/cli.py discover:new --interactive
+python3 -m builder discover:new --interactive
 
 # Batch discovery with templates
-python3 builder/cli.py discover:new --batch --template enterprise --product "My Product" --idea "Product idea"
+python3 -m builder discover:new --batch --template enterprise --product "My Product" --idea "Product idea"
 
 # Auto-generate enhanced content
-python3 builder/cli.py discover:new --batch --template startup --auto-generate
+python3 -m builder discover:new --batch --template startup --auto-generate
 ```
 
 ### Discovery Templates
@@ -211,16 +211,16 @@ python3 builder/cli.py discover:new --batch --template startup --auto-generate
 ### Discovery Analysis
 ```bash
 # Analyze entire repository
-python3 builder/cli.py discover:analyze --repo-root
+python3 -m builder discover:analyze --repo-root
 
 # Scan and auto-generate missing contexts
-python3 builder/cli.py discover:scan --auto-generate
+python3 -m builder discover:scan --auto-generate
 
 # Regenerate all discovery outputs
-python3 builder/cli.py discover:regenerate --all
+python3 -m builder discover:regenerate --all
 
 # Validate discovery context
-python3 builder/cli.py discover:validate discovery_context.yml
+python3 -m builder discover:validate discovery_context.yml
 ```
 
 ### Auto ADR Linking
@@ -236,7 +236,7 @@ All document types now automatically discover and link related ADRs:
 
 1. **Generate Context**
 
-       python3 builder/cli.py plan:auto test/example.ts
+       python3 -m builder plan:auto test/example.ts
 
    Produces `builder/cache/pack_context.json` and `context.md` with intelligent context selection.
 
@@ -260,18 +260,18 @@ All document types now automatically discover and link related ADRs:
 
 5. **Record a Decision**
 
-       python3 builder/cli.py adr:new "Auth login API shape" --parent ADR-0000 --related test/example.ts --tags auth
+       python3 -m builder adr:new "Auth login API shape" --parent ADR-0000 --related test/example.ts --tags auth
 
 6. **Evaluate Code Quality**
 
        # Objective evaluation (automated metrics)
-       python3 builder/cli.py eval:objective test/example.ts
+       python3 -m builder eval:objective test/example.ts
        
        # Interactive evaluation with Cursor
-       python3 builder/cli.py eval:objective test/example.ts --server
+       python3 -m builder eval:objective test/example.ts --server
        
        # ABC iteration (compare variants)
-       python3 builder/cli.py iter:cursor test/example.ts
+       python3 -m builder iter:cursor test/example.ts
 
 ---
 
@@ -288,19 +288,19 @@ Code Builder includes an intelligent context generation system that automaticall
 ### Context Commands
 ```bash
 # Generate context for a file
-python3 builder/cli.py plan:auto test/example.ts
+python3 -m builder plan:auto test/example.ts
 
 # Build enhanced context with specific parameters
-python3 builder/cli.py ctx:build-enhanced test/example.ts --purpose implement --feature auth
+python3 -m builder ctx:build-enhanced test/example.ts --purpose implement --feature auth
 
 # Explain why specific items were selected
-python3 builder/cli.py ctx:explain
+python3 -m builder ctx:explain
 
 # Generate prompt blocks for AI assistants
-python3 builder/cli.py ctx:pack
+python3 -m builder ctx:pack
 
 # Show context graph statistics
-python3 builder/cli.py ctx:graph:stats
+python3 -m builder ctx:graph:stats
 ```
 
 ### Context Output
@@ -584,13 +584,13 @@ Code Builder includes comprehensive PR ergonomics to streamline code reviews:
 ### Validation Commands
 ```bash
 # Documentation validation
-python3 builder/cli.py doc:check
+python3 -m builder doc:check
 
 # Documentation quality (markdown + spell)
 pnpm run docs:all
 
 # Context building
-python3 builder/cli.py ctx:build-enhanced test/example.ts --purpose implement
+python3 -m builder ctx:build-enhanced test/example.ts --purpose implement
 
 # All tests
 pnpm run test:all
@@ -628,28 +628,28 @@ Code Builder includes a comprehensive evaluation system that measures code quali
 #### Quick Evaluation
 ```bash
 # Objective evaluation only (automated)
-python3 builder/cli.py eval:objective test/example.ts
+python3 -m builder eval:objective test/example.ts
 
 # Interactive evaluation with Cursor Bridge Server
-python3 builder/cli.py eval:objective test/example.ts --server
+python3 -m builder eval:objective test/example.ts --server
 ```
 
 #### Manual Evaluation
 ```bash
 # Generate Cursor evaluation prompt
-python3 builder/cli.py eval:prepare src/hello.ts
+python3 -m builder eval:prepare src/hello.ts
 
 # Complete evaluation with Cursor response
-python3 builder/cli.py eval:complete src/hello.ts --cursor-response response.json
+python3 -m builder eval:complete src/hello.ts --cursor-response response.json
 ```
 
 #### ABC Iteration
 ```bash
 # Generate variants and prepare for Cursor evaluation
-python3 builder/cli.py iter:cursor src/hello.ts
+python3 -m builder iter:cursor src/hello.ts
 
 # Complete iteration with winner selection
-python3 builder/cli.py iter:finish src/hello.ts --winner B --scores-file cursor_response.json
+python3 -m builder iter:finish src/hello.ts --winner B --scores-file cursor_response.json
 ```
 
 ### Cursor Integration
@@ -698,32 +698,32 @@ python3 builder/cli.py iter:finish src/hello.ts --winner B --scores-file cursor_
 - **Agent ownership**: Protect files created by active agents from cleanup
 
 #### Documentation Management
-- **Document creation**: `python3 builder/cli.py doc:new <type> --title "Title"`
-- **Document indexing**: `python3 builder/cli.py doc:index`
-- **Document validation**: `python3 builder/cli.py doc:check`
-- **Link management**: `python3 builder/cli.py doc:set-links`
+- **Document creation**: `python3 -m builder doc:new <type> --title "Title"`
+- **Document indexing**: `python3 -m builder doc:index`
+- **Document validation**: `python3 -m builder doc:check`
+- **Link management**: `python3 -m builder doc:set-links`
 - **Auto ADR linking**: Automatic discovery and linking of related ADRs across all document types
 
 #### Discovery System
-- **Interactive discovery**: `python3 builder/cli.py discover:new --interactive`
-- **Batch discovery**: `python3 builder/cli.py discover:new --batch --template <type>`
+- **Interactive discovery**: `python3 -m builder discover:new --interactive`
+- **Batch discovery**: `python3 -m builder discover:new --batch --template <type>`
 - **Template support**: `default`, `enterprise`, `startup` templates with tailored fields
 - **Auto-generation**: `--auto-generate` flag for enhanced content generation
-- **Discovery scanning**: `python3 builder/cli.py discover:scan --auto-generate`
-- **Context regeneration**: `python3 builder/cli.py discover:regenerate --all`
-- **Artifact cleanup**: `python3 builder/cli.py cleanup:artifacts --clean`
+- **Discovery scanning**: `python3 -m builder discover:scan --auto-generate`
+- **Context regeneration**: `python3 -m builder discover:regenerate --all`
+- **Artifact cleanup**: `python3 -m builder cleanup:artifacts --clean`
 
 #### Context System
-- **Graph building**: `python3 builder/cli.py ctx:graph:build`
-- **Context selection**: `python3 builder/cli.py ctx:select`
-- **Budget management**: `python3 builder/cli.py ctx:budget`
-- **Context diffing**: `python3 builder/cli.py ctx:diff`
-- **Context packing**: `python3 builder/cli.py ctx:pack --split --stdout`
+- **Graph building**: `python3 -m builder ctx:graph:build`
+- **Context selection**: `python3 -m builder ctx:select`
+- **Budget management**: `python3 -m builder ctx:budget`
+- **Context diffing**: `python3 -m builder ctx:diff`
+- **Context packing**: `python3 -m builder ctx:pack --split --stdout`
 
 #### Security & Compliance
 - **PII detection**: Automatic detection of personally identifiable information
 - **Redaction policy**: Optional redaction of sensitive data in discovery contexts
-- **Security validation**: `python3 builder/cli.py discover:validate <context_file>`
+- **Security validation**: `python3 -m builder discover:validate <context_file>`
 
 #### Metrics & Reporting
 - **Comprehensive metrics**: Feature counts, gap analysis, performance tracking

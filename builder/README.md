@@ -75,7 +75,7 @@ The Builder CLI is built around **8 core systems**:
 ### ADR Management
 - `adr:new`
 
-      python3 builder/cli.py adr:new "Create hello module" --parent ADR-0000 --related src/hello.ts --tags demo
+      python3 -m builder adr:new "Create hello module" --parent ADR-0000 --related src/hello.ts --tags demo
 
   Creates `docs/adrs/ADR-000X.md` and links it in `0000_MASTER_ADR.md`.
 
@@ -150,41 +150,41 @@ The Builder CLI is built around **8 core systems**:
 ### Discovery System
 - `discover:new`
 
-      python3 builder/cli.py discover:new --interactive
-      python3 builder/cli.py discover:new --batch --template enterprise --product "My Product" --idea "Product idea"
-      python3 builder/cli.py discover:new --batch --template startup --auto-generate
+      python3 -m builder discover:new --interactive
+      python3 -m builder discover:new --batch --template enterprise --product "My Product" --idea "Product idea"
+      python3 -m builder discover:new --batch --template startup --auto-generate
 
   Creates discovery contexts with interactive prompts or batch processing. Supports `default`, `enterprise`, and `startup` templates.
 
 - `discover:analyze`
 
-      python3 builder/cli.py discover:analyze --repo-root
+      python3 -m builder discover:analyze --repo-root
 
   Analyzes codebase and generates comprehensive discovery reports with metrics.
 
 - `discover:scan`
 
-      python3 builder/cli.py discover:scan --auto-generate
+      python3 -m builder discover:scan --auto-generate
 
   Scans all documents and auto-generates missing discovery contexts.
 
 - `discover:regenerate`
 
-      python3 builder/cli.py discover:regenerate --all
+      python3 -m builder discover:regenerate --all
 
   Regenerates all discovery outputs and documentation.
 
 - `discover:validate`
 
-      python3 builder/cli.py discover:validate discovery_context.yml
+      python3 -m builder discover:validate discovery_context.yml
 
   Validates discovery context files with PII detection and security checks.
 
 - `cleanup:artifacts`
 
-      python3 builder/cli.py cleanup:artifacts --dry-run
-      python3 builder/cli.py cleanup:artifacts --clean
-      python3 builder/cli.py cleanup:artifacts --check-agents --agent-workspaces
+      python3 -m builder cleanup:artifacts --dry-run
+      python3 -m builder cleanup:artifacts --clean
+      python3 -m builder cleanup:artifacts --check-agents --agent-workspaces
 
   Scans for and cleans up test/example artifacts outside of designated directories.
   Enhanced with agent-aware cleanup that protects files created by active agents.
@@ -194,25 +194,25 @@ The Builder CLI is built around **8 core systems**:
 ### Planning & Context
 - `plan:auto`
 
-      python3 builder/cli.py plan:auto src/auth/login.ts
+      python3 -m builder plan:auto src/auth/login.ts
 
   Infers feature from `builder/feature_map.json` and generates intelligent context.
 
 - `ctx:build-enhanced`
 
-      python3 builder/cli.py ctx:build-enhanced src/auth/login.ts --purpose implement --feature auth
+      python3 -m builder ctx:build-enhanced src/auth/login.ts --purpose implement --feature auth
 
   Builds enhanced context with specific parameters and budget management.
 
 - `ctx:explain`
 
-      python3 builder/cli.py ctx:explain
+      python3 -m builder ctx:explain
 
   Shows why specific items were selected for the context.
 
 - `ctx:pack`
 
-      python3 builder/cli.py ctx:pack
+      python3 -m builder ctx:pack
 
   Generates prompt blocks for AI assistants.
 
@@ -229,25 +229,25 @@ Outputs `builder/cache/pack_context.json` and `context.md` with:
 ### Documentation Management
 - `doc:new`
 
-      python3 builder/cli.py doc:new prd --title "User Authentication" --prd PRD-001
+      python3 -m builder doc:new prd --title "User Authentication" --prd PRD-001
 
   Creates new documents with proper front-matter and linking.
 
 - `doc:set-links`
 
-      python3 builder/cli.py doc:set-links docs/arch/ARCH-001.md --prd PRD-001 --ux UX-001
+      python3 -m builder doc:set-links docs/arch/ARCH-001.md --prd PRD-001 --ux UX-001
 
   Sets front-matter links without manual YAML editing.
 
 - `doc:check`
 
-      python3 builder/cli.py doc:check
+      python3 -m builder doc:check
 
   Validates document front-matter and structure.
 
 - `doc:index`
 
-      python3 builder/cli.py doc:index
+      python3 -m builder doc:index
 
   Generates documentation index with current status.
 
@@ -256,31 +256,31 @@ Outputs `builder/cache/pack_context.json` and `context.md` with:
 ### Context System
 - `ctx:graph:build`
 
-      python3 builder/cli.py ctx:graph:build
+      python3 -m builder ctx:graph:build
 
   Builds context graph from documentation and source code.
 
 - `ctx:graph:stats`
 
-      python3 builder/cli.py ctx:graph:stats
+      python3 -m builder ctx:graph:stats
 
   Shows context graph statistics (nodes and edges by type).
 
 - `ctx:select`
 
-      python3 builder/cli.py ctx:select src/auth/login.ts --feature auth
+      python3 -m builder ctx:select src/auth/login.ts --feature auth
 
   Selects and ranks context for a target path.
 
 - `ctx:budget`
 
-      python3 builder/cli.py ctx:budget
+      python3 -m builder ctx:budget
 
   Applies token budget to context selection.
 
 - `ctx:diff`
 
-      python3 builder/cli.py ctx:diff old.json new.json
+      python3 -m builder ctx:diff old.json new.json
 
   Shows differences between two context packs.
 
@@ -289,25 +289,25 @@ Outputs `builder/cache/pack_context.json` and `context.md` with:
 ### Code Evaluation
 - `eval:objective <path>`
 
-      python3 builder/cli.py eval:objective src/hello.ts
+      python3 -m builder eval:objective src/hello.ts
 
   Runs objective evaluation using tests, coverage, lint, spell, and guardrails.
 
 - `eval:objective <path> --server`
 
-      python3 builder/cli.py eval:objective src/hello.ts --server
+      python3 -m builder eval:objective src/hello.ts --server
 
   Starts Cursor Bridge Server for interactive evaluation.
 
 - `eval:prepare <path>`
 
-      python3 builder/cli.py eval:prepare src/hello.ts
+      python3 -m builder eval:prepare src/hello.ts
 
   Generates evaluation prompt for Cursor.
 
 - `eval:complete <path> --cursor-response <json>`
 
-      python3 builder/cli.py eval:complete src/hello.ts --cursor-response response.json
+      python3 -m builder eval:complete src/hello.ts --cursor-response response.json
 
   Blends objective and subjective scores.
 
@@ -316,13 +316,13 @@ Outputs `builder/cache/pack_context.json` and `context.md` with:
 ### ABC Iteration
 - `iter:cursor <path> [--rounds N]`
 
-      python3 builder/cli.py iter:cursor src/hello.ts
+      python3 -m builder iter:cursor src/hello.ts
 
   Generates A/B/C variants and prepares for Cursor evaluation.
 
 - `iter:finish <path> --winner A|B|C`
 
-      python3 builder/cli.py iter:finish src/hello.ts --winner B
+      python3 -m builder iter:finish src/hello.ts --winner B
 
   Completes iteration with winner selection.
 
@@ -331,13 +331,13 @@ Outputs `builder/cache/pack_context.json` and `context.md` with:
 ### Rules & Guardrails
 - `rules:show`
 
-      python3 builder/cli.py rules:show --feature auth --stacks typescript,react
+      python3 -m builder rules:show --feature auth --stacks typescript,react
 
   Shows merged rules + guardrails with conflict detection.
 
 - `rules:check`
 
-      python3 builder/cli.py rules:check "tests/**/*.ts" --feature auth --stacks typescript,react
+      python3 -m builder rules:check "tests/**/*.ts" --feature auth --stacks typescript,react
 
   Fails if any forbidden patterns found.
 

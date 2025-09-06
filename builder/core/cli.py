@@ -5159,8 +5159,8 @@ def discover_new(interactive, batch, template, product, idea, problem, users, fe
         if auto_generate:
             click.echo("🚀 Next steps:")
             click.echo("  1. Review the generated discovery context")
-            click.echo("  2. Run: python builder/cli.py discover:scan --auto-generate")
-            click.echo("  3. Run: python builder/cli.py discover:regenerate --all")
+            click.echo("  2. Run: python -m builder discover:scan --auto-generate")
+            click.echo("  3. Run: python -m builder discover:regenerate --all")
         
     except Exception as e:
         click.echo(f"❌ Error creating discovery context: {e}")
@@ -5243,8 +5243,8 @@ def discover_analyze(repo_root, target, feature, question_set, output, batch):
         # Show next steps
         click.echo(f"\n🚀 Next Steps:")
         click.echo(f"1. Review analysis results in: {output}")
-        click.echo(f"2. Run: python builder/cli.py discover:validate {output}")
-        click.echo(f"3. Generate reports: python builder/cli.py discover:regenerate --reports")
+        click.echo(f"2. Run: python -m builder discover:validate {output}")
+        click.echo(f"3. Generate reports: python -m builder discover:regenerate --reports")
         
     except Exception as e:
         click.echo(f"❌ Error: {e}")
@@ -6460,13 +6460,13 @@ def discover_validate(context_file, strict, lenient, min_features, min_idea_word
         if not validation_results.get('is_valid', False):
             click.echo(f"\n🔧 Fix Issues:")
             click.echo(f"1. Address validation errors above")
-            click.echo(f"2. Re-run validation: python builder/cli.py discover:validate {context_file}")
+            click.echo(f"2. Re-run validation: python -m builder discover:validate {context_file}")
             click.echo(f"3. Check file format and required fields")
             raise SystemExit(1)
         
         # Show next steps for successful validation
         click.echo(f"\n🚀 Next Steps:")
-        click.echo(f"1. Run: python builder/cli.py discover:regenerate --reports")
+        click.echo(f"1. Run: python -m builder discover:regenerate --reports")
         click.echo(f"2. Review generated documentation")
         click.echo(f"3. Update discovery context as needed")
         
@@ -6860,7 +6860,7 @@ def discover_regenerate(batch, reports, docs, diagrams, all, input, output_dir):
         click.echo(f"1. Review generated outputs in: {output_dir}")
         click.echo(f"2. Share reports with stakeholders")
         click.echo(f"3. Update discovery context based on findings")
-        click.echo(f"4. Run: python builder/cli.py discover:analyze --repo-root (to re-analyze)")
+        click.echo(f"4. Run: python -m builder discover:analyze --repo-root (to re-analyze)")
         
         # F1: Run doc:index hook automatically after generation
         click.echo(f"\n📚 Running doc:index hook...")

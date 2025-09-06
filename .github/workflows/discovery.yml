@@ -31,7 +31,7 @@ jobs:
       - name: Run discovery scan
         run: |
           echo "🔍 Running discovery scan with auto-generation..."
-          python builder/cli.py discover:scan --auto-generate || {
+          python -m builder discover:scan --auto-generate || {
             echo "⚠️ Discovery scan completed with warnings (non-blocking)"
             exit 0
           }

@@ -585,7 +585,7 @@ class DiscoveryEngine:
             
             # Run ctx:build command
             cmd = [
-                'python3', 'builder/cli.py', 'ctx:build', target_path,
+                'python3', '-m', 'builder', 'ctx:build', target_path,
                 '--purpose', 'implement'
             ]
             
