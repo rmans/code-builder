@@ -32,6 +32,8 @@ __pycache__/
 
 # Builder cache
 builder/cache/
+# Discovery cache (exclude discovery subdirectory)
+builder/cache/discovery/
 
 # Test files (temporary development files)
 .testfiles/

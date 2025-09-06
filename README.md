@@ -32,10 +32,28 @@ Run these commands after cloning:
     source .venv/bin/activate
     pip install -r requirements.txt   # click, pyyaml, jinja2
 
+    # Note: pnpm-lock.yaml is committed to ensure reproducible builds
+
     pnpm run build      # build TypeScript
     pnpm run test:all   # run all tests (TypeScript + Python)
     pnpm run docs:all   # validate documentation
     pnpm run rules:check "test/**/*.ts" --feature auth --stacks typescript,react
+
+## Discovery
+
+The Discovery system helps you explore and understand your codebase:
+
+    # Discover related files and dependencies
+    python3 builder/cli.py discover test/example.ts
+    
+    # Show discovery results with explanations
+    python3 builder/cli.py discover test/example.ts --explain
+    
+    # Generate discovery report
+    python3 builder/cli.py discover test/example.ts --report
+    
+    # Clear discovery cache
+    python3 builder/cli.py discover --clear-cache
 
 ---
 

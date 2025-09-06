@@ -1,5 +1,13 @@
 {
 	"type": "module",
+	"name": "code-builder",
+	"version": "1.0.0",
+	"description": "Comprehensive developer productivity scaffold for AI-assisted software projects",
+	"engines": {
+		"node": ">=18.0.0",
+		"pnpm": ">=8.0.0"
+	},
+	"packageManager": "pnpm@10.15.1",
 	"devDependencies": {
 		"@cspell/cspell-json-reporter": "^9.2.1",
 		"@eslint/js": "^9.35.0",
