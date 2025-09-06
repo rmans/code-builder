@@ -252,37 +252,37 @@ jobs:
           echo "### Context Statistics" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           python3 -c "
-          import json
-          with open('builder/cache/pack_context.json', 'r') as f:
-              data = json.load(f)
-          
-          print(f'Task: {data.get(\"task\", {}).get(\"purpose\", \"unknown\")} - {data.get(\"task\", {}).get(\"target_path\", \"unknown\")}')
-          print(f'Feature: {data.get(\"task\", {}).get(\"feature\", \"none\")}')
-          print(f'Token Limit: {data.get(\"constraints\", {}).get(\"token_limit\", \"unknown\")}')
-          print(f'Budget Summary: {data.get(\"constraints\", {}).get(\"budget_summary\", {}).get(\"total_tokens\", \"unknown\")} tokens')
-          print(f'Acceptance Criteria: {len(data.get(\"acceptance\", []))} items')
-          print(f'Architecture: {len(data.get(\"architecture\", []))} items')
-          print(f'Code: {len(data.get(\"code\", []))} items')
-          
-          # Rules and Acceptance validation
-          rules = data.get('rules', {})
-          rules_markdown = rules.get('rules_markdown', '')
-          acceptance = data.get('acceptance_criteria', [])
-          
-          print(f'Rules Content: {len(rules_markdown)} characters')
-          print(f'Acceptance Items: {len(acceptance)} items')
-          
-          # Check if Rules and Acceptance are present and substantial
-          if len(rules_markdown.strip()) >= 50:
-              print('✅ Rules: Present and substantial')
-          else:
-              print('⚠️  Rules: Present but may be too short')
-              
-          if len(acceptance) > 0:
-              print('✅ Acceptance: Present')
-          else:
-              print('❌ Acceptance: Missing')
-          " >> $GITHUB_STEP_SUMMARY
+import json
+with open('builder/cache/pack_context.json', 'r') as f:
+    data = json.load(f)
+
+print(f'Task: {data.get(\"task\", {}).get(\"purpose\", \"unknown\")} - {data.get(\"task\", {}).get(\"target_path\", \"unknown\")}')
+print(f'Feature: {data.get(\"task\", {}).get(\"feature\", \"none\")}')
+print(f'Token Limit: {data.get(\"constraints\", {}).get(\"token_limit\", \"unknown\")}')
+print(f'Budget Summary: {data.get(\"constraints\", {}).get(\"budget_summary\", {}).get(\"total_tokens\", \"unknown\")} tokens')
+print(f'Acceptance Criteria: {len(data.get(\"acceptance_criteria\", []))} items')
+print(f'Architecture: {len(data.get(\"architecture\", []))} items')
+print(f'Code: {len(data.get(\"code\", []))} items')
+
+# Rules and Acceptance validation
+rules = data.get('rules', {})
+rules_markdown = rules.get('rules_markdown', '')
+acceptance = data.get('acceptance_criteria', [])
+
+print(f'Rules Content: {len(rules_markdown)} characters')
+print(f'Acceptance Items: {len(acceptance)} items')
+
+# Check if Rules and Acceptance are present and substantial
+if len(rules_markdown.strip()) >= 50:
+    print('✅ Rules: Present and substantial')
+else:
+    print('⚠️  Rules: Present but may be too short')
+    
+if len(acceptance) > 0:
+    print('✅ Acceptance: Present')
+else:
+    print('❌ Acceptance: Missing')
+" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           
           # Add Rules and Acceptance validation status
