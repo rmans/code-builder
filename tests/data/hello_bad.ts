@@ -1,5 +1,5 @@
 // bad code with lint errors
-export const hello = (name) => {
+export const hello = (name: string) => {
   var result = "hi"
   if (name) {
     result = result + ", " + name
@@ -11,7 +11,7 @@ export const hello = (name) => {
 const unused = "this is not used"
 
 // missing return type
-function badFunction(x) {
+function badFunction(x: number) {
   return x * 2
 }
 
@@ -20,4 +20,4 @@ const Bad_Variable_Name = "bad"
 const anotherBadVariableName = "also bad"
 
 // no error handling
-export const divide = (a, b) => a / b
+export const divide = (a: number, b: number) => a / b

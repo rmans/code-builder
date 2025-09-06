@@ -21,6 +21,16 @@ It combines **ADRs (Architecture Decision Records)**, **context generation**, **
 
 ---
 
+## Recent Improvements
+
+- **Fixed import issues**: Resolved `rules_loader` and `artifact_detector` import paths in evaluation prompts
+- **Enhanced Cursor integration**: Improved chat workflow with proper guidance and session management
+- **Multi-agent support**: Better task orchestration and agent management capabilities
+- **Cache management**: Added cleanup commands for agent sessions and workspaces
+- **Documentation updates**: Improved templates and documentation structure
+
+---
+
 ## Quickstart
 
 Run these commands after cloning:
@@ -162,6 +172,132 @@ python3 builder/cli.py ctx:graph:stats
 
 ---
 
+## Agent & Orchestration System
+
+Code Builder includes a sophisticated agent tracking and task orchestration system that enables concurrent AI agent workflows with intelligent task scheduling and dependency management.
+
+### Agent Session Management
+- **Session tracking**: Each agent gets a unique session ID for tracking
+- **File ownership**: Track which files were created by which agents
+- **Concurrent protection**: Prevent agents from interfering with each other's work
+- **Session timeouts**: Automatic cleanup of stale agent sessions
+- **Agent types**: Support for different agent types (backend, frontend, setup, etc.)
+
+### Task Orchestration
+- **Dependency resolution**: Uses NetworkX to build task dependency graphs
+- **Intelligent scheduling**: Only runs tasks when dependencies are satisfied
+- **Parallel execution**: Run independent tasks simultaneously
+- **Cycle detection**: Prevents circular dependencies
+- **Priority management**: Task priority-based scheduling
+- **Status tracking**: Monitor task progress (pending, running, completed, failed)
+
+### Multi-Agent Cursor Integration
+- **Isolated workspaces**: Each agent gets its own workspace directory
+- **Task instructions**: Detailed instructions for each agent
+- **Execution scripts**: Ready-to-run scripts for task execution
+- **Progress monitoring**: Track agent progress and completion
+- **Manual workflow**: Human agents can follow provided instructions
+
+### Agent-Aware Cleanup System
+- **File ownership tracking**: Track which files were created by which agents
+- **Active agent protection**: Prevent cleanup of files created by active agents
+- **Session-based cleanup**: Clean up files when agent sessions end
+- **Workspace cleanup**: Clean up completed agent workspaces automatically
+- **Safe concurrent cleanup**: Run cleanup while agents are active without interference
+
+### 5-Phase Agent Workflow
+- **Phase 1: 🚀 Implementation**: Build core functionality and business logic
+- **Phase 2: 🧪 Testing**: Write and run tests to verify functionality
+- **Phase 3: 📚 Documentation**: Add documentation and examples
+- **Phase 4: 🧹 Cleanup**: Clean up artifacts and ensure code quality
+- **Phase 5: 💾 Commit**: Stage, commit, and push changes to repository
+
+### Agent Commands
+```bash
+# Start an agent session
+python3 builder/core/cli.py agent:start --type backend --session-id my-agent-1
+
+# List active agents
+python3 builder/core/cli.py agent:list
+
+# Stop an agent session
+python3 builder/core/cli.py agent:stop --session-id my-agent-1
+
+# Cleanup agent files
+python3 builder/core/cli.py agent:cleanup --session-id my-agent-1
+```
+
+### Orchestrator Commands
+```bash
+# Create new tasks using Jinja2 template
+python3 builder/core/cli.py doc:new tasks --title "Task Name" --owner "owner"
+
+# Load tasks from TASK-*.md files
+python3 builder/core/cli.py orchestrator:load-tasks
+
+# Show orchestrator status
+python3 builder/core/cli.py orchestrator:status
+
+# Run single orchestration cycle
+python3 builder/core/cli.py orchestrator:run --single-cycle
+
+# Show optimal execution order
+python3 builder/core/cli.py orchestrator:execution-order
+
+# Launch multiple Cursor agents
+python3 builder/core/cli.py orchestrator:multi-agent --launch-all
+
+# Reset orchestrator state
+python3 builder/core/cli.py orchestrator:reset --confirm
+
+# Enhanced cleanup with agent awareness
+python3 builder/core/cli.py cleanup:artifacts --check-agents --agent-workspaces --clean
+```
+
+### Agent Workflow Template
+All tasks follow a standardized 5-phase execution workflow:
+
+1. **🚀 Implementation**: Build core functionality
+2. **🧪 Testing**: Write and run tests
+3. **📚 Documentation**: Add documentation
+4. **🧹 Cleanup**: Clean up artifacts
+5. **💾 Commit**: Stage and commit changes
+
+All tasks are created using the Jinja2 template system with `doc:new tasks`, which includes the standardized 5-phase agent workflow.
+
+### Task File Format
+Tasks are defined in `docs/tasks/TASK-*.md` files with YAML frontmatter:
+
+```yaml
+---
+id: TASK-2025-01-15-setup-project
+title: Setup Project Structure
+description: Create basic project structure with directories
+agent_type: setup
+priority: 10
+dependencies: []
+tags: [setup, infrastructure]
+---
+
+# Task: Setup Project Structure
+
+## Description
+Create the basic project structure with necessary directories.
+
+## Command
+```bash
+mkdir -p src tests docs && echo "Project structure created" > setup.log
+```
+
+## Acceptance Criteria
+- [ ] `src/` directory created
+- [ ] `tests/` directory created  
+- [ ] `docs/` directory created
+- [ ] `setup.log` file created
+```
+
+---
+
 ## Directory Structure
 
     docs/
@@ -172,6 +308,7 @@ python3 builder/cli.py ctx:graph:stats
       exec/         # Execution plans
       ux/           # User experience designs
       tasks/        # Task definitions
+      templates/    # Workflow and document templates
       rules/        # Global/project/stack/feature rules + guardrails.json
       eval/         # Evaluation configuration and weights
       CURSOR-Custom-Commands.md    # Cursor integration guide
@@ -316,6 +453,13 @@ python3 builder/cli.py iter:finish src/hello.ts --winner B --scores-file cursor_
 
 ### Recent Updates
 
+### Agent Tracking & Orchestration System
+- **Agent session management**: Track concurrent agents and prevent interference
+- **Task orchestration**: Intelligent task scheduling with dependency resolution
+- **Multi-agent Cursor integration**: Launch multiple Cursor agents for parallel work
+- **Agent ownership protection**: Prevent cleanup of files created by active agents
+- **Task file parsing**: Execute tasks from structured TASK-*.md files
+
 ### Test Directory Consolidation
 - **Consolidated test structure**: All test files now organized under `tests/` directory
 - **Test data**: Moved from `.testfiles/` to `tests/data/` for better organization
@@ -328,6 +472,16 @@ python3 builder/cli.py iter:finish src/hello.ts --winner B --scores-file cursor_
 - **Improved reliability**: All CLI commands now work correctly with proper imports
 
 ## New Features
+
+#### Agent Tracking & Orchestration
+- **Agent session management**: `python3 builder/core/cli.py agent:start --type backend`
+- **Task orchestration**: `python3 builder/core/cli.py orchestrator:load-tasks`
+- **Multi-agent Cursor**: `python3 builder/core/cli.py orchestrator:multi-agent --launch-all`
+- **Agent cleanup**: `python3 builder/core/cli.py agent:cleanup --session-id <id>`
+- **Smart cleanup**: `python3 builder/core/cli.py cleanup:artifacts --check-agents --agent-workspaces`
+- **Task execution**: `python3 builder/core/cli.py orchestrator:run --single-cycle`
+- **Dependency resolution**: Automatic task scheduling based on dependencies
+- **Agent ownership**: Protect files created by active agents from cleanup
 
 #### Documentation Management
 - **Document creation**: `python3 builder/cli.py doc:new <type> --title "Title"`

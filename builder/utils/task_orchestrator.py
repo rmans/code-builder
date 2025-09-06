@@ -57,6 +57,11 @@ class Task:
     completed_at: Optional[datetime] = None
     assigned_agent: Optional[str] = None
     error_message: Optional[str] = None
+    # ABC iteration support
+    requires_abc_iteration: bool = False
+    abc_target_file: Optional[str] = None  # File to run ABC iteration on
+    abc_rounds: int = 3  # Number of ABC rounds
+    abc_winner: Optional[str] = None  # Selected winner (A, B, or C)
     
     def __post_init__(self):
         if self.created_at is None:
@@ -394,7 +399,7 @@ class TaskOrchestrator:
         }
     
     def execute_task(self, task_id: str) -> bool:
-        """Execute a task by running its command."""
+        """Execute a task by running its command and optionally ABC iteration."""
         if task_id not in self.tasks:
             return False
         
@@ -405,7 +410,8 @@ class TaskOrchestrator:
             original_cwd = os.getcwd()
             os.chdir(task.working_directory)
             
-            # Execute the command
+            # Execute the main command
+            print(f"🚀 Executing task {task_id}: {task.name}")
             result = subprocess.run(
                 task.command,
                 shell=True,
@@ -414,17 +420,28 @@ class TaskOrchestrator:
                 timeout=task.estimated_duration * 60  # Convert to seconds
             )
             
-            # Restore original directory
-            os.chdir(original_cwd)
+            # Check if main command succeeded
+            main_success = result.returncode == 0
+            error_message = result.stderr if not main_success else None
             
-            # Check if command succeeded
-            success = result.returncode == 0
-            error_message = result.stderr if not success else None
+            if not main_success:
+                self.complete_task(task_id, False, f"Main command failed: {error_message}")
+                return False
             
-            # Mark task as completed or failed
-            self.complete_task(task_id, success, error_message)
+            # Run ABC iteration if required
+            if task.requires_abc_iteration:
+                print(f"🔄 Task {task_id} requires ABC iteration")
+                abc_success = self.run_abc_iteration(task_id)
+                
+                if not abc_success:
+                    self.complete_task(task_id, False, "ABC iteration failed")
+                    return False
+                
+                print(f"✅ ABC iteration completed for task {task_id}")
             
-            return success
+            # Mark task as completed
+            self.complete_task(task_id, True, None)
+            return True
             
         except subprocess.TimeoutExpired:
             self.complete_task(task_id, False, "Task timed out")
@@ -477,6 +494,88 @@ class TaskOrchestrator:
                     cycle_info["tasks_failed"] += 1
         
         return cycle_info
+    
+    def run_abc_iteration(self, task_id: str) -> bool:
+        """Run ABC iteration for a task that requires it."""
+        if task_id not in self.tasks:
+            return False
+        
+        task = self.tasks[task_id]
+        
+        if not task.requires_abc_iteration or not task.abc_target_file:
+            return True  # No ABC iteration needed
+        
+        try:
+            # Change to working directory
+            original_cwd = os.getcwd()
+            os.chdir(task.working_directory)
+            
+            # Run ABC iteration with new iterative system
+            print(f"🔄 Running ABC iteration for task {task_id} on {task.abc_target_file}")
+            print(f"   Rounds: {task.abc_rounds}")
+            
+            # Use the new iterative ABC system with auto-selection
+            result = subprocess.run([
+                "python3", "builder/core/cli.py", "iter:cursor", 
+                task.abc_target_file, 
+                "--rounds", str(task.abc_rounds),
+                "--auto-select"
+            ], capture_output=True, text=True, timeout=600)  # 10 minute timeout for multiple rounds
+            
+            if result.returncode == 0:
+                print(f"✅ ABC iteration completed for task {task_id}")
+                print(f"   Output: {result.stdout}")
+                # The new system automatically applies the winner and cleans up
+                task.abc_winner = "auto-selected"
+                return True
+            else:
+                print(f"❌ ABC iteration failed: {result.stderr}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            print(f"❌ ABC iteration timed out for task {task_id}")
+            return False
+        except Exception as e:
+            print(f"❌ ABC iteration error for task {task_id}: {e}")
+            return False
+        finally:
+            # Restore original directory
+            os.chdir(original_cwd)
+    
+    def _select_abc_winner(self, target_file: str) -> Optional[str]:
+        """Select ABC winner based on objective scores (automated selection)."""
+        try:
+            # Look for variant files in cache
+            cache_dir = Path("builder/cache")
+            variant_files = {
+                "A": cache_dir / "variant_A.ts",
+                "B": cache_dir / "variant_B.ts", 
+                "C": cache_dir / "variant_C.ts"
+            }
+            
+            # Check which variants exist
+            available_variants = {k: v for k, v in variant_files.items() if v.exists()}
+            
+            if not available_variants:
+                return None
+            
+            # For automated selection, we'll use a simple heuristic:
+            # - Prefer variant B (usually the enhanced version)
+            # - Fall back to A if B doesn't exist
+            # - Fall back to C if neither A nor B exist
+            
+            if "B" in available_variants:
+                return "B"
+            elif "A" in available_variants:
+                return "A"
+            elif "C" in available_variants:
+                return "C"
+            else:
+                return None
+                
+        except Exception as e:
+            print(f"Warning: Error selecting ABC winner: {e}")
+            return None
     
     def run_continuous(self, max_cycles: int = None, cycle_delay: float = 5.0):
         """Run continuous orchestration until all tasks are complete or max_cycles reached."""

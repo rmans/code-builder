@@ -4,6 +4,10 @@ title: {{ title }}
 status: proposed
 date: {{ date }}
 parent: {{ parent }}
+# ABC Iteration Support (optional)
+requires_abc_iteration: {{requires_abc_iteration}}
+abc_target_file: "{{abc_target_file}}"
+abc_rounds: {{abc_rounds}}
 related_files:
 {% for f in related_files %}
   - {{ f }}
@@ -23,3 +27,4 @@ last_modified: {{ date }}
 
 ## Alternatives Considered
 {{ alternatives }}
+

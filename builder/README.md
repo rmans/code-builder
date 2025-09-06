@@ -4,6 +4,10 @@ Python CLI (builder/cli.py) manages ADRs, context generation, planning, iteratio
 
 ## Recent Updates
 
+- **Agent Tracking & Orchestration**: Multi-agent session management with intelligent task scheduling
+- **Multi-Agent Cursor Integration**: Launch multiple Cursor agents for parallel task execution
+- **Task File Parsing**: Execute structured tasks from TASK-*.md files with dependency resolution
+- **Agent Ownership Protection**: Prevent cleanup of files created by active agents
 - **Discovery System**: Interactive and batch discovery with templates
 - **Auto ADR Linking**: Automatic discovery and linking of related ADRs across all document types
 - **PII Detection**: Security validation with automatic PII detection and redaction
@@ -20,6 +24,72 @@ Python CLI (builder/cli.py) manages ADRs, context generation, planning, iteratio
       python3 builder/cli.py adr:new "Create hello module" --parent ADR-0000 --related src/hello.ts --tags demo
 
   Creates `docs/adrs/ADR-000X.md` and links it in `0000_MASTER_ADR.md`.
+
+---
+
+### Agent Management
+- `agent:start`
+
+      python3 builder/core/cli.py agent:start --type backend --session-id my-agent-1
+
+  Starts a new agent session with specified type and ID.
+
+- `agent:stop`
+
+      python3 builder/core/cli.py agent:stop --session-id my-agent-1
+
+  Stops an active agent session and cleans up resources.
+
+- `agent:list`
+
+      python3 builder/core/cli.py agent:list
+
+  Lists all active agent sessions with their status and created files.
+
+- `agent:cleanup`
+
+      python3 builder/core/cli.py agent:cleanup --session-id my-agent-1
+
+  Cleans up files created by a specific agent session.
+
+---
+
+### Task Orchestration
+- `orchestrator:load-tasks`
+
+      python3 builder/core/cli.py orchestrator:load-tasks
+
+  Loads tasks from TASK-*.md files in docs/tasks/ directory.
+
+- `orchestrator:status`
+
+      python3 builder/core/cli.py orchestrator:status
+
+  Shows current orchestrator status with task and agent information.
+
+- `orchestrator:run`
+
+      python3 builder/core/cli.py orchestrator:run --single-cycle
+
+  Runs a single orchestration cycle, assigning and executing tasks.
+
+- `orchestrator:execution-order`
+
+      python3 builder/core/cli.py orchestrator:execution-order
+
+  Shows the optimal execution order for all tasks based on dependencies.
+
+- `orchestrator:multi-agent`
+
+      python3 builder/core/cli.py orchestrator:multi-agent --launch-all
+
+  Launches multiple Cursor agents for parallel task execution.
+
+- `orchestrator:reset`
+
+      python3 builder/core/cli.py orchestrator:reset --confirm
+
+  Resets the orchestrator state, clearing all tasks and agents.
 
 ---
 
@@ -60,8 +130,10 @@ Python CLI (builder/cli.py) manages ADRs, context generation, planning, iteratio
 
       python3 builder/cli.py cleanup:artifacts --dry-run
       python3 builder/cli.py cleanup:artifacts --clean
+      python3 builder/cli.py cleanup:artifacts --check-agents --agent-workspaces
 
   Scans for and cleans up test/example artifacts outside of designated directories.
+  Enhanced with agent-aware cleanup that protects files created by active agents.
 
 ---
 
@@ -243,6 +315,16 @@ The builder includes a comprehensive evaluation system:
 
 ## New Features
 
+### Agent Tracking & Orchestration System
+- **Multi-agent session management**: Track concurrent agents and prevent interference
+- **Intelligent task scheduling**: Dependency-based task execution with NetworkX graphs
+- **Agent ownership protection**: Prevent cleanup of files created by active agents
+- **Task file parsing**: Execute structured tasks from TASK-*.md files
+- **Multi-agent Cursor integration**: Launch multiple Cursor agents for parallel work
+- **Dependency resolution**: Automatic task ordering based on dependencies
+- **Status tracking**: Monitor task progress and agent activity
+- **Workspace isolation**: Each agent gets its own isolated workspace
+
 ### Context System
 - **Graph-based selection**: Discovers related items through explicit links and proximity
 - **Intelligent ranking**: Scores items based on relevance, feature matching, and recency
@@ -277,3 +359,12 @@ The builder includes a comprehensive evaluation system:
 - Record new **ADRs** when design decisions are made
 - Create **PRs** with auto-populated templates and context preview
 - Use **caching** for fast, consistent context generation
+
+## Orchestrator Workflow
+1. **Define tasks** → Create TASK-*.md files in docs/tasks/
+2. **Load tasks** → `python3 builder/core/cli.py orchestrator:load-tasks`
+3. **Check status** → `python3 builder/core/cli.py orchestrator:status`
+4. **Launch agents** → `python3 builder/core/cli.py orchestrator:multi-agent --launch-all`
+5. **Execute tasks** → `python3 builder/core/cli.py orchestrator:run`
+6. **Monitor progress** → Check agent workspaces and progress logs
+7. **Cleanup** → `python3 builder/core/cli.py agent:cleanup` when done

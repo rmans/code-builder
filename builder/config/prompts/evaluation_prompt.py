@@ -24,11 +24,13 @@ def load_project_rules(feature: Optional[str] = None, stacks: list = None) -> st
     """Load project rules using rules_loader"""
     try:
         import sys
-        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-        from rules_loader import load_rules
+        # Add the builder directory to the path
+        builder_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        sys.path.append(builder_dir)
+        from builder.core.rules_loader import load_rules
         
         rules = load_rules(feature, stacks or [])
-        return rules.get('merged_md', 'No project rules found.')
+        return rules.get('rules_markdown', 'No project rules found.')
     except Exception:
         return "Project rules not available."
 
@@ -100,7 +102,10 @@ def build_single_eval_prompt(artifact_path: str, artifact_type: Optional[str] = 
     # Auto-detect artifact type if not provided
     if not artifact_type:
         try:
-            from artifact_detector import detect_artifact_type
+            import sys
+            builder_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            sys.path.append(builder_dir)
+            from builder.evaluators.artifact_detector import detect_artifact_type
             artifact_type = detect_artifact_type(artifact_path)
         except Exception:
             artifact_type = 'task'
@@ -274,7 +279,10 @@ def build_pairwise_prompt(path_a: str, path_b: str, artifact_type: Optional[str]
     # Auto-detect artifact type if not provided
     if not artifact_type:
         try:
-            from artifact_detector import detect_artifact_type
+            import sys
+            builder_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            sys.path.append(builder_dir)
+            from builder.evaluators.artifact_detector import detect_artifact_type
             artifact_type = detect_artifact_type(path_a)
         except Exception:
             artifact_type = 'task'

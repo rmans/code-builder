@@ -1,4 +1,4 @@
-import { hello } from '../src/hello';
+import { hello } from '../../src/hello';
 
 describe('hello', () => {
   it('returns "hi" with no args', () => {

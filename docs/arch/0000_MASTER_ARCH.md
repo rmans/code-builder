@@ -25,3 +25,4 @@ links:
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
 | *No Architecture documents currently defined* |  |  |  |  |
+| ARCH-2025-09-06-test-abc-architectur | Test ABC Architecture | draft |  | ./ARCH-2025-09-06-test-abc-architectur.md |

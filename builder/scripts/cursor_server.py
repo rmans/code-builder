@@ -24,7 +24,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from evaluators.objective import evaluate_code, evaluate_doc
 from evaluators.artifact_detector import detect_artifact_type
-from prompts.evaluation_prompt import build_single_eval_prompt, build_abc_eval_prompt
+from config.prompts.evaluation_prompt import build_single_eval_prompt, build_abc_eval_prompt
 
 app = Flask(__name__)
 
@@ -195,7 +195,7 @@ def complete_single_evaluation(eval_id: str):
             config = yaml.safe_load(f)
         
         # Merge evaluations
-        from cursor_bridge import merge_evaluations
+        from utils.cursor_bridge import merge_evaluations
         final_scores = merge_evaluations(
             objective_scores, 
             subjective_response, 

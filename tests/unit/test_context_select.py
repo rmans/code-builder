@@ -255,7 +255,7 @@ export class AuthService {
             f.write(code_content)
             
         # Build context graph
-        from builder.context_graph import ContextGraph
+        from builder.core.context_graph import ContextGraph
         graph = ContextGraph()
         graph.scan_project(str(self.project_root))
         

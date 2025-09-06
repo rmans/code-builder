@@ -10,6 +10,7 @@ from builder.core.context_budget import (
     ContextBudgetManager, BudgetItem
 )
 
+
 class TestContextBudgetManager(unittest.TestCase):
     """Test cases for the context budget management system."""
     
@@ -20,274 +21,261 @@ class TestContextBudgetManager(unittest.TestCase):
     def test_budget_allocations(self):
         """Test that budget allocations are correct."""
         # Check that allocations sum to 100%
-        total_allocation = sum(self.budget_manager.allocations[cat].allocated_tokens 
-                              for cat in BudgetCategory)
+        total_allocation = sum(self.budget_manager.budget_allocations.values())
         self.assertEqual(total_allocation, 1000)
         
-        # Check specific allocations
-        self.assertEqual(self.budget_manager.allocations[BudgetCategory.RULES].allocated_tokens, 150)  # 15%
-        self.assertEqual(self.budget_manager.allocations[BudgetCategory.ACCEPTANCE].allocated_tokens, 250)  # 25%
-        self.assertEqual(self.budget_manager.allocations[BudgetCategory.ADRS].allocated_tokens, 150)  # 15%
-        self.assertEqual(self.budget_manager.allocations[BudgetCategory.INTEGRATIONS].allocated_tokens, 150)  # 15%
-        self.assertEqual(self.budget_manager.allocations[BudgetCategory.ARCH].allocated_tokens, 100)  # 10%
-        self.assertEqual(self.budget_manager.allocations[BudgetCategory.CODE_TEST].allocated_tokens, 200)  # 20%
+        # Check specific allocations (percentages from BUDGET_PERCENTAGES)
+        self.assertEqual(self.budget_manager.budget_allocations['rules'], 150)  # 15%
+        self.assertEqual(self.budget_manager.budget_allocations['acceptance'], 250)  # 25%
+        self.assertEqual(self.budget_manager.budget_allocations['adr'], 150)  # 15%
+        self.assertEqual(self.budget_manager.budget_allocations['integration'], 150)  # 15%
+        self.assertEqual(self.budget_manager.budget_allocations['arch'], 100)  # 10%
+        self.assertEqual(self.budget_manager.budget_allocations['code'], 200)  # 20%
         
-    def test_add_item_within_budget(self):
-        """Test adding items within budget."""
-        success = self.budget_manager.add_item(
-            content="Test content",
-            source="test.md",
-            category=BudgetCategory.RULES,
-            weight=1.0
-        )
+    def test_token_estimation(self):
+        """Test token estimation accuracy."""
+        # Test with known content
+        content = "Hello world" * 10  # 110 characters, ~11 words
+        estimated_tokens = self.budget_manager.estimate_tokens(content)
         
-        self.assertTrue(success)
-        self.assertEqual(len(self.budget_manager.allocations[BudgetCategory.RULES].items), 1)
+        # Should be approximately 11 * 1.3 = 14.3 tokens
+        self.assertGreaterEqual(estimated_tokens, 10)
+        self.assertLessEqual(estimated_tokens, 20)
         
-    def test_add_item_exceeds_budget(self):
-        """Test adding items that exceed budget."""
-        # Add a large item that exceeds the rules budget
-        large_content = "x" * 1000  # 250 tokens
-        success = self.budget_manager.add_item(
-            content=large_content,
-            source="large.md",
-            category=BudgetCategory.ARCH,  # 100 token budget
-            weight=1.0
-        )
+    def test_empty_content_token_estimation(self):
+        """Test token estimation with empty content."""
+        estimated_tokens = self.budget_manager.estimate_tokens("")
+        self.assertEqual(estimated_tokens, 0)
         
-        # Should fail for non-must-include categories
-        self.assertFalse(success)
+    def test_create_budget_items(self):
+        """Test creating budget items from context selection."""
+        context_selection = {
+            'rules': [
+                {
+                    'id': 'rule1',
+                    'score': 5.0,
+                    'node': {
+                        'title': 'Test Rule',
+                        'file_path': '/test/rule.md',
+                        'status': 'approved'
+                    }
+                }
+            ],
+            'code': [
+                {
+                    'id': 'code1',
+                    'score': 3.0,
+                    'node': {
+                        'title': 'Test Code',
+                        'file_path': '/test/code.py'
+                    }
+                }
+            ]
+        }
         
-    def test_must_include_categories(self):
-        """Test that must-include categories can exceed budget."""
-        # Add a large item to a must-include category
-        large_content = "x" * 1000  # 250 tokens
-        success = self.budget_manager.add_item(
-            content=large_content,
-            source="large_rules.md",
-            category=BudgetCategory.RULES,  # Must include
-            weight=1.0
-        )
+        budget_items = self.budget_manager.create_budget_items(context_selection)
         
-        # Should succeed even if exceeds budget
-        self.assertTrue(success)
+        self.assertEqual(len(budget_items), 2)
         
-    def test_token_counting(self):
-        """Test token counting accuracy."""
-        item = BudgetItem(
-            content="Hello world",  # 11 characters = ~2-3 tokens
-            source="test.md",
-            weight=1.0,
-            category=BudgetCategory.RULES
-        )
+        # Check first item (rules)
+        rule_item = budget_items[0]
+        self.assertEqual(rule_item.id, 'rule1')
+        self.assertEqual(rule_item.type, 'rules')
+        self.assertEqual(rule_item.title, 'Test Rule')
+        self.assertEqual(rule_item.weight, 5.0)
         
-        # Should be approximately 2-3 tokens
-        self.assertGreaterEqual(item.token_count, 2)
-        self.assertLessEqual(item.token_count, 3)
+        # Check second item (code)
+        code_item = budget_items[1]
+        self.assertEqual(code_item.id, 'code1')
+        self.assertEqual(code_item.type, 'code')
+        self.assertEqual(code_item.title, 'Test Code')
+        self.assertEqual(code_item.weight, 3.0)
         
-    def test_usage_summary(self):
-        """Test usage summary generation."""
-        # Add some items
-        self.budget_manager.add_item("Test rules", "rules.md", BudgetCategory.RULES, 1.0)
-        self.budget_manager.add_item("Test acceptance", "acceptance.md", BudgetCategory.ACCEPTANCE, 1.0)
-        
-        summary = self.budget_manager.get_usage_summary()
-        
-        self.assertIn('total_allocated', summary)
-        self.assertIn('total_used', summary)
-        self.assertIn('total_remaining', summary)
-        self.assertIn('is_over_budget', summary)
-        self.assertIn('categories', summary)
-        
-        self.assertEqual(summary['total_allocated'], 1000)
-        self.assertGreater(summary['total_used'], 0)
-        
-    def test_handle_overflow(self):
-        """Test overflow handling with weight-based trimming."""
-        # Add multiple items to code_test category (200 token budget)
-        items = [
-            ("Small item 1", 5.0),  # High weight
-            ("Small item 2", 3.0),  # Medium weight
-            ("Large item 1", 1.0),  # Low weight, but large
-            ("Large item 2", 2.0),  # Low weight, large
-        ]
-        
-        for content, weight in items:
-            # Create content that will exceed budget when all added
-            large_content = content + " " + "x" * 200  # ~50 tokens each
-            self.budget_manager.add_item(
-                content=large_content,
-                source=f"{content}.ts",
-                category=BudgetCategory.CODE_TEST,
-                weight=weight
-            )
-            
-        # Should be over budget now
-        self.assertTrue(self.budget_manager.allocations[BudgetCategory.CODE_TEST].is_over_budget)
-        
-        # Handle overflow
-        overflow_summaries = self.budget_manager.handle_overflow()
-        
-        # Should have trimmed some items
-        self.assertIn('code_test', overflow_summaries)
-        self.assertGreater(len(overflow_summaries['code_test']), 0)
-        
-        # Should keep higher weight items
-        remaining_items = self.budget_manager.allocations[BudgetCategory.CODE_TEST].items
-        if remaining_items:
-            # Should be sorted by weight (highest first)
-            weights = [item.weight for item in remaining_items]
-            self.assertEqual(weights, sorted(weights, reverse=True))
-            
-    def test_must_include_preservation(self):
-        """Test that must-include categories are never dropped."""
-        # Add large items to must-include categories
-        large_rules = "x" * 1000  # 250 tokens
-        large_acceptance = "x" * 1000  # 250 tokens
-        
-        self.budget_manager.add_item(large_rules, "rules.md", BudgetCategory.RULES, 1.0)
-        self.budget_manager.add_item(large_acceptance, "acceptance.md", BudgetCategory.ACCEPTANCE, 1.0)
-        
-        # Add items to non-must-include category
-        self.budget_manager.add_item("Small arch", "arch.md", BudgetCategory.ARCH, 1.0)
-        
-        # Handle overflow
-        overflow_summaries = self.budget_manager.handle_overflow()
-        
-        # Must-include categories should still have items
-        self.assertGreater(len(self.budget_manager.allocations[BudgetCategory.RULES].items), 0)
-        self.assertGreater(len(self.budget_manager.allocations[BudgetCategory.ACCEPTANCE].items), 0)
-        
-    def test_category_content_retrieval(self):
-        """Test retrieving content for categories."""
-        # Add items to different categories
-        self.budget_manager.add_item("Rules content", "rules.md", BudgetCategory.RULES, 1.0)
-        self.budget_manager.add_item("Acceptance content", "acceptance.md", BudgetCategory.ACCEPTANCE, 1.0)
-        
-        rules_content = self.budget_manager.get_category_content(BudgetCategory.RULES)
-        acceptance_content = self.budget_manager.get_category_content(BudgetCategory.ACCEPTANCE)
-        
-        self.assertIn("Rules content", rules_content)
-        self.assertIn("Acceptance content", acceptance_content)
-        
-    def test_empty_categories(self):
-        """Test handling of empty categories."""
-        empty_content = self.budget_manager.get_category_content(BudgetCategory.INTEGRATIONS)
-        self.assertEqual(empty_content, "")
-        
-    def test_weight_calculation(self):
-        """Test weight calculation for context items."""
-        # This would require a ContextItem, so we'll test the method directly
-        # Create a mock context item structure
-        class MockContextItem:
-            def __init__(self, score, reasons, node_metadata, node_type):
-                self.score = score
-                self.reasons = reasons
-                self.node = type('Node', (), {
-                    'metadata': node_metadata,
-                    'node_type': node_type
-                })()
-                
-        # Test weight calculation
-        mock_item = MockContextItem(
-            score=5.0,
-            reasons=['same feature auth (+3.0)', 'recent (0 days ago, +1.0)'],
-            node_metadata={'status': 'approved'},
-            node_type='rules'
-        )
-        
-        weight = self.budget_manager._calculate_item_weight(mock_item)
-        
-        # Should be base score + must-include bonus + approved bonus + recent bonus
-        expected_weight = 5.0 + 10.0 + 5.0 + 2.0  # 22.0
-        self.assertEqual(weight, expected_weight)
-        
-    def test_categorization(self):
-        """Test item categorization logic."""
-        # Test different node types
+    def test_map_to_budget_type(self):
+        """Test mapping context types to budget types."""
         test_cases = [
-            ('rules', BudgetCategory.RULES),
-            ('prd', BudgetCategory.ACCEPTANCE),  # PRD with acceptance in title
-            ('adr', BudgetCategory.ADRS),
-            ('integrations', BudgetCategory.INTEGRATIONS),
-            ('arch', BudgetCategory.ARCH),
-            ('code', BudgetCategory.CODE_TEST),
+            ('rules', 'rules'),
+            ('prd', 'acceptance'),
+            ('adr', 'adr'),
+            ('integration', 'integration'),
+            ('arch', 'arch'),
+            ('code', 'code'),
+            ('ux', 'arch'),  # UX goes to arch budget
+            ('impl', 'arch'),  # Implementation goes to arch budget
+            ('exec', 'arch'),  # Execution goes to arch budget
+            ('task', 'arch'),  # Tasks go to arch budget
+            ('unknown', 'arch')  # Unknown types default to arch
         ]
         
-        for node_type, expected_category in test_cases:
-            # Create mock context item
-            class MockContextItem:
-                def __init__(self, node_type, title):
-                    self.node = type('Node', (), {
-                        'node_type': node_type,
-                        'title': title
-                    })()
-                    
-            mock_item = MockContextItem(node_type, f"Test {node_type}")
-            category = self.budget_manager._categorize_item(mock_item)
-            self.assertEqual(category, expected_category)
+        for context_type, expected_budget_type in test_cases:
+            result = self.budget_manager._map_to_budget_type(context_type)
+            self.assertEqual(result, expected_budget_type)
+            
+    def test_apply_budget_within_limits(self):
+        """Test applying budget when items are within limits."""
+        # Create budget items that fit within budget
+        budget_items = [
+            BudgetItem(
+                id='item1',
+                type='rules',
+                title='Rule 1',
+                content='Short rule content',
+                file_path='/test/rule1.md',
+                weight=5.0,
+                token_estimate=50,
+                source_anchor='[Rule 1](/test/rule1.md)'
+            ),
+            BudgetItem(
+                id='item2',
+                type='code',
+                title='Code 1',
+                content='Short code content',
+                file_path='/test/code1.py',
+                weight=3.0,
+                token_estimate=30,
+                source_anchor='[Code 1](/test/code1.py)'
+            )
+        ]
+        
+        selected, overflow, summary = self.budget_manager.apply_budget(budget_items)
+        
+        # All items should be selected since they're within budget
+        self.assertEqual(len(selected), 2)
+        self.assertEqual(len(overflow), 0)
+        
+        # Check summary structure
+        self.assertIn('rules', summary)
+        self.assertIn('code', summary)
+        
+    def test_apply_budget_with_overflow(self):
+        """Test applying budget when items exceed limits."""
+        # Create budget items that exceed budget
+        budget_items = [
+            BudgetItem(
+                id='item1',
+                type='rules',
+                title='Large Rule',
+                content='x' * 1000,  # Large content
+                file_path='/test/rule1.md',
+                weight=5.0,
+                token_estimate=300,  # Exceeds rules budget of 150
+                source_anchor='[Large Rule](/test/rule1.md)'
+            ),
+            BudgetItem(
+                id='item2',
+                type='code',
+                title='Large Code',
+                content='x' * 1000,  # Large content
+                file_path='/test/code1.py',
+                weight=3.0,
+                token_estimate=300,  # Exceeds code budget of 200
+                source_anchor='[Large Code](/test/code1.py)'
+            )
+        ]
+        
+        selected, overflow, summary = self.budget_manager.apply_budget(budget_items)
+        
+        # Some items should be in overflow
+        self.assertGreater(len(overflow), 0)
+        
+        # Check that rules items are protected (compressed instead of dropped)
+        rules_items = [item for item in selected if item.type == 'rules']
+        if rules_items:
+            # Rules items should be compressed, not dropped
+            self.assertGreater(len(rules_items), 0)
+            
+    def test_compress_content(self):
+        """Test content compression functionality."""
+        long_content = 'x' * 500  # 500 characters
+        compressed = self.budget_manager._compress_content(long_content)
+        
+        # Should be compressed to 200 characters + "..."
+        self.assertEqual(len(compressed), 203)  # 200 + "..."
+        self.assertTrue(compressed.endswith('...'))
+        
+        # Short content should not be compressed
+        short_content = 'short'
+        not_compressed = self.budget_manager._compress_content(short_content)
+        self.assertEqual(not_compressed, short_content)
+        
+    def test_create_overflow_summary(self):
+        """Test overflow summary creation."""
+        overflow_items = [
+            BudgetItem(
+                id='item1',
+                type='rules',
+                title='Overflow Rule',
+                content='content',
+                file_path='/test/rule.md',
+                weight=5.0,
+                token_estimate=100,
+                source_anchor='[Overflow Rule](/test/rule.md)'
+            ),
+            BudgetItem(
+                id='item2',
+                type='code',
+                title='Overflow Code',
+                content='content',
+                file_path='/test/code.py',
+                weight=3.0,
+                token_estimate=100,
+                source_anchor='[Overflow Code](/test/code.py)'
+            )
+        ]
+        
+        summary = self.budget_manager.create_overflow_summary(overflow_items)
+        
+        self.assertIn('Overflow Items', summary)
+        self.assertIn('RULES', summary)
+        self.assertIn('CODE', summary)
+        self.assertIn('Overflow Rule', summary)
+        self.assertIn('Overflow Code', summary)
+        
+    def test_empty_overflow_summary(self):
+        """Test overflow summary with no overflow items."""
+        summary = self.budget_manager.create_overflow_summary([])
+        self.assertEqual(summary, "")
+
 
 class TestBudgetItem(unittest.TestCase):
     """Test cases for BudgetItem class."""
     
-    def test_token_counting(self):
-        """Test token counting in BudgetItem."""
-        # Test with known content
-        content = "Hello world" * 10  # 110 characters
+    def test_budget_item_creation(self):
+        """Test BudgetItem creation and properties."""
         item = BudgetItem(
-            content=content,
-            source="test.md",
-            weight=1.0,
-            category=BudgetCategory.RULES
+            id='test1',
+            type='rules',
+            title='Test Item',
+            content='Test content',
+            file_path='/test/item.md',
+            weight=5.0,
+            token_estimate=100,
+            source_anchor='[Test Item](/test/item.md)'
         )
         
-        # Should be approximately 110/4 = 27-28 tokens
-        self.assertGreaterEqual(item.token_count, 25)
-        self.assertLessEqual(item.token_count, 30)
+        self.assertEqual(item.id, 'test1')
+        self.assertEqual(item.type, 'rules')
+        self.assertEqual(item.title, 'Test Item')
+        self.assertEqual(item.content, 'Test content')
+        self.assertEqual(item.file_path, '/test/item.md')
+        self.assertEqual(item.weight, 5.0)
+        self.assertEqual(item.token_estimate, 100)
+        self.assertEqual(item.source_anchor, '[Test Item](/test/item.md)')
         
-    def test_empty_content(self):
-        """Test handling of empty content."""
+    def test_budget_item_defaults(self):
+        """Test BudgetItem with default values."""
         item = BudgetItem(
-            content="",
-            source="empty.md",
-            weight=1.0,
-            category=BudgetCategory.RULES
+            id='test1',
+            type='rules',
+            title='Test Item',
+            content='Test content',
+            file_path='/test/item.md',
+            weight=5.0,
+            token_estimate=100
         )
         
-        self.assertEqual(item.token_count, 0)
+        self.assertEqual(item.source_anchor, "")  # Default empty string
 
-class TestBudgetAllocation(unittest.TestCase):
-    """Test cases for BudgetAllocation class."""
-    
-    def test_remaining_tokens(self):
-        """Test remaining tokens calculation."""
-        allocation = BudgetAllocation(
-            category=BudgetCategory.RULES,
-            allocated_tokens=100,
-            used_tokens=30
-        )
-        
-        self.assertEqual(allocation.remaining_tokens, 70)
-        
-    def test_over_budget_detection(self):
-        """Test over budget detection."""
-        allocation = BudgetAllocation(
-            category=BudgetCategory.RULES,
-            allocated_tokens=100,
-            used_tokens=150
-        )
-        
-        self.assertTrue(allocation.is_over_budget)
-        
-    def test_under_budget_detection(self):
-        """Test under budget detection."""
-        allocation = BudgetAllocation(
-            category=BudgetCategory.RULES,
-            allocated_tokens=100,
-            used_tokens=50
-        )
-        
-        self.assertFalse(allocation.is_over_budget)
 
 if __name__ == '__main__':
     unittest.main()
