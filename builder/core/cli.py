@@ -4693,7 +4693,9 @@ def cleanup_artifacts(dry_run, clean, root):
     try:
         import sys
         import os
-        sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
         from utils.cleanup_rules import ArtifactCleaner
         
         cleaner = ArtifactCleaner(root)
