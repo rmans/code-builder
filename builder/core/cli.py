@@ -4331,6 +4331,47 @@ def fields_check(target, context_pack):
         else:
             click.echo("✅ No field name issues found")
 
+@cli.command("yaml:check")
+@click.argument("target", default=".")
+@click.option("--yaml-file", help="Validate specific YAML file")
+def yaml_check(target, yaml_file):
+    """Check for Python code issues in YAML files"""
+    from ..utils.yaml_python_validator import validate_yaml_python, find_python_in_yaml_files
+    
+    if yaml_file:
+        # Validate specific YAML file
+        is_valid, errors, warnings = validate_yaml_python(yaml_file)
+        
+        click.echo(f"Validating Python code in YAML: {yaml_file}")
+        
+        if warnings:
+            for warning in warnings:
+                click.echo(f"  ⚠️  {warning}")
+        
+        if errors:
+            for error in errors:
+                click.echo(f"  ❌ {error}")
+        
+        if is_valid:
+            click.echo("  ✅ Python code in YAML is valid")
+        else:
+            click.echo("  ❌ Python code in YAML has issues")
+            raise SystemExit(1)
+    else:
+        # Find Python issues in YAML files
+        click.echo(f"Checking for Python code issues in YAML files: {target}")
+        issues = find_python_in_yaml_files(target)
+        
+        if issues:
+            click.echo("\nFound Python code issues in YAML files:")
+            for file_path, file_issues in issues.items():
+                click.echo(f"\n{file_path}:")
+                for issue in file_issues:
+                    click.echo(f"  {issue}")
+            raise SystemExit(1)
+        else:
+            click.echo("✅ No Python code issues found in YAML files")
+
 @cli.command("ctx:pack")
 @click.option("--output", default="", help="Output file path (prints to stdout if not specified)")
 @click.option("--split", is_flag=True, help="Emit four separate files: system.txt, instructions.txt, user.txt, references.md")

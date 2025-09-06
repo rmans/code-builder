@@ -53,6 +53,14 @@ alwaysApply: true
 - **Document field mappings** - clearly document which fields contain which data in generated structures
 - **Never assume field names** - always check the actual generated data structure before writing validation code
 
+## Python Code in YAML Files
+- **Never indent Python code** - Python code in `python3 -c` commands must start at column 1, not indented
+- **Test Python scripts locally** - run embedded Python code locally before committing to catch syntax errors
+- **Use proper YAML multiline syntax** - use `|` or `>` for multiline strings containing Python code
+- **Avoid complex Python in workflows** - prefer external scripts for complex Python logic
+- **Validate Python syntax** - ensure Python code is syntactically correct before embedding in YAML
+- **Check indentation carefully** - Python is whitespace-sensitive, YAML indentation can break Python syntax
+
 ## Terminal Usage
 - **Always open new terminal** - when executing commands, start fresh terminal session
 - **Avoid terminal reuse** - don't rely on previous terminal state or environment
