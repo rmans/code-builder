@@ -7,6 +7,9 @@ and patterns to understand the codebase at a deeper level.
 
 import ast
 import re
+import time
+import json
+from datetime import datetime
 from typing import Dict, List, Any, Optional, Set, Tuple
 from pathlib import Path
 
@@ -17,6 +20,9 @@ class CodeAnalyzer:
     def __init__(self):
         """Initialize the code analyzer."""
         self.analysis_cache = {}
+        self.metrics_history = []
+        self.start_time = None
+        self.end_time = None
     
     def analyze(self, target: Path, interview_data: Dict[str, Any]) -> Dict[str, Any]:
         """Perform deep analysis of the target code.
@@ -26,19 +32,36 @@ class CodeAnalyzer:
             interview_data: Data from interview phase
             
         Returns:
-            Analysis results dictionary
+            Analysis results dictionary with metrics
         """
-        analysis_data = {
-            'detected': self._detect_stack_and_structure(target),
-            'relationships': self._analyze_relationships(target),
-            'complexity_metrics': self._calculate_complexity_metrics(target),
-            'code_patterns': self._identify_code_patterns(target),
-            'architecture': self._analyze_architecture(target),
-            'quality_indicators': self._assess_quality_indicators(target),
-            'security_concerns': self._check_security_concerns(target),
-            'performance_indicators': self._analyze_performance_indicators(target),
-            'maintainability': self._assess_maintainability(target)
+        # Start timing
+        self.start_time = time.time()
+        
+        # Perform analysis with timing for each phase
+        analysis_phases = {
+            'detected': self._timed_analysis('detect_stack_and_structure', self._detect_stack_and_structure, target),
+            'relationships': self._timed_analysis('analyze_relationships', self._analyze_relationships, target),
+            'complexity_metrics': self._timed_analysis('calculate_complexity_metrics', self._calculate_complexity_metrics, target),
+            'code_patterns': self._timed_analysis('identify_code_patterns', self._identify_code_patterns, target),
+            'architecture': self._timed_analysis('analyze_architecture', self._analyze_architecture, target),
+            'quality_indicators': self._timed_analysis('assess_quality_indicators', self._assess_quality_indicators, target),
+            'security_concerns': self._timed_analysis('check_security_concerns', self._check_security_concerns, target),
+            'performance_indicators': self._timed_analysis('analyze_performance_indicators', self._analyze_performance_indicators, target),
+            'maintainability': self._timed_analysis('assess_maintainability', self._assess_maintainability, target)
         }
+        
+        # End timing
+        self.end_time = time.time()
+        
+        # Calculate comprehensive metrics
+        metrics = self._calculate_analysis_metrics(analysis_phases, interview_data)
+        
+        # Add metrics to analysis data
+        analysis_data = analysis_phases.copy()
+        analysis_data['metrics'] = metrics
+        
+        # Store metrics in history
+        self._store_metrics_history(metrics)
         
         return analysis_data
     
@@ -996,3 +1019,344 @@ class CodeAnalyzer:
                     build_tools.append('Make')
         
         return list(set(build_tools))  # Remove duplicates
+    
+    def _timed_analysis(self, phase_name: str, analysis_func, *args, **kwargs) -> Dict[str, Any]:
+        """Run analysis function with timing.
+        
+        Args:
+            phase_name: Name of the analysis phase
+            analysis_func: Analysis function to run
+            *args: Arguments for the analysis function
+            **kwargs: Keyword arguments for the analysis function
+            
+        Returns:
+            Analysis results with timing information
+        """
+        start_time = time.time()
+        try:
+            result = analysis_func(*args, **kwargs)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            
+            # Add timing to result if it's a dictionary
+            if isinstance(result, dict):
+                result['_timing'] = {
+                    'phase': phase_name,
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'elapsed_seconds': elapsed_time
+                }
+            
+            return result
+        except Exception as e:
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            return {
+                'error': str(e),
+                '_timing': {
+                    'phase': phase_name,
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'elapsed_seconds': elapsed_time,
+                    'error': True
+                }
+            }
+    
+    def _calculate_analysis_metrics(self, analysis_phases: Dict[str, Any], interview_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate comprehensive analysis metrics.
+        
+        Args:
+            analysis_phases: Results from each analysis phase
+            interview_data: Data from interview phase
+            
+        Returns:
+            Comprehensive metrics dictionary
+        """
+        total_elapsed = self.end_time - self.start_time if self.start_time and self.end_time else 0
+        
+        # Count features from interview data
+        features_count = 0
+        if 'synthesis' in interview_data and 'features' in interview_data['synthesis']:
+            features_count = len(interview_data['synthesis']['features'])
+        elif 'key_features' in interview_data:
+            features_count = len(interview_data['key_features'])
+        
+        # Count gaps from analysis
+        gaps_count = 0
+        gaps_list = []
+        if 'detected' in analysis_phases and 'gaps' in analysis_phases['detected']:
+            gaps_count = len(analysis_phases['detected']['gaps'])
+            gaps_list = analysis_phases['detected']['gaps']
+        
+        # Count detection results
+        detection_results = {
+            'total_detections': 0,
+            'successful_detections': 0,
+            'failed_detections': 0,
+            'detection_types': {}
+        }
+        
+        for phase_name, phase_result in analysis_phases.items():
+            if isinstance(phase_result, dict):
+                if 'error' in phase_result:
+                    detection_results['failed_detections'] += 1
+                else:
+                    detection_results['successful_detections'] += 1
+                
+                # Count specific detection types
+                if 'technologies' in phase_result:
+                    detection_results['detection_types']['technologies'] = len(phase_result['technologies'])
+                if 'frameworks' in phase_result:
+                    detection_results['detection_types']['frameworks'] = len(phase_result['frameworks'])
+                if 'libraries' in phase_result:
+                    detection_results['detection_types']['libraries'] = len(phase_result['libraries'])
+                if 'tools' in phase_result:
+                    detection_results['detection_types']['tools'] = len(phase_result['tools'])
+        
+        detection_results['total_detections'] = detection_results['successful_detections'] + detection_results['failed_detections']
+        
+        # Calculate phase timings
+        phase_timings = {}
+        for phase_name, phase_result in analysis_phases.items():
+            if isinstance(phase_result, dict) and '_timing' in phase_result:
+                timing = phase_result['_timing']
+                phase_timings[phase_name] = {
+                    'elapsed_seconds': timing['elapsed_seconds'],
+                    'start_time': timing['start_time'],
+                    'end_time': timing['end_time'],
+                    'error': timing.get('error', False)
+                }
+        
+        # Calculate quality metrics
+        quality_metrics = {
+            'overall_score': 0,
+            'maintainability_score': 0,
+            'complexity_score': 0,
+            'test_coverage': 0,
+            'documentation_score': 0
+        }
+        
+        if 'quality_indicators' in analysis_phases:
+            quality_data = analysis_phases['quality_indicators']
+            quality_metrics.update({
+                'overall_score': quality_data.get('overall_score', 0),
+                'maintainability_score': quality_data.get('maintainability_score', 0),
+                'complexity_score': quality_data.get('complexity_score', 0),
+                'test_coverage': quality_data.get('test_coverage', 0),
+                'documentation_score': quality_data.get('documentation_score', 0)
+            })
+        
+        # Calculate complexity metrics
+        complexity_metrics = {
+            'cyclomatic_complexity': 0,
+            'lines_of_code': 0,
+            'functions_count': 0,
+            'classes_count': 0,
+            'imports_count': 0
+        }
+        
+        if 'complexity_metrics' in analysis_phases:
+            complexity_data = analysis_phases['complexity_metrics']
+            complexity_metrics.update({
+                'cyclomatic_complexity': complexity_data.get('cyclomatic_complexity', 0),
+                'lines_of_code': complexity_data.get('lines_of_code', 0),
+                'functions_count': complexity_data.get('functions_count', 0),
+                'classes_count': complexity_data.get('classes_count', 0),
+                'imports_count': complexity_data.get('imports_count', 0)
+            })
+        
+        # Calculate security metrics
+        security_metrics = {
+            'security_issues_count': 0,
+            'vulnerabilities_count': 0,
+            'security_score': 0
+        }
+        
+        if 'security_concerns' in analysis_phases:
+            security_data = analysis_phases['security_concerns']
+            if isinstance(security_data, dict):
+                security_metrics.update({
+                    'security_issues_count': len(security_data.get('issues', [])),
+                    'vulnerabilities_count': len(security_data.get('vulnerabilities', [])),
+                    'security_score': security_data.get('security_score', 0)
+                })
+            elif isinstance(security_data, list):
+                security_metrics.update({
+                    'security_issues_count': len(security_data),
+                    'vulnerabilities_count': 0,
+                    'security_score': 0
+                })
+        
+        # Create comprehensive metrics
+        metrics = {
+            'timestamp': datetime.now().isoformat(),
+            'analysis_id': f"analysis_{int(time.time())}",
+            'total_elapsed_seconds': total_elapsed,
+            'features': {
+                'count': features_count,
+                'list': interview_data.get('key_features', []) if 'key_features' in interview_data else []
+            },
+            'gaps': {
+                'count': gaps_count,
+                'list': gaps_list
+            },
+            'detection_results': detection_results,
+            'phase_timings': phase_timings,
+            'quality_metrics': quality_metrics,
+            'complexity_metrics': complexity_metrics,
+            'security_metrics': security_metrics,
+            'performance_metrics': {
+                'analysis_speed': total_elapsed,
+                'phases_completed': len([p for p in phase_timings.values() if not p.get('error', False)]),
+                'phases_failed': len([p for p in phase_timings.values() if p.get('error', False)]),
+                'average_phase_time': sum(p['elapsed_seconds'] for p in phase_timings.values()) / len(phase_timings) if phase_timings else 0
+            },
+            'summary': {
+                'total_phases': len(analysis_phases),
+                'successful_phases': detection_results['successful_detections'],
+                'failed_phases': detection_results['failed_detections'],
+                'success_rate': detection_results['successful_detections'] / detection_results['total_detections'] if detection_results['total_detections'] > 0 else 0,
+                'features_discovered': features_count,
+                'gaps_identified': gaps_count,
+                'overall_quality_score': quality_metrics['overall_score']
+            }
+        }
+        
+        return metrics
+    
+    def _store_metrics_history(self, metrics: Dict[str, Any]) -> None:
+        """Store metrics in history for tracking over time.
+        
+        Args:
+            metrics: Metrics dictionary to store
+        """
+        # Add to in-memory history
+        self.metrics_history.append(metrics.copy())
+        
+        # Keep only last 100 entries to prevent memory issues
+        if len(self.metrics_history) > 100:
+            self.metrics_history = self.metrics_history[-100:]
+        
+        # Write to discovery_report.json
+        self._write_discovery_report(metrics)
+    
+    def _write_discovery_report(self, metrics: Dict[str, Any]) -> None:
+        """Write discovery report with metrics to JSON file.
+        
+        Args:
+            metrics: Metrics to write
+        """
+        report_data = {
+            'report_metadata': {
+                'generated_at': metrics['timestamp'],
+                'analysis_id': metrics['analysis_id'],
+                'version': '1.0.0',
+                'generator': 'CodeAnalyzer'
+            },
+            'metrics': metrics,
+            'historical_metrics': self.metrics_history[-10:],  # Last 10 analyses
+            'trends': self._calculate_trends()
+        }
+        
+        # Ensure cache directory exists
+        cache_dir = Path('builder/cache')
+        cache_dir.mkdir(exist_ok=True)
+        
+        # Write to discovery_report.json
+        report_path = cache_dir / 'discovery_report.json'
+        with open(report_path, 'w', encoding='utf-8') as f:
+            json.dump(report_data, f, indent=2, default=str)
+    
+    def _calculate_trends(self) -> Dict[str, Any]:
+        """Calculate trends from historical metrics.
+        
+        Returns:
+            Trends dictionary
+        """
+        if len(self.metrics_history) < 2:
+            return {'insufficient_data': True}
+        
+        trends = {
+            'features_trend': self._calculate_trend('features.count'),
+            'gaps_trend': self._calculate_trend('gaps.count'),
+            'quality_trend': self._calculate_trend('quality_metrics.overall_score'),
+            'complexity_trend': self._calculate_trend('complexity_metrics.cyclomatic_complexity'),
+            'performance_trend': self._calculate_trend('total_elapsed_seconds'),
+            'success_rate_trend': self._calculate_trend('summary.success_rate')
+        }
+        
+        return trends
+    
+    def _calculate_trend(self, metric_path: str) -> Dict[str, Any]:
+        """Calculate trend for a specific metric.
+        
+        Args:
+            metric_path: Dot-separated path to metric (e.g., 'features.count')
+            
+        Returns:
+            Trend information
+        """
+        values = []
+        for metrics in self.metrics_history:
+            try:
+                value = metrics
+                for key in metric_path.split('.'):
+                    value = value[key]
+                values.append(float(value))
+            except (KeyError, TypeError, ValueError):
+                continue
+        
+        if len(values) < 2:
+            return {'trend': 'insufficient_data', 'values': values}
+        
+        # Calculate simple linear trend
+        n = len(values)
+        x = list(range(n))
+        y = values
+        
+        # Simple linear regression
+        sum_x = sum(x)
+        sum_y = sum(y)
+        sum_xy = sum(x[i] * y[i] for i in range(n))
+        sum_x2 = sum(x[i] ** 2 for i in range(n))
+        
+        slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x ** 2)
+        
+        # Determine trend direction
+        if slope > 0.1:
+            trend_direction = 'increasing'
+        elif slope < -0.1:
+            trend_direction = 'decreasing'
+        else:
+            trend_direction = 'stable'
+        
+        return {
+            'trend': trend_direction,
+            'slope': slope,
+            'values': values,
+            'first_value': values[0],
+            'last_value': values[-1],
+            'change_percent': ((values[-1] - values[0]) / values[0] * 100) if values[0] != 0 else 0
+        }
+    
+    def get_metrics_summary(self) -> Dict[str, Any]:
+        """Get a summary of all metrics.
+        
+        Returns:
+            Metrics summary dictionary
+        """
+        if not self.metrics_history:
+            return {'message': 'No metrics available'}
+        
+        latest_metrics = self.metrics_history[-1]
+        
+        return {
+            'latest_analysis': latest_metrics,
+            'total_analyses': len(self.metrics_history),
+            'trends': self._calculate_trends(),
+            'performance_summary': {
+                'average_analysis_time': sum(m['total_elapsed_seconds'] for m in self.metrics_history) / len(self.metrics_history),
+                'fastest_analysis': min(m['total_elapsed_seconds'] for m in self.metrics_history),
+                'slowest_analysis': max(m['total_elapsed_seconds'] for m in self.metrics_history)
+            }
+        }
