@@ -16,11 +16,12 @@ class DiscoveryValidator:
         """Initialize the discovery validator."""
         self.validation_rules = self._load_validation_rules()
     
-    def validate(self, generation_data: Dict[str, Any]) -> Dict[str, Any]:
+    def validate(self, generation_data: Dict[str, Any], synthesis_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Validate discovery generation data.
         
         Args:
             generation_data: Data from generation phase
+            synthesis_data: Data from synthesis phase (optional)
             
         Returns:
             Validation results dictionary
@@ -35,6 +36,23 @@ class DiscoveryValidator:
             'consistency': self._check_consistency(generation_data),
             'quality_metrics': self._validate_quality_metrics(generation_data)
         }
+        
+        # Add synthesis meta validation if available
+        if synthesis_data and 'meta' in synthesis_data:
+            meta_validation = synthesis_data['meta']
+            validation_data['synthesis_meta'] = {
+                'ok': meta_validation.get('ok', False),
+                'errors': meta_validation.get('errors', []),
+                'warnings': meta_validation.get('warnings', []),
+                'gaps': meta_validation.get('gaps', []),
+                'missing_fields': meta_validation.get('missing_fields', []),
+                'shell_gaps': meta_validation.get('shell_gaps', [])
+            }
+            
+            # Include synthesis meta errors in overall validation
+            if not meta_validation.get('ok', False):
+                validation_data['errors'].extend(meta_validation.get('errors', []))
+                validation_data['warnings'].extend(meta_validation.get('warnings', []))
         
         # Overall validation status
         validation_data['is_valid'] = (

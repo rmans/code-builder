@@ -3266,7 +3266,9 @@ def discover_validate(context_file, strict, output):
         elif 'synthesis' in data and 'analysis' in data:
             # This is a discovery analysis result
             click.echo("📊 Validating discovery analysis results...")
-            validation_results = validator.validate(data)
+            generation_data = data.get('generation', {})
+            synthesis_data = data.get('synthesis', {})
+            validation_results = validator.validate(generation_data, synthesis_data)
         else:
             click.echo("❌ Error: Unknown file format - not a discovery context or analysis result")
             raise SystemExit(1)

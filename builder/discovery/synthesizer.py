@@ -16,24 +16,30 @@ class DiscoverySynthesizer:
         """Initialize the discovery synthesizer."""
         self.insights_cache = {}
     
-    def synthesize(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Synthesize analysis data into structured insights.
+    def synthesize(self, analysis_data: Dict[str, Any], interview_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Synthesize analysis and interview data into structured insights.
         
         Args:
             analysis_data: Data from analysis phase
+            interview_data: Data from interview phase (optional)
             
         Returns:
-            Synthesis results dictionary
+            Synthesis results dictionary with validation metadata
         """
+        # Merge interview and analysis data
+        merged_data = self._merge_interview_and_analysis(interview_data, analysis_data)
+        
+        # Generate synthesis data
         synthesis_data = {
-            'insights': self._generate_insights(analysis_data),
-            'recommendations': self._generate_recommendations(analysis_data),
-            'patterns': self._identify_patterns(analysis_data),
-            'architecture_analysis': self._analyze_architecture(analysis_data),
-            'quality_assessment': self._assess_quality(analysis_data),
-            'risk_factors': self._identify_risks(analysis_data),
-            'opportunities': self._identify_opportunities(analysis_data),
-            'summary': self._create_summary(analysis_data)
+            'insights': self._generate_insights(merged_data),
+            'recommendations': self._generate_recommendations(merged_data),
+            'patterns': self._identify_patterns(merged_data),
+            'architecture_analysis': self._analyze_architecture(merged_data),
+            'quality_assessment': self._assess_quality(merged_data),
+            'risk_factors': self._identify_risks(merged_data),
+            'opportunities': self._identify_opportunities(merged_data),
+            'summary': self._create_summary(merged_data),
+            'meta': self._create_validation_metadata(merged_data)
         }
         
         return synthesis_data
@@ -448,3 +454,178 @@ class DiscoverySynthesizer:
             return 'moderate'
         else:
             return 'high'
+    
+    def _merge_interview_and_analysis(self, interview_data: Optional[Dict[str, Any]], analysis_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Merge interview and analysis data into a unified structure.
+        
+        Args:
+            interview_data: Data from interview phase
+            analysis_data: Data from analysis phase
+            
+        Returns:
+            Merged data dictionary
+        """
+        merged = {}
+        
+        # Start with analysis data as base
+        merged.update(analysis_data)
+        
+        # Merge interview data if available
+        if interview_data:
+            # Merge questions from interview
+            if 'questions' in interview_data:
+                merged['questions'] = interview_data['questions']
+            
+            # Merge detected technologies from analysis with interview insights
+            if 'detected' in analysis_data:
+                merged['detected'] = analysis_data['detected']
+            
+            # Add interview-specific data
+            if 'target_type' in interview_data:
+                merged['target_type'] = interview_data['target_type']
+            if 'file_info' in interview_data:
+                merged['file_info'] = interview_data['file_info']
+            if 'dependencies' in interview_data:
+                merged['dependencies'] = interview_data['dependencies']
+            if 'structure' in interview_data:
+                merged['structure'] = interview_data['structure']
+            if 'patterns' in interview_data:
+                merged['patterns'] = interview_data['patterns']
+        
+        return merged
+    
+    def _create_validation_metadata(self, merged_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create validation metadata with gap detection.
+        
+        Args:
+            merged_data: Merged interview and analysis data
+            
+        Returns:
+            Validation metadata dictionary
+        """
+        validation = {
+            'ok': True,
+            'errors': [],
+            'warnings': [],
+            'gaps': [],
+            'required_fields': self._get_required_fields(),
+            'present_fields': self._get_present_fields(merged_data),
+            'missing_fields': []
+        }
+        
+        # Check for required fields
+        required_fields = validation['required_fields']
+        present_fields = validation['present_fields']
+        missing_fields = []
+        
+        for field in required_fields:
+            if field not in present_fields:
+                missing_fields.append(field)
+                validation['errors'].append(f"Missing required field: {field}")
+        
+        validation['missing_fields'] = missing_fields
+        validation['gaps'] = missing_fields
+        
+        # Check for minimum shells (basic data presence)
+        validation.update(self._check_minimum_shells(merged_data))
+        
+        # Set overall validation status
+        if validation['errors']:
+            validation['ok'] = False
+        
+        return validation
+    
+    def _get_required_fields(self) -> List[str]:
+        """Get list of required fields for validation."""
+        return [
+            'product_name',
+            'main_idea',
+            'problem_solved',
+            'target_users',
+            'key_features',
+            'success_metrics'
+        ]
+    
+    def _get_present_fields(self, data: Dict[str, Any]) -> List[str]:
+        """Get list of fields present in the data."""
+        present_fields = []
+        
+        # Check top-level fields
+        for key in data.keys():
+            if data[key] is not None and data[key] != '' and data[key] != []:
+                present_fields.append(key)
+        
+        # Check nested fields in questions
+        if 'questions' in data and isinstance(data['questions'], dict):
+            for key in data['questions'].keys():
+                if data['questions'][key] is not None and data['questions'][key] != '' and data['questions'][key] != []:
+                    present_fields.append(key)
+        
+        return present_fields
+    
+    def _check_minimum_shells(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Check for minimum shell requirements and mark gaps.
+        
+        Args:
+            data: Merged data to validate
+            
+        Returns:
+            Dictionary with shell validation results
+        """
+        shell_validation = {
+            'minimum_shells_met': True,
+            'shell_gaps': [],
+            'shell_warnings': []
+        }
+        
+        # Check for basic product information
+        questions = data.get('questions', {})
+        
+        # Product identity shell
+        if not questions.get('product_name') or questions.get('product_name') == 'Not specified':
+            shell_validation['shell_gaps'].append('product_identity')
+            shell_validation['shell_warnings'].append('Product name not specified')
+        
+        # Problem definition shell
+        if not questions.get('problem_solved') or questions.get('problem_solved') == 'Not specified':
+            shell_validation['shell_gaps'].append('problem_definition')
+            shell_validation['shell_warnings'].append('Problem definition missing')
+        
+        # User definition shell
+        if not questions.get('target_users') or questions.get('target_users') == 'Not specified':
+            shell_validation['shell_gaps'].append('user_definition')
+            shell_validation['shell_warnings'].append('Target users not specified')
+        
+        # Feature definition shell
+        if not questions.get('key_features') or questions.get('key_features') == 'Not specified':
+            shell_validation['shell_gaps'].append('feature_definition')
+            shell_validation['shell_warnings'].append('Key features not specified')
+        
+        # Success metrics shell
+        if not questions.get('success_metrics') or questions.get('success_metrics') == 'Not specified':
+            shell_validation['shell_gaps'].append('success_metrics')
+            shell_validation['shell_warnings'].append('Success metrics not defined')
+        
+        # Technical stack shell
+        detected = data.get('detected', {})
+        if not detected.get('languages') and not detected.get('frameworks'):
+            shell_validation['shell_gaps'].append('technical_stack')
+            shell_validation['shell_warnings'].append('Technical stack not detected or specified')
+        
+        # Architecture shell
+        architecture = data.get('architecture_analysis', {})
+        if not architecture.get('layers') and not architecture.get('patterns'):
+            shell_validation['shell_gaps'].append('architecture_definition')
+            shell_validation['shell_warnings'].append('Architecture not defined or detected')
+        
+        # Testing shell
+        test_runners = detected.get('test_runners', [])
+        if not test_runners:
+            shell_validation['shell_gaps'].append('testing_framework')
+            shell_validation['shell_warnings'].append('Testing framework not detected or specified')
+        
+        # Set overall shell validation status
+        if shell_validation['shell_gaps']:
+            shell_validation['minimum_shells_met'] = False
+        
+        return shell_validation

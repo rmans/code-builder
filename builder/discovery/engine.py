@@ -79,13 +79,13 @@ class DiscoveryEngine:
             analysis_data = self.analyzer.analyze(target, interview_data)
             
             # Phase 3: Synthesis - combine and structure findings
-            synthesis_data = self.synthesizer.synthesize(analysis_data)
+            synthesis_data = self.synthesizer.synthesize(analysis_data, interview_data)
             
             # Phase 4: Generation - create outputs and reports
             generation_data = self.generators.generate(synthesis_data, target)
             
             # Phase 5: Validation - verify results
-            validation_data = self.validator.validate(generation_data)
+            validation_data = self.validator.validate(generation_data, synthesis_data)
             
             # Combine all results
             self.results = {
