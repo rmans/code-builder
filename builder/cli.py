@@ -55,6 +55,229 @@ def _update_master_file(doc_type, doc_id, title, status="draft", domain=""):
     except Exception as e:
         click.echo(f"Warning: Could not update {master_file}: {e}")
 
+def _extract_target_from_prd(prd_file) -> str:
+    """Extract target path from PRD content"""
+    try:
+        with open(prd_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Look for target information in PRD content
+        # This could be in a "Target Path" or "Source" section
+        import re
+        
+        # Try to find target path patterns
+        target_patterns = [
+            r'Target Path[:\s]+(.+)',
+            r'Source[:\s]+(.+)',
+            r'Repository[:\s]+(.+)',
+            r'Codebase[:\s]+(.+)'
+        ]
+        
+        for pattern in target_patterns:
+            match = re.search(pattern, content, re.IGNORECASE)
+            if match:
+                target = match.group(1).strip()
+                if target and target != '.':
+                    return target
+        
+        # Default to repo root
+        return "."
+        
+    except Exception:
+        return "."
+
+def _extract_batch_kwargs_from_prd(prd_file) -> dict:
+    """Extract batch kwargs from PRD content for auto-generation"""
+    try:
+        with open(prd_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Extract key information from PRD content
+        import re
+        
+        batch_kwargs = {}
+        
+        # Extract product name
+        product_match = re.search(r'Product Requirements Document[:\s]+(.+)', content)
+        if product_match:
+            batch_kwargs['product'] = product_match.group(1).strip()
+        
+        # Extract main idea from Executive Summary
+        summary_match = re.search(r'## Executive Summary\s*\n\s*(.+?)(?=\n##|\Z)', content, re.DOTALL)
+        if summary_match:
+            batch_kwargs['idea'] = summary_match.group(1).strip()
+        
+        # Extract problem from Problem Statement
+        problem_match = re.search(r'## Problem Statement\s*\n\s*(.+?)(?=\n##|\Z)', content, re.DOTALL)
+        if problem_match:
+            batch_kwargs['problem'] = problem_match.group(1).strip()
+        
+        # Extract target users
+        users_match = re.search(r'## Target Users\s*\n\s*(.+?)(?=\n##|\Z)', content, re.DOTALL)
+        if users_match:
+            batch_kwargs['users'] = users_match.group(1).strip()
+        
+        # Extract key features
+        features_match = re.search(r'## Key Features\s*\n\s*(.+?)(?=\n##|\Z)', content, re.DOTALL)
+        if features_match:
+            features_text = features_match.group(1).strip()
+            # Convert numbered list to comma-separated
+            features = re.findall(r'\d+\.\s*(.+)', features_text)
+            if features:
+                batch_kwargs['features'] = ', '.join(features)
+        
+        # Extract success metrics
+        metrics_match = re.search(r'## Success Metrics\s*\n\s*(.+?)(?=\n##|\Z)', content, re.DOTALL)
+        if metrics_match:
+            batch_kwargs['metrics'] = metrics_match.group(1).strip()
+        
+        return batch_kwargs
+        
+    except Exception:
+        return {}
+
+def _is_prd_stale(prd_file, cache_file) -> bool:
+    """Check if PRD cache is stale by comparing content hashes"""
+    try:
+        import hashlib
+        
+        # Get PRD file modification time
+        prd_mtime = prd_file.stat().st_mtime
+        
+        # Get cache file modification time
+        cache_mtime = cache_file.stat().st_mtime
+        
+        # If PRD is newer than cache, it's stale
+        if prd_mtime > cache_mtime:
+            return True
+        
+        # Load cache file to check for content hash
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            cache_data = yaml.safe_load(f)
+        
+        # Check if cache has content hash
+        cached_hash = cache_data.get('content_hash')
+        if not cached_hash:
+            return True  # No hash means stale
+        
+        # Compute current PRD content hash
+        with open(prd_file, 'r', encoding='utf-8') as f:
+            prd_content = f.read()
+        
+        current_hash = hashlib.md5(prd_content.encode()).hexdigest()
+        
+        # Compare hashes
+        return cached_hash != current_hash
+        
+    except Exception:
+        return True  # Error means stale
+
+def _refresh_prd_context(prd_id: str, question_set: str, pack: bool) -> None:
+    """Refresh a single PRD context using existing refresh logic"""
+    from discovery.engine import DiscoveryEngine
+    from discovery.analyzer import CodeAnalyzer
+    from discovery.synthesizer import DiscoverySynthesizer
+    from discovery.validator import DiscoveryValidator
+    from discovery.generators import DiscoveryGenerators
+    import yaml
+    from pathlib import Path
+    
+    # Load the PRD cache file
+    prd_cache_file = Path("builder/cache/discovery") / f"{prd_id}.yml"
+    if not prd_cache_file.exists():
+        raise FileNotFoundError(f"PRD cache file not found: {prd_cache_file}")
+    
+    # Load PRD data
+    with open(prd_cache_file, 'r', encoding='utf-8') as f:
+        prd_data = yaml.safe_load(f)
+    
+    # Extract original discovery results
+    discovery_results = prd_data.get('discovery_results', {})
+    interview_data = discovery_results.get('interview', {})
+    original_target = interview_data.get('target', '.')
+    
+    # Initialize discovery engine
+    engine = DiscoveryEngine(question_set=question_set)
+    
+    # Re-run analysis
+    analysis_data = engine.analyzer.analyze(Path(original_target), interview_data)
+    
+    # Re-run synthesis
+    synthesis_data = engine.synthesizer.synthesize(analysis_data, interview_data)
+    
+    # Re-run validation
+    validation_data = engine.validator.validate(analysis_data, synthesis_data)
+    
+    # Update PRD cache with refreshed data
+    prd_data['discovery_results']['analysis'] = analysis_data
+    prd_data['discovery_results']['synthesis'] = synthesis_data
+    prd_data['discovery_results']['validation'] = validation_data
+    prd_data['last_refreshed'] = engine._get_timestamp()
+    
+    # Update content hash
+    prd_file = Path("docs/prd") / f"{prd_id}.md"
+    if prd_file.exists():
+        with open(prd_file, 'r', encoding='utf-8') as f:
+            prd_content = f.read()
+        import hashlib
+        prd_data['content_hash'] = hashlib.md5(prd_content.encode()).hexdigest()
+    
+    # Save updated PRD cache
+    with open(prd_cache_file, 'w', encoding='utf-8') as f:
+        yaml.dump(prd_data, f, default_flow_style=False, sort_keys=False)
+    
+    # Optional: Generate context pack
+    if pack:
+        try:
+            engine._try_auto_ctx_build(Path(original_target))
+        except Exception:
+            pass  # Silently fail for pack generation
+
+def _adapt_results_for_prd(results, target_prd_id, prd_file):
+    """Adapt discovery results to match a specific PRD ID"""
+    import yaml
+    import hashlib
+    from pathlib import Path
+    
+    try:
+        # Extract information from the PRD file
+        batch_kwargs = _extract_batch_kwargs_from_prd(prd_file)
+        
+        # Create adapted context data
+        adapted_context = {
+            'prd_id': target_prd_id,
+            'product_name': batch_kwargs.get('product', 'Unknown Product'),
+            'main_idea': batch_kwargs.get('idea', ''),
+            'problem_solved': batch_kwargs.get('problem', ''),
+            'target_users': batch_kwargs.get('users', ''),
+            'key_features': batch_kwargs.get('features', ''),
+            'success_metrics': batch_kwargs.get('metrics', ''),
+            'tech_stack_preferences': 'Node.js/JavaScript, Python',  # Default
+            'detected_tech': results.get('analysis', {}).get('detected', {}),
+            'created': results.get('interview', {}).get('timestamp', ''),
+            'status': 'draft',
+            'discovery_results': {
+                'interview': results.get('interview', {}),
+                'analysis': results.get('analysis', {}),
+                'synthesis': results.get('synthesis', {}),
+                'generation': results.get('generation', {}),
+                'validation': results.get('validation', {})
+            }
+        }
+        
+        # Add content hash
+        with open(prd_file, 'r', encoding='utf-8') as f:
+            prd_content = f.read()
+        adapted_context['content_hash'] = hashlib.md5(prd_content.encode()).hexdigest()
+        
+        # Save adapted context
+        cache_file = Path("builder/cache/discovery") / f"{target_prd_id}.yml"
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            yaml.dump(adapted_context, f, default_flow_style=False, sort_keys=False)
+            
+    except Exception as e:
+        raise Exception(f"Failed to adapt results for {target_prd_id}: {e}")
+
 @click.group()
 def cli():
     """Code Builder CLI"""
@@ -3482,6 +3705,101 @@ def discover_refresh(prd, regenerate_docs, regenerate_pack, question_set):
         
     except Exception as e:
         click.echo(f"❌ Error refreshing PRD: {e}")
+        raise SystemExit(1)
+
+@cli.command("discover:scan")
+@click.option("--auto-generate", is_flag=True, help="Auto-generate missing PRD contexts")
+@click.option("--pack", is_flag=True, help="Generate context packs for refreshed PRDs")
+@click.option("--question-set", default="comprehensive", help="Question set to use for refresh")
+def discover_scan(auto_generate, pack, question_set):
+    """Scan all PRDs and refresh stale or missing contexts"""
+    import yaml
+    import hashlib
+    from pathlib import Path
+    from discovery.engine import DiscoveryEngine
+    
+    try:
+        click.echo("🔍 Scanning all PRDs for freshness...")
+        
+        # Find all PRD markdown files
+        prd_dir = Path("docs/prd")
+        prd_files = list(prd_dir.glob("PRD-*.md"))
+        
+        if not prd_files:
+            click.echo("❌ No PRD files found in docs/prd/")
+            return
+        
+        click.echo(f"📋 Found {len(prd_files)} PRD files")
+        
+        # Initialize discovery engine
+        engine = DiscoveryEngine(question_set=question_set)
+        
+        refreshed_count = 0
+        up_to_date_count = 0
+        missing_count = 0
+        
+        for prd_file in prd_files:
+            prd_id = prd_file.stem  # e.g., "PRD-2025-09-06-payments"
+            click.echo(f"\n🔍 Checking {prd_id}...")
+            
+            # Check if PRD cache exists
+            cache_file = Path("builder/cache/discovery") / f"{prd_id}.yml"
+            
+            if not cache_file.exists():
+                click.echo(f"  ❌ Missing cache file: {cache_file}")
+                if auto_generate:
+                    click.echo(f"  🔄 Auto-generating context for {prd_id}...")
+                    try:
+                        # Try to extract target from PRD content or use repo root
+                        target = _extract_target_from_prd(prd_file) or "."
+                        
+                        # Run discovery with auto-generation
+                        batch_kwargs = _extract_batch_kwargs_from_prd(prd_file)
+                        results = engine.discover(target, batch_kwargs=batch_kwargs)
+                        
+                        # Check if the generated PRD matches our target PRD
+                        generated_prd_id = results.get('prd_id')
+                        if generated_prd_id == prd_id:
+                            click.echo(f"  ✅ Generated context for {prd_id}")
+                            refreshed_count += 1
+                        else:
+                            # The generated PRD doesn't match, but we can still use the results
+                            # to create a context for our target PRD
+                            click.echo(f"  🔄 Generated {generated_prd_id}, adapting for {prd_id}...")
+                            _adapt_results_for_prd(results, prd_id, prd_file)
+                            click.echo(f"  ✅ Generated context for {prd_id}")
+                            refreshed_count += 1
+                    except Exception as e:
+                        click.echo(f"  ❌ Error generating context: {e}")
+                        missing_count += 1
+                else:
+                    missing_count += 1
+                continue
+            
+            # Check freshness by comparing content hashes
+            if _is_prd_stale(prd_file, cache_file):
+                click.echo(f"  🔄 Stale cache detected, refreshing {prd_id}...")
+                try:
+                    # Use existing refresh logic
+                    _refresh_prd_context(prd_id, question_set, pack)
+                    click.echo(f"  ✅ Refreshed {prd_id}")
+                    refreshed_count += 1
+                except Exception as e:
+                    click.echo(f"  ❌ Error refreshing {prd_id}: {e}")
+                    missing_count += 1
+            else:
+                click.echo(f"  ✅ Up-to-date: {prd_id}")
+                up_to_date_count += 1
+        
+        # Print summary
+        click.echo(f"\n📊 Scan Summary:")
+        click.echo(f"  🔄 Refreshed: {refreshed_count}")
+        click.echo(f"  ✅ Up-to-date: {up_to_date_count}")
+        click.echo(f"  ❌ Missing/Failed: {missing_count}")
+        click.echo(f"  📋 Total: {len(prd_files)}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error during scan: {e}")
         raise SystemExit(1)
 
 @cli.command("discover:regenerate")
