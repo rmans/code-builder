@@ -4034,8 +4034,11 @@ def discover_analyze(repo_root, target, feature, question_set, output, batch):
 @cli.command("discover:validate")
 @click.argument("context_file")
 @click.option("--strict", is_flag=True, help="Use strict validation mode")
+@click.option("--lenient", is_flag=True, help="Use lenient validation mode (overrides strict)")
+@click.option("--min-features", default=3, help="Minimum number of features required (default: 3)")
+@click.option("--min-idea-words", default=10, help="Minimum words in product idea (default: 10)")
 @click.option("--output", default="builder/cache/validation_report.json", help="Output validation report path")
-def discover_validate(context_file, strict, output):
+def discover_validate(context_file, strict, lenient, min_features, min_idea_words, output):
     """Validate discovery context or analysis results"""
     try:
         from discovery.validator import DiscoveryValidator
@@ -4062,45 +4065,69 @@ def discover_validate(context_file, strict, output):
             click.echo(f"❌ Error: Unsupported file format: {file_ext}")
             raise SystemExit(1)
         
-        # Initialize validator
-        validator = DiscoveryValidator()
+        # Determine validation mode
+        strict_mode = strict and not lenient
+        
+        # Initialize validator with strict settings
+        validator = DiscoveryValidator(
+            strict_mode=strict_mode,
+            min_features=min_features,
+            min_idea_words=min_idea_words
+        )
         
         # Determine validation type based on data structure
-        if 'discovery_phases' in data:
+        if 'discovery_phases' in data or 'discovery_results' in data:
             # This is a discovery context file
             click.echo("📋 Validating discovery context...")
-            validation_results = {
-                'type': 'discovery_context',
-                'is_valid': True,
-                'errors': [],
-                'warnings': [],
-                'checks': []
-            }
             
-            # Check required fields
-            required_fields = ['product', 'idea', 'created', 'status', 'discovery_phases']
-            for field in required_fields:
-                if field not in data:
-                    validation_results['errors'].append(f"Missing required field: {field}")
-                    validation_results['is_valid'] = False
-                else:
-                    validation_results['checks'].append(f"Field '{field}' present")
+            # Extract discovery data for strict validation
+            discovery_data = {}
+            if 'discovery_phases' in data:
+                discovery_data = data['discovery_phases']
+                # Add top-level data for validation
+                discovery_data['interview'] = discovery_data.get('interview', {})
+                discovery_data['synthesis'] = discovery_data.get('synthesis', {})
+                # Add key_features from top level if available
+                if 'key_features' in data:
+                    discovery_data['synthesis']['key_features'] = data['key_features']
+            elif 'discovery_results' in data:
+                discovery_data = data['discovery_results']
             
-            # Check discovery phases
-            phases = data.get('discovery_phases', {})
-            expected_phases = ['interview', 'analysis', 'synthesis', 'generation', 'validation']
-            for phase in expected_phases:
-                if phase not in phases:
-                    validation_results['warnings'].append(f"Missing phase: {phase}")
-                else:
-                    validation_results['checks'].append(f"Phase '{phase}' present")
+            # Run strict validation if enabled
+            if strict_mode:
+                validation_results = validator.validate_strict_spec(discovery_data)
+                validation_results['type'] = 'discovery_context_strict'
+            else:
+                # Basic validation for lenient mode
+                validation_results = {
+                    'type': 'discovery_context_lenient',
+                    'is_valid': True,
+                    'errors': [],
+                    'warnings': [],
+                    'checks': []
+                }
+                
+                # Check required fields
+                required_fields = ['product', 'idea', 'created', 'status']
+                for field in required_fields:
+                    if field not in data:
+                        validation_results['errors'].append(f"Missing required field: {field}")
+                        validation_results['is_valid'] = False
+                    else:
+                        validation_results['checks'].append(f"Field '{field}' present")
             
         elif 'synthesis' in data and 'analysis' in data:
             # This is a discovery analysis result
             click.echo("📊 Validating discovery analysis results...")
-            generation_data = data.get('generation', {})
-            synthesis_data = data.get('synthesis', {})
-            validation_results = validator.validate(generation_data, synthesis_data)
+            
+            if strict_mode:
+                validation_results = validator.validate_strict_spec(data)
+                validation_results['type'] = 'analysis_synthesis_strict'
+            else:
+                generation_data = data.get('generation', {})
+                synthesis_data = data.get('synthesis', {})
+                validation_results = validator.validate(generation_data, synthesis_data)
+                validation_results['type'] = 'analysis_synthesis_lenient'
         else:
             click.echo("❌ Error: Unknown file format - not a discovery context or analysis result")
             raise SystemExit(1)
@@ -4115,47 +4142,38 @@ def discover_validate(context_file, strict, output):
             json.dump(validation_results, f, indent=2)
         
         # Show validation results
-        if validation_results.get('is_valid', False):
-            click.echo(f"✅ Validation passed!")
+        if strict_mode:
+            summary = validator.get_strict_validation_summary(validation_results)
+            click.echo(summary)
         else:
-            click.echo(f"❌ Validation failed!")
+            summary = validator.get_validation_summary(validation_results)
+            click.echo(summary)
         
-        # Show errors
-        errors = validation_results.get('errors', [])
-        if errors:
-            click.echo(f"\n❌ Errors ({len(errors)}):")
-            for error in errors:
-                click.echo(f"  - {error}")
-        
-        # Show warnings
-        warnings = validation_results.get('warnings', [])
-        if warnings:
-            click.echo(f"\n⚠️  Warnings ({len(warnings)}):")
-            for warning in warnings:
-                click.echo(f"  - {warning}")
-        
-        # Show checks performed
-        checks = validation_results.get('checks', [])
-        if checks:
-            click.echo(f"\n✅ Checks performed ({len(checks)}):")
-            for check in checks[:5]:  # Show first 5
-                click.echo(f"  - {check}")
-            if len(checks) > 5:
-                click.echo(f"  ... and {len(checks) - 5} more checks")
+        # Show gaps if in strict mode
+        if strict_mode:
+            gaps = validation_results.get('gaps', [])
+            if gaps:
+                click.echo(f"\n🔍 Gaps identified ({len(gaps)}):")
+                for gap in gaps[:3]:  # Show first 3 gaps
+                    click.echo(f"  - {gap}")
+                if len(gaps) > 3:
+                    click.echo(f"  ... and {len(gaps) - 3} more gaps")
         
         click.echo(f"\n📄 Validation report saved to: {output}")
         
-        # Show next steps
-        if validation_results.get('is_valid', False):
-            click.echo(f"\n🚀 Next Steps:")
-            click.echo(f"1. Run: python builder/cli.py discover:regenerate --reports")
-            click.echo(f"2. Review generated documentation")
-            click.echo(f"3. Update discovery context as needed")
-        else:
+        # Exit with non-zero code if validation failed
+        if not validation_results.get('is_valid', False):
             click.echo(f"\n🔧 Fix Issues:")
             click.echo(f"1. Address validation errors above")
             click.echo(f"2. Re-run validation: python builder/cli.py discover:validate {context_file}")
             click.echo(f"3. Check file format and required fields")
+            raise SystemExit(1)
+        
+        # Show next steps for successful validation
+        click.echo(f"\n🚀 Next Steps:")
+        click.echo(f"1. Run: python builder/cli.py discover:regenerate --reports")
+        click.echo(f"2. Review generated documentation")
+        click.echo(f"3. Update discovery context as needed")
         
     except Exception as e:
         click.echo(f"❌ Error: {e}")
