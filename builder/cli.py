@@ -21,6 +21,7 @@ def _render(path, ctx):
 def _update_master_file(doc_type, doc_id, title, status="draft", domain=""):
     """Update the master index file for a document type"""
     master_files = {
+        'adr': 'docs/adrs/0000_MASTER_ADR.md',
         'prd': 'docs/prd/0000_MASTER_PRD.md',
         'arch': 'docs/arch/0000_MASTER_ARCH.md', 
         'exec': 'docs/exec/0000_MASTER_EXEC.md',
@@ -66,10 +67,40 @@ def cli():
 @click.option("--tags", default="")
 def adr_new(title, parent, related, tags):
     os.makedirs(ADRS, exist_ok=True)
-    existing = [p for p in glob.glob(os.path.join(ADRS, "ADR-*.md")) if "MASTER" not in p]
-    if existing:
-        last = sorted([int(p.split("ADR-")[-1].split(".md")[0]) for p in existing])[-1]
-        next_id = f"ADR-{last+1:04d}"
+    
+    # Get existing ADR IDs from both files and master file
+    existing_files = [p for p in glob.glob(os.path.join(ADRS, "ADR-*.md")) if "MASTER" not in p]
+    existing_ids = set()
+    
+    # Add IDs from existing files
+    for p in existing_files:
+        adr_id = os.path.basename(p).replace('.md', '')
+        existing_ids.add(adr_id)
+    
+    # Add IDs from master file
+    master_file = os.path.join(ADRS, "0000_MASTER_ADR.md")
+    if os.path.exists(master_file):
+        with open(master_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            # Extract ADR IDs from master file
+            import re
+            adr_matches = re.findall(r'\| (ADR-\d+) \|', content)
+            existing_ids.update(adr_matches)
+    
+    # Find next available ID
+    if existing_ids:
+        numeric_ids = []
+        for adr_id in existing_ids:
+            try:
+                numeric_id = int(adr_id.split('-')[1])
+                numeric_ids.append(numeric_id)
+            except (ValueError, IndexError):
+                continue
+        
+        if numeric_ids:
+            next_id = f"ADR-{max(numeric_ids)+1:04d}"
+        else:
+            next_id = "ADR-0001"
     else:
         next_id = "ADR-0001"
     ctx = {
@@ -80,9 +111,10 @@ def adr_new(title, parent, related, tags):
     out = _render(os.path.join(TEMPL, "sub_adr.md.hbs"), ctx)
     out_path = os.path.join(ADRS, f"{next_id}.md")
     with open(out_path, "w", encoding="utf-8") as f: f.write(out)
-    master = os.path.join(ADRS, "0000_MASTER_ADR.md")
-    row = f"| {next_id} | {title} | proposed |  | ./{next_id}.md |\n"
-    with open(master, "a", encoding="utf-8") as f: f.write(row)
+    
+    # Update master ADR file with duplicate prevention
+    _update_master_file('adr', next_id, title, "proposed", "")
+    
     click.echo(f"Created {out_path}")
 
 # -------------------- RULES LOADER --------------------

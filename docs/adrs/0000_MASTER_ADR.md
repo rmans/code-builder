@@ -10,5 +10,5 @@ tags: [index]
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| ADR-0001 | Create hello module | proposed |  | ./ADR-0001.md |
+| ADR-0001 | Technology Stack Selection | proposed |  | ./ADR-0001.md |
 | ADR-0002 | Hello module API shape | proposed |  | ./ADR-0002.md |
