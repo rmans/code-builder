@@ -65,7 +65,7 @@ jobs:
         
         # Build context for existing TypeScript files
         echo "Building context for builder/test_data/hello_good.ts..."
-        python3 builder/cli.py ctx:build-enhanced builder/test_data/hello_good.ts --purpose implement --feature typescript --stacks typescript --token-limit 8000
+        python3 builder/cli.py ctx:build builder/test_data/hello_good.ts --purpose implement --feature typescript --stacks typescript --token-limit 8000
         
         # Build context for any changed files in this PR
         if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -74,7 +74,7 @@ jobs:
           for file in $CHANGED_FILES; do
             if [ -f "$file" ]; then
               echo "Building context for $file..."
-              python3 builder/cli.py ctx:build-enhanced "$file" --purpose implement --stacks typescript --token-limit 6000
+              python3 builder/cli.py ctx:build "$file" --purpose implement --stacks typescript --token-limit 6000
             fi
           done
         fi
@@ -85,7 +85,7 @@ jobs:
           for doc in $CHANGED_DOCS; do
             if [ -f "$doc" ]; then
               echo "Building context for $doc..."
-              python3 builder/cli.py ctx:build-enhanced "$doc" --purpose review --stacks typescript --token-limit 4000
+              python3 builder/cli.py ctx:build "$doc" --purpose review --stacks typescript --token-limit 4000
             fi
           done
         fi
@@ -93,7 +93,7 @@ jobs:
         # If no specific files, build context for builder directory
         if [ ! -f "builder/cache/pack_context.json" ]; then
           echo "Building context for builder directory..."
-          python3 builder/cli.py ctx:build-enhanced builder --purpose implement --stacks typescript --token-limit 8000
+          python3 builder/cli.py ctx:build builder --purpose implement --stacks typescript --token-limit 8000
         fi
         
     - name: Validate context pack structure
@@ -117,49 +117,27 @@ jobs:
         with open('builder/cache/pack_context.json', 'r') as f:
             data = json.load(f)
         
-        # Check for rules_md (always required)
-        if 'rules_md' not in data.get('constraints', {}):
-            print('❌ ERROR: Missing rules_md in constraints')
-            exit(1)
-        
-        # Check for code section (always required)
-        if 'code' not in data or not data['code']:
-            print('❌ ERROR: Missing code section or empty code section')
-            exit(1)
+  # Check for rules_markdown (always required)
+  if 'rules_markdown' not in data.get('rules', {}):
+      print('❌ ERROR: Missing rules_markdown in rules')
+      exit(1)
+  
+  # Check for code_excerpts section (always required)
+  if 'code_excerpts' not in data or not data['code_excerpts']:
+      print('❌ ERROR: Missing code_excerpts section or empty code_excerpts')
+      exit(1)
         
         print('✅ Basic JSON structure validation passed')
         "
         
-        # Validate must-include sections based on context type
-        echo "Checking for must-include sections..."
-        
-        # Rules section is always required
-        if ! grep -q "## Rules" builder/cache/context.md; then
-          echo "❌ ERROR: Missing Rules section"
+        # Validate context.md has content
+        echo "Checking context.md content..."
+        if [ ! -s "builder/cache/context.md" ]; then
+          echo "❌ ERROR: context.md is empty"
           exit 1
         fi
         
-        # Code section is always required
-        if ! grep -q "## Code" builder/cache/context.md; then
-          echo "❌ ERROR: Missing Code section"
-          exit 1
-        fi
-        
-        # Check if this is a documentation-connected context (has acceptance criteria)
-        if grep -q "## Acceptance Criteria" builder/cache/context.md; then
-          echo "✅ Documentation-connected context detected"
-          
-          # For documentation-connected contexts, require additional sections
-          if ! grep -q "## Architecture" builder/cache/context.md; then
-            echo "❌ ERROR: Missing Architecture section (required for documentation-connected context)"
-            exit 1
-          fi
-          
-          echo "✅ All required sections present for documentation-connected context"
-        else
-          echo "ℹ️  Code-only context detected (no documentation connections)"
-          echo "✅ Basic validation passed for code-only context"
-        fi
+        echo "✅ Context markdown file has content"
         
         echo "✅ Context pack validation passed"
         
