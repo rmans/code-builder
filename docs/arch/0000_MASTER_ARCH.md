@@ -24,4 +24,4 @@ links:
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| ARCH-2025-09-06-api-architecture-des | API Architecture Design | draft |  | ./ARCH-2025-09-06-api-architecture-des.md |
+| *No Architecture documents currently defined* |  |  |  |  |

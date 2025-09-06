@@ -12,15 +12,8 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 - ❓ **Master Product Requirements Index** (`0000_MASTER_PRD`)
   - Owner: system | Created: 2025-09-06
 
-- 📝 **Unknown Product** (`PRD-2025-09-06-unknownproduct`)
-  - Owner: product_team | Created: 2025-09-06
-  - Links: prd:P, R, D, -, 2, 0, 2, 5, -, 0, 9, -, 0, 6, -, u, n, k, n, o, w, n, p, r, o, d, u, c, t
-
 ### 🏗️ Architecture
 *Architectural decisions and designs*
-
-- 📝 **API Architecture Design** (`ARCH-2025-09-06-api-architecture-des`)
-  - Owner: Dev Team | Created: 2025-09-06
 
 - ❓ **Master Architecture Index** (`0000_MASTER_ARCH`)
   - Owner: system | Created: 2025-09-06
@@ -43,17 +36,11 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 - ❓ **Master Implementation Index** (`0000_MASTER_IMPL`)
   - Owner: system | Created: 2025-09-06
 
-- 📝 **User Authentication Implementation** (`IMPL-2025-09-06-user-authentication-`)
-  - Owner: Backend Team | Created: 2025-09-06
-
 ### 📊 Executive
 *Executive summaries and business documents*
 
 - ❓ **Master Execution Index** (`0000_MASTER_EXEC`)
   - Owner: system | Created: 2025-09-06
-
-- 📝 **Deployment Plan** (`EXEC-2025-09-06-deployment-plan`)
-  - Owner: Ops Team | Created: 2025-09-06
 
 ### ✅ Tasks
 *Task definitions and work items*
