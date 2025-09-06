@@ -23,6 +23,4 @@ links:
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| ADR-0001 | Technology Stack Selection | proposed |  | ./ADR-0001.md |
-| ADR-0002 | Hello module API shape | proposed |  | ./ADR-0002.md |
-| ADR-2025-09-06-test-standardized-id | Test Standardized ID Format | proposed |  | ./ADR-2025-09-06-test-standardized-id.md |
+| *No ADRs currently defined* |  |  |  |  |

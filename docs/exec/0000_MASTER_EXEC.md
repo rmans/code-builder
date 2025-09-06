@@ -25,4 +25,3 @@ links:
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
 | EXEC-2025-09-06-deployment-plan | Deployment Plan | draft |  | ./EXEC-2025-09-06-deployment-plan.md |
-| EXEC-2025-09-06-test-execution-with- | Test Execution with Docker and Kubernetes | draft |  | ./EXEC-2025-09-06-test-execution-with-.md |

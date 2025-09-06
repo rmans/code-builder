@@ -25,5 +25,3 @@ links:
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
 | ARCH-2025-09-06-api-architecture-des | API Architecture Design | draft |  | ./ARCH-2025-09-06-api-architecture-des.md |
-| ARCH-2025-09-06-test-architecture-do | Test Architecture Document | draft |  | ./ARCH-2025-09-06-test-architecture-do.md |
-| ARCH-2025-09-06-test-architecture-wi | Test Architecture with Python and TypeScript | draft |  | ./ARCH-2025-09-06-test-architecture-wi.md |
