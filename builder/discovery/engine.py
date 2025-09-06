@@ -43,12 +43,13 @@ class DiscoveryEngine:
         self.results: Dict[str, Any] = {}
         self.cache_key: Optional[str] = None
     
-    def discover(self, target_path: str, options: Optional[Dict] = None) -> Dict[str, Any]:
+    def discover(self, target_path: str, options: Optional[Dict] = None, batch_kwargs: Optional[Dict] = None) -> Dict[str, Any]:
         """Run the complete discovery process for a target file or directory.
         
         Args:
             target_path: Path to analyze (file or directory)
             options: Optional configuration options
+            batch_kwargs: Optional batch input data for interview
             
         Returns:
             Dictionary containing discovery results
@@ -60,6 +61,8 @@ class DiscoveryEngine:
         # Generate cache key
         options = options or {}
         options['question_set'] = self.question_set
+        if batch_kwargs:
+            options['batch_kwargs'] = batch_kwargs
         self.cache_key = self._generate_cache_key(target, options)
         
         # Check cache first
@@ -70,7 +73,7 @@ class DiscoveryEngine:
         # Run discovery pipeline
         try:
             # Phase 1: Interview - gather initial information
-            interview_data = self.interview.conduct(target, options)
+            interview_data = self.interview.conduct(target, options, batch_kwargs)
             
             # Phase 2: Analysis - deep code analysis
             analysis_data = self.analyzer.analyze(target, interview_data)
@@ -88,6 +91,7 @@ class DiscoveryEngine:
             self.results = {
                 'target': str(target),
                 'cache_key': self.cache_key,
+                'question_set': self.question_set,
                 'interview': interview_data,
                 'analysis': analysis_data,
                 'synthesis': synthesis_data,

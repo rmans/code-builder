@@ -3020,8 +3020,34 @@ def discover_new(product, idea, problem, users, features, metrics, tech, timelin
         if auto_generate:
             click.echo("🤖 Auto-generating discovery context...")
             
+            # Prepare batch kwargs for discovery engine
+            batch_kwargs = {
+                'product': product,
+                'idea': idea,
+                'problem': problem,
+                'users': users,
+                'features': features,
+                'metrics': metrics,
+                'tech': tech,
+                'timeline': timeline,
+                'team_size': team_size
+            }
+            
             # Initialize discovery engine
             engine = DiscoveryEngine(question_set=question_set)
+            
+            # Run discovery with batch kwargs to generate user stories
+            try:
+                discovery_results = engine.discover(".", batch_kwargs=batch_kwargs)
+                
+                # Extract user stories from discovery results
+                if 'interview' in discovery_results and 'questions' in discovery_results['interview']:
+                    questions = discovery_results['interview']['questions']
+                    if 'features_with_stories' in questions:
+                        discovery_context['features_with_stories'] = questions['features_with_stories']
+                        click.echo("📝 Generated user stories for features")
+            except Exception as e:
+                click.echo(f"⚠️  Warning: Could not generate user stories: {e}")
             
             # Fill in missing required fields for new products
             if 'problem_solved' not in discovery_context:

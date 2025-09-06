@@ -24,23 +24,35 @@ class DiscoveryInterview:
         self.questions = self._load_questions(question_set)
         self.patterns = self._load_patterns()
     
-    def conduct(self, target: Path, options: Optional[Dict] = None) -> Dict[str, Any]:
+    def conduct(self, target: Path, options: Optional[Dict] = None, batch_kwargs: Optional[Dict] = None) -> Dict[str, Any]:
         """Conduct interview for the target path.
         
         Args:
             target: Path to analyze
             options: Optional configuration options
+            batch_kwargs: Optional batch input data to merge with interview results
             
         Returns:
             Interview data dictionary
         """
+        # Answer discovery questions
+        question_answers = self._answer_questions(target)
+        
+        # Merge batch kwargs if provided
+        if batch_kwargs:
+            question_answers = self._merge_batch_kwargs(question_answers, batch_kwargs)
+        
+        # Generate user stories for features if missing
+        if "key_features" in question_answers and question_answers["key_features"]:
+            question_answers = self._generate_user_stories(question_answers)
+        
         interview_data = {
             'target_type': self._determine_target_type(target),
             'file_info': self._gather_file_info(target),
             'dependencies': self._find_dependencies(target),
             'structure': self._analyze_structure(target),
             'patterns': self._detect_patterns(target),
-            'questions': self._answer_questions(target),
+            'questions': question_answers,
             'options': options or {}
         }
         
@@ -549,6 +561,101 @@ class DiscoveryInterview:
     def _get_deployment_status(self, target: Path) -> str:
         """Get deployment status from discovery context."""
         return "unknown"
+    
+    def _merge_batch_kwargs(self, question_answers: Dict[str, Any], batch_kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """Merge batch kwargs into question answers.
+        
+        Args:
+            question_answers: Current question answers
+            batch_kwargs: Batch input data to merge
+            
+        Returns:
+            Updated question answers with batch data
+        """
+        # Map batch kwargs to question fields
+        batch_mapping = {
+            'product': 'product_name',
+            'idea': 'main_idea',
+            'problem': 'problem_solved',
+            'users': 'target_users',
+            'features': 'key_features',
+            'metrics': 'success_metrics',
+            'tech': 'tech_stack_preferences',
+            'timeline': 'timeline',
+            'team_size': 'team_size',
+            'deployment': 'deployment_preferences'
+        }
+        
+        # Merge batch data
+        for batch_key, question_key in batch_mapping.items():
+            if batch_key in batch_kwargs and batch_kwargs[batch_key]:
+                question_answers[question_key] = batch_kwargs[batch_key]
+        
+        return question_answers
+    
+    def _generate_user_stories(self, question_answers: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate user stories for features using the 'As a...I want...so that...' template.
+        
+        Args:
+            question_answers: Question answers containing key_features
+            
+        Returns:
+            Updated question answers with user stories
+        """
+        if "key_features" not in question_answers or not question_answers["key_features"]:
+            return question_answers
+        
+        features = question_answers["key_features"]
+        target_users = question_answers.get("target_users", "user")
+        problem_solved = question_answers.get("problem_solved", "achieve their goals")
+        
+        # Ensure features is a list
+        if isinstance(features, str):
+            features = [f.strip() for f in features.split(",") if f.strip()]
+        
+        # Generate user stories
+        user_stories = []
+        for feature in features:
+            if isinstance(feature, str) and feature.strip():
+                # Generate user story using template
+                user_story = self._create_user_story(feature, target_users, problem_solved)
+                user_stories.append({
+                    "feature": feature.strip(),
+                    "user_story": user_story
+                })
+        
+        # Add user stories to question answers
+        question_answers["features_with_stories"] = user_stories
+        
+        return question_answers
+    
+    def _create_user_story(self, feature: str, target_users: str, problem_solved: str) -> str:
+        """Create a user story from a feature using the 'As a...I want...so that...' template.
+        
+        Args:
+            feature: The feature description
+            target_users: Target user description
+            problem_solved: Problem being solved
+            
+        Returns:
+            Formatted user story string
+        """
+        # Clean up inputs
+        users = target_users.strip() if target_users else "user"
+        problem = problem_solved.strip() if problem_solved else "achieve their goals"
+        feature_clean = feature.strip()
+        
+        # Clean up problem text - make it more concise and readable
+        if len(problem) > 30:
+            # Take first sentence or first 30 characters
+            problem = problem.split('.')[0]
+            if len(problem) > 30:
+                problem = problem[:30] + "..."
+        
+        # Generate user story with proper formatting
+        user_story = f"As a {users}, I want {feature_clean.lower()}, so that I can {problem.lower()}"
+        
+        return user_story
     
     def _load_questions(self, question_set: str = "comprehensive") -> List[Dict[str, str]]:
         """Load discovery questions from configuration."""
