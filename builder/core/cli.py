@@ -5492,6 +5492,122 @@ def orchestrator_cursor_execute(tasks_dir, max_cycles, cycle_delay, auto_load, c
         raise click.Abort()
 
 
+@cli.command("orchestrator:cursor-chat")
+@click.option("--task-id", required=True, help="Task ID to open Cursor chat for")
+@click.option("--tasks-dir", default="docs/tasks", help="Directory containing TASK-*.md files")
+def orchestrator_cursor_chat(task_id, tasks_dir):
+    """Open a Cursor chat for a specific task."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.cursor_chat_manager import CursorChatManager
+        from utils.task_parser import TaskFileParser
+        
+        # Load tasks to find the specific one
+        parser = TaskFileParser(tasks_dir)
+        orchestrator_tasks = parser.load_tasks_from_files()
+        
+        # Find the task
+        task = None
+        for t in orchestrator_tasks:
+            if t.task_id == task_id:
+                task = t
+                break
+        
+        if not task:
+            click.echo(f"❌ Task {task_id} not found in {tasks_dir}")
+            return
+        
+        # Create chat manager
+        chat_manager = CursorChatManager()
+        
+        # Create chat session
+        session = chat_manager.create_task_chat(task)
+        if not session:
+            click.echo(f"❌ Failed to create Cursor chat for task {task_id}")
+            return
+        
+        # Open Cursor chat
+        if chat_manager.open_cursor_chat(session):
+            click.echo(f"✅ Opened Cursor chat for task: {task.name}")
+            click.echo(f"   Chat ID: {session.chat_id}")
+            click.echo(f"   Working Directory: {session.working_directory}")
+            click.echo(f"   Instructions: {chat_manager.sessions_dir}/{task_id}_instructions.md")
+            click.echo("")
+            click.echo("💡 The Cursor chat will open in a new window with task instructions.")
+            click.echo("   Work through the task in the chat, then create a completion marker:")
+            click.echo(f"   touch {chat_manager.sessions_dir}/{task_id}_completed")
+        else:
+            click.echo(f"❌ Failed to open Cursor chat for task {task_id}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error opening Cursor chat: {e}")
+        raise click.Abort()
+
+
+@cli.command("orchestrator:cursor-chat-status")
+def orchestrator_cursor_chat_status():
+    """Show status of Cursor chat sessions."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        from utils.cursor_chat_manager import CursorChatManager
+        
+        chat_manager = CursorChatManager()
+        
+        click.echo("💬 Cursor Chat Sessions Status")
+        click.echo("=" * 50)
+        
+        # List active sessions
+        active_sessions = chat_manager.list_active_sessions()
+        click.echo(f"🔄 Active Sessions: {len(active_sessions)}")
+        
+        if active_sessions:
+            for session in active_sessions:
+                click.echo(f"   • {session.task_id}")
+                click.echo(f"     Chat ID: {session.chat_id}")
+                click.echo(f"     Status: {session.status}")
+                click.echo(f"     Created: {session.created_at}")
+                click.echo(f"     Working Dir: {session.working_directory}")
+        else:
+            click.echo("   No active sessions")
+        
+        # Check for completed tasks
+        sessions_dir = chat_manager.sessions_dir
+        completed_files = list(sessions_dir.glob("*_completed"))
+        click.echo(f"\n✅ Completed Tasks: {len(completed_files)}")
+        
+        if completed_files:
+            for completed_file in completed_files:
+                task_id = completed_file.stem.replace("_completed", "")
+                click.echo(f"   • {task_id}")
+        
+        # Show session files
+        context_files = list(sessions_dir.glob("*_context.json"))
+        click.echo(f"\n📁 Session Files: {len(context_files)}")
+        
+        if context_files:
+            for context_file in context_files:
+                try:
+                    with open(context_file, 'r') as f:
+                        data = json.load(f)
+                        click.echo(f"   • {data['task_name']} ({data['task_id']})")
+                        click.echo(f"     Created: {data['created_at']}")
+                        click.echo(f"     Agent Type: {data['agent_type']}")
+                except Exception:
+                    click.echo(f"   • {context_file.name} (corrupted)")
+        
+    except Exception as e:
+        click.echo(f"❌ Error getting chat status: {e}")
+        raise click.Abort()
+
+
 @cli.command("orchestrator:cursor-status")
 def orchestrator_cursor_status():
     """Show status of Cursor agent orchestration."""
