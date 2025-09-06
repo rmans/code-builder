@@ -1,6 +1,59 @@
 # Builder CLI
 
-Python CLI (builder/cli.py) manages ADRs, context generation, planning, iterations, rules, documentation, discovery, and code evaluation. The CLI provides a comprehensive set of commands for AI-assisted development workflows with intelligent discovery, auto ADR linking, and comprehensive metrics tracking.
+Python CLI (builder/cli.py) manages ADRs, context generation, planning, iterations, rules, documentation, discovery, and code evaluation. The CLI provides a comprehensive set of **53 commands** across **8 categories** for AI-assisted development workflows with intelligent discovery, auto ADR linking, and comprehensive metrics tracking.
+
+## 🏗️ System Architecture
+
+The Builder CLI is built around **8 core systems**:
+
+### 1. **Context Management System** (12 commands)
+- **Graph-based selection**: Discovers related items through explicit links and code proximity
+- **Intelligent ranking**: Scores items based on relevance, feature matching, and recency
+- **Budget management**: Token-aware packaging with per-purpose allocations
+- **Caching**: SHA256-based cache keys for fast, deterministic context generation
+
+### 2. **Discovery System** (6 commands)
+- **Interactive interviews**: Guided prompts for new and existing products
+- **Code analysis**: Deep analysis of codebase structure, patterns, and dependencies
+- **Synthesis engine**: Combines findings into structured insights
+- **Document generation**: Auto-generates PRDs, ADRs, and technical specifications
+- **Validation**: Ensures generated documents meet quality standards
+
+### 3. **Multi-Agent Orchestration** (12 commands)
+- **Task management**: Parse and execute structured tasks from TASK-*.md files
+- **Agent tracking**: Session management with ownership protection
+- **Dependency resolution**: Intelligent task scheduling based on dependencies
+- **Cursor integration**: Launch multiple Cursor agents for parallel execution
+- **Progress monitoring**: Real-time tracking of agent activities and file creation
+
+### 4. **Document Management** (8 commands)
+- **Master synchronization**: Automated maintenance of 0000_MASTER_*.md index files
+- **Cross-reference cleanup**: Automatic removal of broken links when documents are deleted
+- **Template system**: Jinja2-based document generation with consistent formatting
+- **8 document types**: PRD, ADR, ARCH, EXEC, IMPL, INTEGRATIONS, TASKS, UX
+
+### 5. **Evaluation System** (4 commands)
+- **Objective evaluation**: Automated scoring based on test coverage, linting, and metrics
+- **Subjective evaluation**: AI-powered quality assessment with structured prompts
+- **ABC iteration**: Systematic code improvement through variant generation and comparison
+- **Comprehensive reporting**: Historical data, trends, and actionable insights
+
+### 6. **Agent Management** (4 commands)
+- **Session tracking**: Monitor active agent sessions and their activities
+- **Ownership protection**: Prevent cleanup of files created by active agents
+- **Resource cleanup**: Automatic cleanup of old and timed-out sessions
+- **Status monitoring**: Real-time visibility into agent activities
+
+### 7. **Rules & Guardrails** (2 commands)
+- **Hierarchical rules**: Global → Project → Stack → Feature precedence
+- **Conflict detection**: Automatic identification of rule contradictions
+- **Guardrails enforcement**: Forbidden patterns and security validation
+- **PII detection**: Automatic detection and redaction of sensitive information
+
+### 8. **Utility & Maintenance** (3 commands)
+- **Artifact cleanup**: Clean up test files and temporary artifacts
+- **Master synchronization**: Keep document indexes up to date
+- **System maintenance**: Various utility functions for system health
 
 ## Recent Updates
 
@@ -13,6 +66,7 @@ Python CLI (builder/cli.py) manages ADRs, context generation, planning, iteratio
 - **PII Detection**: Security validation with automatic PII detection and redaction
 - **Metrics Tracking**: Comprehensive reporting with historical data and trends
 - **CI Integration**: Automated discovery and context pack generation in pull requests
+- **Master File Synchronization**: Automated sync of 0000_MASTER_*.md files with cross-reference cleanup
 
 ---
 

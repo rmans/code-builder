@@ -5,7 +5,61 @@
 [![Documentation](https://github.com/rmans/code-builder/workflows/Documentation/badge.svg)](https://github.com/rmans/code-builder/actions)
 
 Code Builder is a comprehensive developer productivity scaffold for AI-assisted software projects.  
-It combines **ADRs (Architecture Decision Records)**, **context generation**, **iteration loops**, **rules/guardrails**, **automated evaluation**, and **PR ergonomics** to make AI outputs repeatable, testable, and compliant with your coding standards.
+It combines **ADRs (Architecture Decision Records)**, **context generation**, **iteration loops**, **rules/guardrails**, **automated evaluation**, **multi-agent orchestration**, and **discovery systems** to make AI outputs repeatable, testable, and compliant with your coding standards.
+
+## 🏗️ System Architecture
+
+Code Builder is built around **8 core systems** working together:
+
+### 1. **Context Management System**
+- **Graph-based selection**: Discovers related items through explicit links and code proximity
+- **Intelligent ranking**: Scores items based on relevance, feature matching, and recency  
+- **Budget management**: Token-aware packaging with per-purpose allocations
+- **Caching**: SHA256-based cache keys for fast, deterministic context generation
+
+### 2. **Discovery System** 
+- **Interactive interviews**: Guided prompts for new and existing products
+- **Code analysis**: Deep analysis of codebase structure, patterns, and dependencies
+- **Synthesis engine**: Combines findings into structured insights
+- **Document generation**: Auto-generates PRDs, ADRs, and technical specifications
+- **Validation**: Ensures generated documents meet quality standards
+
+### 3. **Multi-Agent Orchestration**
+- **Task management**: Parse and execute structured tasks from TASK-*.md files
+- **Agent tracking**: Session management with ownership protection
+- **Dependency resolution**: Intelligent task scheduling based on dependencies
+- **Cursor integration**: Launch multiple Cursor agents for parallel execution
+- **Progress monitoring**: Real-time tracking of agent activities and file creation
+
+### 4. **Evaluation System**
+- **Objective evaluation**: Automated scoring based on test coverage, linting, and metrics
+- **Subjective evaluation**: AI-powered quality assessment with structured prompts
+- **ABC iteration**: Systematic code improvement through variant generation and comparison
+- **Comprehensive reporting**: Historical data, trends, and actionable insights
+
+### 5. **Document Management**
+- **Master synchronization**: Automated maintenance of 0000_MASTER_*.md index files
+- **Cross-reference cleanup**: Automatic removal of broken links when documents are deleted
+- **Template system**: Jinja2-based document generation with consistent formatting
+- **8 document types**: PRD, ADR, ARCH, EXEC, IMPL, INTEGRATIONS, TASKS, UX
+
+### 6. **Rules & Guardrails System**
+- **Hierarchical rules**: Global → Project → Stack → Feature precedence
+- **Conflict detection**: Automatic identification of rule contradictions
+- **Guardrails enforcement**: Forbidden patterns and security validation
+- **PII detection**: Automatic detection and redaction of sensitive information
+
+### 7. **Cache & Performance System**
+- **Intelligent caching**: SHA256-based cache keys with automatic invalidation
+- **Agent session cleanup**: Automatic cleanup of old and timed-out sessions
+- **Workspace management**: Cleanup of completed agent workspaces
+- **Performance optimization**: Fast context generation and retrieval
+
+### 8. **PR Ergonomics System**
+- **Auto-populated templates**: GitHub PR templates with validation checklists
+- **Context preview**: Shows first 200 lines of generated context
+- **Validation commands**: Integrated quality gates for PRs
+- **Reviewer guidance**: Clear instructions for context evaluation
 
 ---
 
@@ -21,6 +75,16 @@ It combines **ADRs (Architecture Decision Records)**, **context generation**, **
 
 ---
 
+## 📊 System Statistics
+
+- **53 CLI Commands** across 8 categories
+- **34 Python Modules** in the builder system  
+- **41 Markdown Files** for comprehensive documentation
+- **8 Document Types** with automated master synchronization
+- **8 Core Systems** working together seamlessly
+- **Multi-language Support** (Python, TypeScript, JavaScript)
+- **Comprehensive Testing** (Unit, Integration, E2E)
+
 ## Recent Improvements
 
 - **Fixed import issues**: Resolved `rules_loader` and `artifact_detector` import paths in evaluation prompts
@@ -32,7 +96,7 @@ It combines **ADRs (Architecture Decision Records)**, **context generation**, **
 
 ---
 
-## Quickstart
+## 🚀 Quickstart
 
 Run these commands after cloning:
 
@@ -49,6 +113,79 @@ Run these commands after cloning:
     pnpm run test:all   # run all tests (TypeScript + Python)
     pnpm run docs:all   # validate documentation
     pnpm run rules:check "tests/**/*.ts" --feature auth --stacks typescript,react
+
+## 📋 Command Overview
+
+Code Builder provides **53 CLI commands** organized into **8 categories**:
+
+### 🔍 Discovery Commands (6)
+- `discover:new` - Interactive discovery with guided prompts
+- `discover:analyze` - Deep codebase analysis and insights
+- `discover:scan` - Batch discovery with auto-generation
+- `discover:validate` - Validate discovery context files
+- `discover:refresh` - Refresh specific PRD contexts
+- `discover:regenerate` - Regenerate discovery outputs
+
+### 📝 Document Commands (8)
+- `doc:new` - Create new documents (PRD, ADR, ARCH, etc.)
+- `doc:index` - Update document indexes and cross-references
+- `doc:check` - Validate document structure and front-matter
+- `doc:set-links` - Set document links and relationships
+- `doc:fix-master` - Fix master document indexes
+- `doc:abc` - ABC iteration for documents
+- `adr:new` - Create new Architecture Decision Records
+- `master:sync` - Synchronize master index files
+
+### 🧠 Context Commands (12)
+- `ctx:build` - Build context for specific files
+- `ctx:build-enhanced` - Enhanced context with parameters
+- `ctx:diff` - Compare context packages
+- `ctx:explain` - Explain context selection decisions
+- `ctx:pack` - Generate context packages
+- `ctx:trace` - Trace context generation process
+- `ctx:graph:build` - Build context relationship graph
+- `ctx:graph:stats` - Show context graph statistics
+- `ctx:select` - Select context items
+- `ctx:budget` - Manage token budgets
+- `context:scan` - Scan for context items
+- `plan:auto` - Auto-generate context plans
+
+### 🤖 Agent Commands (4)
+- `agent:start` - Start new agent session
+- `agent:stop` - Stop agent session
+- `agent:list` - List active agents
+- `agent:cleanup` - Clean up old sessions
+
+### 🎯 Orchestration Commands (12)
+- `orchestrator:add-task` - Add new task
+- `orchestrator:add-agent` - Add new agent
+- `orchestrator:status` - Show orchestration status
+- `orchestrator:run` - Run orchestration cycles
+- `orchestrator:execution-order` - Show task execution order
+- `orchestrator:reset` - Reset orchestration state
+- `orchestrator:load-tasks` - Load tasks from files
+- `orchestrator:execute-tasks` - Execute loaded tasks
+- `orchestrator:create-task-template` - Create task template
+- `orchestrator:multi-agent` - Launch multi-agent workflows
+- `orchestrator:add-task-abc` - Add ABC iteration task
+- `orchestrator:run-abc` - Run ABC iterations
+
+### 📊 Evaluation Commands (4)
+- `eval:objective` - Run objective evaluation
+- `eval:prepare` - Prepare evaluation data
+- `eval:complete` - Complete evaluation process
+- `iter:run` - Run iteration cycles
+
+### 🔄 Iteration Commands (4)
+- `iter:cursor` - Cursor-based iteration
+- `iter:finish` - Finish iteration process
+- `plan:sync` - Sync planning data
+- `rules:show` - Show applicable rules
+
+### 🧹 Utility Commands (3)
+- `rules:check` - Check rule compliance
+- `cleanup:artifacts` - Clean up artifacts
+- `master:sync` - Sync master files
 
 ## Discovery System
 
