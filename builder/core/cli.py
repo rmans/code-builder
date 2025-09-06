@@ -4290,6 +4290,47 @@ def workflows_validate(workflow_file, all):
         else:
             click.echo("✅ Workflow is valid!")
 
+@cli.command("fields:check")
+@click.argument("target", default=".")
+@click.option("--context-pack", help="Validate specific context pack file")
+def fields_check(target, context_pack):
+    """Check for field name consistency issues"""
+    from ..utils.field_name_validator import validate_context_pack_fields, find_field_name_issues
+    
+    if context_pack:
+        # Validate specific context pack
+        is_valid, errors, warnings = validate_context_pack_fields(context_pack)
+        
+        click.echo(f"Validating context pack: {context_pack}")
+        
+        if warnings:
+            for warning in warnings:
+                click.echo(f"  ⚠️  {warning}")
+        
+        if errors:
+            for error in errors:
+                click.echo(f"  ❌ {error}")
+        
+        if is_valid:
+            click.echo("  ✅ Context pack field names are valid")
+        else:
+            click.echo("  ❌ Context pack has field name issues")
+            raise SystemExit(1)
+    else:
+        # Find field name issues in directory
+        click.echo(f"Checking for field name issues in: {target}")
+        issues = find_field_name_issues(target)
+        
+        if issues:
+            click.echo("\nFound field name issues:")
+            for file_path, file_issues in issues.items():
+                click.echo(f"\n{file_path}:")
+                for issue in file_issues:
+                    click.echo(f"  ❌ {issue}")
+            raise SystemExit(1)
+        else:
+            click.echo("✅ No field name issues found")
+
 @cli.command("ctx:pack")
 @click.option("--output", default="", help="Output file path (prints to stdout if not specified)")
 @click.option("--split", is_flag=True, help="Emit four separate files: system.txt, instructions.txt, user.txt, references.md")

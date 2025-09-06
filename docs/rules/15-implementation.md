@@ -45,6 +45,14 @@ alwaysApply: true
 - **Test permission requirements** - verify workflows work with minimal required permissions
 - **Handle 403 errors gracefully** - provide clear error messages and fallback behavior
 
+## Data Structure Consistency
+- **Use correct field names** - always use the actual field names from generated data structures
+- **Validate field names match** - ensure validation scripts use the same field names as the data they're validating
+- **Check context pack structure** - verify field names in context packs match what validation expects
+- **Test validation locally** - run validation scripts locally before committing to catch field name mismatches
+- **Document field mappings** - clearly document which fields contain which data in generated structures
+- **Never assume field names** - always check the actual generated data structure before writing validation code
+
 ## Terminal Usage
 - **Always open new terminal** - when executing commands, start fresh terminal session
 - **Avoid terminal reuse** - don't rely on previous terminal state or environment

@@ -267,7 +267,7 @@ jobs:
           # Rules and Acceptance validation
           rules = data.get('rules', {})
           rules_markdown = rules.get('rules_markdown', '')
-          acceptance = data.get('acceptance', [])
+          acceptance = data.get('acceptance_criteria', [])
           
           print(f'Rules Content: {len(rules_markdown)} characters')
           print(f'Acceptance Items: {len(acceptance)} items')

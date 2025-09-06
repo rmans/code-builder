@@ -9,7 +9,9 @@
     { "pattern": "\"acceptance_criteria\":\\s*\\[\\s*\\]", "message": "Context packs must have non-empty acceptance_criteria - implement fallback generation" },
     { "pattern": "\"code_excerpts\":\\s*\\[\\s*\\]", "message": "Context packs must have non-empty code_excerpts - check target file exists and is readable" },
     { "pattern": "uses:\\s*actions/github-script", "message": "GitHub Actions using github-script must have explicit permissions - add permissions block with pull-requests: write and issues: write" },
-    { "pattern": "github\\.rest\\.issues\\.(createComment|updateComment)", "message": "GitHub API calls for comments must be wrapped in try-catch blocks to handle permission errors gracefully" }
+    { "pattern": "github\\.rest\\.issues\\.(createComment|updateComment)", "message": "GitHub API calls for comments must be wrapped in try-catch blocks to handle permission errors gracefully" },
+    { "pattern": "data\\.get\\('acceptance'", "message": "Use 'acceptance_criteria' not 'acceptance' when accessing context pack data - field name mismatch causes validation failures" },
+    { "pattern": "data\\.get\\(\"acceptance\"", "message": "Use 'acceptance_criteria' not 'acceptance' when accessing context pack data - field name mismatch causes validation failures" }
   ],
   "hints": [
     { "pattern": "axios\\.create\\(", "message": "Use shared http client instead of axios.create()" },
