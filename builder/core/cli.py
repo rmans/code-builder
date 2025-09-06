@@ -4230,6 +4230,66 @@ def ctx_validate(context_file):
     else:
         click.echo("✅ Context pack is valid!")
 
+@cli.command("workflows:validate")
+@click.argument("workflow_file", required=False)
+@click.option("--all", is_flag=True, help="Validate all workflow files in .github/workflows/")
+def workflows_validate(workflow_file, all):
+    """Validate GitHub Actions workflow files"""
+    from ..utils.github_actions_validator import validate_workflow_file, validate_all_workflows
+    
+    if all:
+        # Validate all workflows
+        results = validate_all_workflows()
+        
+        total_valid = 0
+        total_files = len(results)
+        
+        for file_path, (is_valid, errors, warnings) in results.items():
+            click.echo(f"\nValidating {file_path}...")
+            
+            if warnings:
+                for warning in warnings:
+                    click.echo(f"  ⚠️  {warning}")
+            
+            if errors:
+                for error in errors:
+                    click.echo(f"  ❌ {error}")
+            
+            if is_valid:
+                total_valid += 1
+                if not warnings:
+                    click.echo("  ✅ Valid")
+                else:
+                    click.echo("  ✅ Valid with warnings")
+            else:
+                click.echo("  ❌ Invalid")
+        
+        click.echo(f"\nSummary: {total_valid}/{total_files} workflows valid")
+        
+        if total_valid < total_files:
+            raise SystemExit(1)
+    else:
+        # Validate specific file
+        if not workflow_file:
+            workflow_file = ".github/workflows"
+        
+        is_valid, errors, warnings = validate_workflow_file(workflow_file)
+        
+        if warnings:
+            click.echo("⚠️  Warnings:")
+            for warning in warnings:
+                click.echo(f"  {warning}")
+            click.echo()
+        
+        if errors:
+            click.echo("❌ Validation errors:")
+            for error in errors:
+                click.echo(f"  {error}")
+            click.echo("\n💡 Fix these issues to make the workflow valid.")
+            raise SystemExit(1)
+        else:
+            click.echo("✅ Workflow is valid!")
+
 @cli.command("ctx:pack")
 @click.option("--output", default="", help="Output file path (prints to stdout if not specified)")
 @click.option("--split", is_flag=True, help="Emit four separate files: system.txt, instructions.txt, user.txt, references.md")

@@ -37,6 +37,14 @@ alwaysApply: true
 - **Provide meaningful defaults** - generate file-type-specific acceptance criteria when none are found
 - **Never return empty arrays** - always populate required fields with fallback content
 
+## GitHub Actions Best Practices
+- **Always add explicit permissions** - workflows using github-script must have permissions block with pull-requests: write and issues: write
+- **Wrap API calls in try-catch** - all github.rest API calls must be wrapped in try-catch blocks to handle permission errors
+- **Use continue-on-error for comments** - comment creation should not fail the entire workflow
+- **Log fallback content** - when comment creation fails, log the content that would have been posted
+- **Test permission requirements** - verify workflows work with minimal required permissions
+- **Handle 403 errors gracefully** - provide clear error messages and fallback behavior
+
 ## Terminal Usage
 - **Always open new terminal** - when executing commands, start fresh terminal session
 - **Avoid terminal reuse** - don't rely on previous terminal state or environment
