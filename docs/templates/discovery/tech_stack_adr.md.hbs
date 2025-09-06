@@ -1,0 +1,191 @@
+---
+title: "ADR-{{adr_number | default('XXXX')}}: {{product | default('Product')}} Technology Stack"
+type: "adr"
+status: "{{status | default('draft')}}"
+created: "{{created_date | default('2024-01-01')}}"
+updated: "{{updated_date | default(created_date)}}"
+parent: "{{parent | default('ADR-0000')}}"
+related_files:
+  - "builder/cache/discovery_context.yml"
+  - "{{prd | default('')}}"
+  - "{{arch | default('')}}"
+  - "{{impl | default('')}}"
+  - "{{exec | default('')}}"
+tags:
+  - adr
+  - technology
+  - stack
+  - "{{product | lower | default('product')}}"
+  - discovery
+---
+
+# ADR-{{adr_number | default('XXXX')}}: {{product | default('Product')}} Technology Stack
+
+**Status:** {{status | default('draft')}}  
+**Date:** {{created_date | default('2024-01-01')}}  
+**Deciders:** {{deciders | default('Technical Team')}}  
+**Consulted:** {{consulted | default('Product Owner, Architecture Team')}}  
+**Informed:** {{informed | default('Development Team, Operations Team')}}
+
+## Context
+
+{{context | default('We need to select a technology stack for ' + (product | default('the product')) + ' based on discovery analysis and requirements.')}}
+
+### Discovery Insights
+{{#each discovery_insights}}
+- {{this}}
+{{/each}}
+
+### Requirements
+{{#each requirements}}
+- {{this}}
+{{/each}}
+
+### Constraints
+{{#each constraints}}
+- {{this}}
+{{/each}}
+
+## Decision
+
+We will use the following technology stack for {{product | default('the product')}}:
+
+### Frontend
+{{#each frontend_technologies}}
+- **{{name | default('Technology')}}**: {{version | default('Version')}} - {{rationale | default('Rationale for selection')}}
+{{/each}}
+
+### Backend
+{{#each backend_technologies}}
+- **{{name | default('Technology')}}**: {{version | default('Version')}} - {{rationale | default('Rationale for selection')}}
+{{/each}}
+
+### Database
+{{#each database_technologies}}
+- **{{name | default('Technology')}}**: {{version | default('Version')}} - {{rationale | default('Rationale for selection')}}
+{{/each}}
+
+### Infrastructure
+{{#each infrastructure_technologies}}
+- **{{name | default('Technology')}}**: {{version | default('Version')}} - {{rationale | default('Rationale for selection')}}
+{{/each}}
+
+### Development Tools
+{{#each dev_tools}}
+- **{{name | default('Tool')}}**: {{version | default('Version')}} - {{purpose | default('Purpose and usage')}}
+{{/each}}
+
+## Rationale
+
+### Why This Stack?
+{{rationale | default('Explanation of why this particular technology stack was chosen.')}}
+
+### Benefits
+{{#each benefits}}
+- {{this}}
+{{/each}}
+
+### Trade-offs
+{{#each trade_offs}}
+- {{this}}
+{{/each}}
+
+### Alternatives Considered
+{{#each alternatives}}
+#### {{name | default('Alternative')}}
+- **Description**: {{description | default('Description of the alternative')}}
+- **Pros**: {{pros | default('Advantages')}}
+- **Cons**: {{cons | default('Disadvantages')}}
+- **Why Not Chosen**: {{why_not | default('Reason for rejection')}}
+{{/each}}
+
+## Consequences
+
+### Positive
+{{#each positive_consequences}}
+- {{this}}
+{{/each}}
+
+### Negative
+{{#each negative_consequences}}
+- {{this}}
+{{/each}}
+
+### Risks
+{{#each risks}}
+- **{{risk | default('Risk')}}**: {{impact | default('Impact')}} - {{mitigation | default('Mitigation strategy')}}
+{{/each}}
+
+## Implementation
+
+### Migration Strategy
+{{migration_strategy | default('How to implement this technology stack.')}}
+
+### Timeline
+{{#each timeline_phases}}
+- **{{phase | default('Phase')}}**: {{duration | default('Duration')}} - {{description | default('Description')}}
+{{/each}}
+
+### Dependencies
+{{#each implementation_dependencies}}
+- {{this}}
+{{/each}}
+
+## Monitoring and Review
+
+### Success Metrics
+{{#each success_metrics}}
+- **{{metric | default('Metric')}}**: {{target | default('Target value')}} - {{measurement | default('How to measure')}}
+{{/each}}
+
+### Review Schedule
+{{review_schedule | default('When and how often to review this decision.')}}
+
+### Decision Review Triggers
+{{#each review_triggers}}
+- {{this}}
+{{/each}}
+
+## Discovery Context
+
+This ADR was informed by discovery analysis. Key findings include:
+
+### Technical Insights
+{{#each technical_insights}}
+- {{this}}
+{{/each}}
+
+### Performance Requirements
+{{#each performance_requirements}}
+- {{this}}
+{{/each}}
+
+### Security Considerations
+{{#each security_considerations}}
+- {{this}}
+{{/each}}
+
+### Scalability Needs
+{{#each scalability_needs}}
+- {{this}}
+{{/each}}
+
+## References
+
+### Discovery Analysis
+- Discovery Context: `builder/cache/discovery_context.yml`
+- Analysis Results: `builder/cache/discovery_analysis.json`
+
+### Related Documents
+{{#each related_documents}}
+- {{this}}
+{{/each}}
+
+### External References
+{{#each external_references}}
+- {{this}}
+{{/each}}
+
+---
+
+*This ADR should be reviewed and updated as the technology stack evolves or new requirements emerge.*
