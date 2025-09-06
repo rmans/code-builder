@@ -20,10 +20,10 @@ sys.path.insert(0, str(project_root))
 
 # Import modules to test
 from builder.evaluators.doc_schema import STATUS_ENUM, validate_file
-from builder.context_rules import merge_context_rules
-from builder.context_graph import ContextGraphBuilder
-from builder.context_select import ContextSelector
-from builder.context_budget import ContextBudgetManager
+from builder.core.context_rules import merge_context_rules
+from builder.core.context_graph import ContextGraphBuilder
+from builder.core.context_select import ContextSelector
+from builder.core.context_budget import ContextBudgetManager
 
 
 class TestStatusValidation:
@@ -182,7 +182,7 @@ Test problem.
             
             # Use the correct constructor
             selector = ContextSelector(temp_dir)
-            selection = selector.select_context("src/test.ts", "test", top_k=10)
+            selection = selector.select_context("src/test.ts", "test", max_items=10)
             
             if selection:
                 # Check that weights are ordered (highest first)
@@ -200,7 +200,7 @@ class TestBudgetConstraints:
     
     def test_budget_protects_critical_items(self):
         """Test that budget manager protects Rules and Acceptance items."""
-        from builder.context_budget import BudgetItem
+        from builder.core.context_budget import BudgetItem
         
         # Create test budget items using BudgetItem class
         budget_items = [
@@ -261,7 +261,7 @@ class TestBudgetConstraints:
     
     def test_budget_respects_limits(self):
         """Test that budget manager respects token limits."""
-        from builder.context_budget import BudgetItem
+        from builder.core.context_budget import BudgetItem
         
         budget_items = [
             BudgetItem(

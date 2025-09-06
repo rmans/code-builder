@@ -8,8 +8,8 @@ import tempfile
 import os
 import json
 from pathlib import Path
-from builder.context_select import ContextSelector, ContextItem
-from builder.context_graph import ContextGraph, GraphNode, GraphEdge
+from builder.core.context_select import ContextSelector, ContextItem
+from builder.core.context_graph import ContextGraph, GraphNode, GraphEdge
 
 class TestContextSelector(unittest.TestCase):
     """Test cases for the context selection system."""

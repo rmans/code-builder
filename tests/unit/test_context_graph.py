@@ -8,7 +8,7 @@ import tempfile
 import os
 import json
 from pathlib import Path
-from builder.context_graph import ContextGraph, GraphNode, GraphEdge, NODE_TYPES, EDGE_TYPES
+from builder.core.context_graph import ContextGraph, GraphNode, GraphEdge, NODE_TYPES, EDGE_TYPES
 
 class TestContextGraph(unittest.TestCase):
     """Test cases for the context graph system."""

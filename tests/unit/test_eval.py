@@ -15,9 +15,9 @@ ROOT = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(os.path.join(ROOT, "builder", "evaluators"))
 sys.path.append(os.path.join(ROOT, "builder", "prompts"))
 
-from objective import evaluate_code
-from artifact_detector import detect_artifact_type
-from evaluation_prompt import build_single_eval_prompt
+from builder.evaluators.objective import evaluate_code
+from builder.evaluators.artifact_detector import detect_artifact_type
+from builder.config.prompts.evaluation_prompt import build_single_eval_prompt
 
 def run_reports():
     """Run reports:all to generate fresh JSON data"""

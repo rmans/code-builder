@@ -6,8 +6,8 @@ Unit tests for the context budget management system.
 import unittest
 import tempfile
 import os
-from builder.context_budget import (
-    ContextBudgetManager, BudgetCategory, BudgetItem, BudgetAllocation
+from builder.core.context_budget import (
+    ContextBudgetManager, BudgetItem
 )
 
 class TestContextBudgetManager(unittest.TestCase):
