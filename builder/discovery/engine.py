@@ -105,6 +105,13 @@ class DiscoveryEngine:
             # Cache results
             self._save_to_cache()
             
+            # Save per-PRD context if PRD was generated
+            if prd_id:
+                self._save_prd_context(prd_id, synthesis_data)
+            
+            # Save legacy discovery context
+            self._save_legacy_context()
+            
             return self.results
             
         except Exception as e:
@@ -184,3 +191,129 @@ class DiscoveryEngine:
         """Get current timestamp as ISO string."""
         from datetime import datetime
         return datetime.now().isoformat()
+    
+    def _save_prd_context(self, prd_id: str, synthesis_data: Dict[str, Any]) -> None:
+        """Save discovery context to per-PRD YAML file."""
+        try:
+            import yaml
+            
+            # Create PRD-specific context
+            # Try to get product info from multiple sources
+            product_name = 'Unknown Product'
+            main_idea = ''
+            problem_solved = ''
+            target_users = ''
+            key_features = []
+            success_metrics = ''
+            tech_stack_preferences = ''
+            
+            # Try synthesis data first
+            if 'questions' in synthesis_data:
+                questions = synthesis_data['questions']
+                product_name = questions.get('product_name', product_name)
+                main_idea = questions.get('main_idea', main_idea)
+                problem_solved = questions.get('problem_solved', problem_solved)
+                target_users = questions.get('target_users', target_users)
+                key_features = questions.get('key_features', key_features)
+                success_metrics = questions.get('success_metrics', success_metrics)
+                tech_stack_preferences = questions.get('tech_stack_preferences', tech_stack_preferences)
+            
+            # Fallback to interview data
+            if product_name == 'Unknown Product' and 'interview' in self.results:
+                interview_questions = self.results['interview'].get('questions', {})
+                product_name = interview_questions.get('product_name', product_name)
+                main_idea = interview_questions.get('main_idea', main_idea)
+                problem_solved = interview_questions.get('problem_solved', problem_solved)
+                target_users = interview_questions.get('target_users', target_users)
+                key_features = interview_questions.get('key_features', key_features)
+                success_metrics = interview_questions.get('success_metrics', success_metrics)
+                tech_stack_preferences = interview_questions.get('tech_stack_preferences', tech_stack_preferences)
+            
+            prd_context = {
+                'prd_id': prd_id,
+                'product_name': product_name,
+                'main_idea': main_idea,
+                'problem_solved': problem_solved,
+                'target_users': target_users,
+                'key_features': key_features,
+                'success_metrics': success_metrics,
+                'tech_stack_preferences': tech_stack_preferences,
+                'detected_tech': synthesis_data.get('detected', {}),
+                'created': self._get_timestamp(),
+                'status': 'draft',
+                'discovery_results': {
+                    'interview': self.results.get('interview', {}),
+                    'analysis': self.results.get('analysis', {}),
+                    'synthesis': self.results.get('synthesis', {}),
+                    'generation': self.results.get('generation', {}),
+                    'validation': self.results.get('validation', {})
+                }
+            }
+            
+            # Save to PRD-specific file
+            prd_file = self.cache_dir / f"{prd_id}.yml"
+            with open(prd_file, 'w', encoding='utf-8') as f:
+                yaml.dump(prd_context, f, default_flow_style=False, sort_keys=False)
+                
+        except Exception as e:
+            # Silently fail for context saving
+            pass
+    
+    def _save_legacy_context(self) -> None:
+        """Save discovery context to legacy discovery_context.yml file."""
+        try:
+            import yaml
+            
+            # Get product info from interview data (same as per-PRD context)
+            interview_questions = self.results.get('interview', {}).get('questions', {})
+            product_name = interview_questions.get('product_name', 'Unknown Product')
+            main_idea = interview_questions.get('main_idea', '')
+            
+            # Create legacy context format
+            legacy_context = {
+                'product': product_name,
+                'idea': main_idea,
+                'created': self._get_timestamp(),
+                'status': 'draft',
+                'question_set': self.question_set,
+                'auto_generated': True,
+                'discovery_phases': {
+                    'interview': {'completed': True, 'data': self.results.get('interview', {})},
+                    'analysis': {'completed': True, 'data': self.results.get('analysis', {})},
+                    'synthesis': {'completed': True, 'data': self.results.get('synthesis', {})},
+                    'generation': {'completed': True, 'data': self.results.get('generation', {})},
+                    'validation': {'completed': True, 'data': self.results.get('validation', {})}
+                },
+                'targets': [],
+                'insights': self.results.get('synthesis', {}).get('insights', []),
+                'recommendations': self.results.get('synthesis', {}).get('recommendations', []),
+                'next_steps': [
+                    f"Review generated PRD: {self.results.get('prd_id', 'N/A')}",
+                    "Refine requirements based on analysis",
+                    "Plan implementation phases",
+                    "Set up development environment",
+                    "Create detailed technical specifications"
+                ]
+            }
+            
+            # Add specific fields if available
+            if interview_questions.get('problem_solved'):
+                legacy_context['problem_solved'] = interview_questions['problem_solved']
+            if interview_questions.get('target_users'):
+                legacy_context['target_users'] = interview_questions['target_users']
+            if interview_questions.get('key_features'):
+                legacy_context['key_features'] = interview_questions['key_features']
+            if interview_questions.get('success_metrics'):
+                legacy_context['success_metrics'] = interview_questions['success_metrics']
+            if interview_questions.get('tech_stack_preferences'):
+                legacy_context['tech_stack_preferences'] = interview_questions['tech_stack_preferences']
+            
+            # Save to legacy file
+            legacy_file = self.root_path / "builder" / "cache" / "discovery_context.yml"
+            legacy_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(legacy_file, 'w', encoding='utf-8') as f:
+                yaml.dump(legacy_context, f, default_flow_style=False, sort_keys=False)
+                
+        except Exception as e:
+            # Silently fail for legacy context saving
+            pass
