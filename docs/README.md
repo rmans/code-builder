@@ -1,6 +1,6 @@
 # Documentation Layer
 
-This repo uses documentation to drive code generation, decisions, evaluation, and context building. The documentation system provides a comprehensive knowledge base that powers AI-assisted development.
+This repo uses docs to drive codegen, decisions, and evaluation.
 
 ---
 
@@ -9,97 +9,75 @@ This repo uses documentation to drive code generation, decisions, evaluation, an
 ### 📋 Product Requirements
 *Product requirements and specifications*
 
-- 📝 **Auth PRD** (`PRD-auth-prd`)
-  - Owner: TBD | Created: 2025-09-05
+- 📝 **Test F1 Hook Verification** (`PRD-2025-09-06-test-f1-hook-verific`)
+  - Owner: TBD | Created: 2025-09-06
 
-- ✅ **User Authentication System** (`PRD-user-auth`)
-  - Owner: Product Team | Created: 2025-09-05
-  - Links: arch:ARCH-auth-architecture | ux:UX-auth-flow | impl:IMPL-auth-service | exec:EXEC-auth-deployment
+- ❓ **Master Product Requirements Index** (`0000_MASTER_PRD`)
+  - Owner: system | Created: 2025-09-06
 
-- 📝 **Test PRD** (`PRD-test-prd`)
-  - Owner: TBD | Created: 2025-09-05
+- 📝 **Test Discovery CI Trigger** (`PRD-2025-09-06-test-discovery-ci-tr`)
+  - Owner: TBD | Created: 2025-09-06
+
+- 📝 **Unknown Product** (`PRD-2025-09-06-unknownproduct`)
+  - Owner: product_team | Created: 2025-09-06
+  - Links: prd:P, R, D, -, 2, 0, 2, 5, -, 0, 9, -, 0, 6, -, u, n, k, n, o, w, n, p, r, o, d, u, c, t
+
+- 📝 **Test Document for F1 Hook** (`PRD-2025-09-06-test-document-for-f1`)
+  - Owner: TBD | Created: 2025-09-06
 
 ### 🏗️ Architecture
 *Architectural decisions and designs*
 
-- 📝 **Auth Architecture** (`ARCH-auth-architecture`)
-  - Owner: TBD | Created: 2025-09-05
-  - Links: prd:P, R, D, -, a, u, t, h, -, p, r, d
+- 📝 **API Architecture Design** (`ARCH-2025-09-06-api-architecture-des`)
+  - Owner: Dev Team | Created: 2025-09-06
 
-- 📝 **API Architecture** (`ARCH-api-architecture`)
-  - Owner: John Doe | Created: 2025-09-05
-  - Links: prd:PRD-test-prd | ux:UX-001
+- ❓ **Master Architecture Index** (`0000_MASTER_ARCH`)
+  - Owner: system | Created: 2025-09-06
+
+- 📝 **Test Architecture Document** (`ARCH-2025-09-06-test-architecture-do`)
+  - Owner: TBD | Created: 2025-09-06
 
 ### 🔗 Integrations
 *Integration specifications and APIs*
 
-- ✅ **Authentication Database Integration** (`INT-auth-database`)
-  - Owner: Backend Team | Created: 2025-09-05
-  - Links: prd:PRD-user-auth | arch:ARCH-auth-architecture | impl:IMPL-auth-service | exec:EXEC-auth-deployment
+- ❓ **Master Integrations Index** (`0000_MASTER_INTEGRATIONS`)
+  - Owner: system | Created: 2025-09-06
 
 ### 🎨 User Experience
 *UX designs and user research*
 
-- ✅ **Authentication User Experience Flow** (`UX-auth-flow`)
-  - Owner: UX Team | Created: 2025-09-05
-  - Links: prd:PRD-user-auth | arch:ARCH-auth-architecture | impl:IMPL-auth-service | exec:EXEC-auth-deployment
+- 📝 **Test UX Document** (`UX-2025-09-06-test-ux-document`)
+  - Owner: TBD | Created: 2025-09-06
 
-- 📝 **Placeholder UX** (`UX-001`)
-  - Owner: TBD | Created: 2025-09-05
-
-- 📝 **User Dashboard Design** (`UX-user-dashboard-desig`)
-  - Owner: Jane Smith | Created: 2025-09-05
-
-- 📝 **UX-001 Design** (`UX-ux-001-design`)
-  - Owner: Designer | Created: 2025-09-05
+- ❓ **Master UX Index** (`0000_MASTER_UX`)
+  - Owner: system | Created: 2025-09-06
 
 ### ⚙️ Implementation
 *Implementation details and technical specs*
 
-- 📝 **Auth Implementation Plan** (`IMPL-auth-implementation-plan`)
-  - Owner: TBD | Created: 2025-09-05
-  - Links: prd:PRD-auth-prd | arch:ARCH-auth-architecture
+- ❓ **Master Implementation Index** (`0000_MASTER_IMPL`)
+  - Owner: system | Created: 2025-09-06
 
-- ❓ **Authentication Service Implementation** (`IMPL-auth-service`)
-  - Owner: Backend Team | Created: 2025-09-05
-  - Links: prd:PRD-user-auth | arch:ARCH-auth-architecture | integrations:INT-auth-database | ux:UX-auth-flow | exec:EXEC-auth-deployment
+- 📝 **Test Implementation Document** (`IMPL-2025-09-06-test-implementation-`)
+  - Owner: TBD | Created: 2025-09-06
 
-- 📝 **Auth Implementation Plan** (`IMPL-auth-implementation-`)
-  - Owner: TBD | Created: 2025-09-05
+- 📝 **User Authentication Implementation** (`IMPL-2025-09-06-user-authentication-`)
+  - Owner: Backend Team | Created: 2025-09-06
 
 ### 📊 Executive
 *Executive summaries and business documents*
 
-- 📝 **Auth Execution Plan** (`EXEC-auth-execution-plan`)
-  - Owner: TBD | Created: 2025-09-05
-  - Links: impl:IMPL-auth-implementation-plan | prd:PRD-auth-prd
+- ❓ **Master Execution Index** (`0000_MASTER_EXEC`)
+  - Owner: system | Created: 2025-09-06
 
-- ❓ **Authentication Service Deployment** (`EXEC-auth-deployment`)
-  - Owner: DevOps Team | Created: 2025-09-05
-  - Links: prd:PRD-user-auth | arch:ARCH-auth-architecture | integrations:INT-auth-database | impl:IMPL-auth-service
+- 📝 **Deployment Plan** (`EXEC-2025-09-06-deployment-plan`)
+  - Owner: Ops Team | Created: 2025-09-06
 
 ### ✅ Tasks
 *Task definitions and work items*
 
-- ❓ **Deploy Authentication Service to Production** (`TASK-auth-deployment`)
-  - Owner: DevOps Team | Created: 2025-09-05
-  - Links: prd:PRD-user-auth | arch:ARCH-auth-architecture | exec:EXEC-auth-deployment | impl:IMPL-auth-service
-
-- ❓ **Implement Authentication Service Core Features** (`TASK-auth-implementation`)
-  - Owner: Backend Team | Created: 2025-09-05
-  - Links: prd:PRD-user-auth | arch:ARCH-auth-architecture | impl:IMPL-auth-service | integrations:INT-auth-database
-
-- ❓ **Set up Authentication Service Project** (`TASK-auth-setup`)
-  - Owner: Backend Team | Created: 2025-09-05
-  - Links: prd:PRD-user-auth | arch:ARCH-auth-architecture | impl:IMPL-auth-service | exec:EXEC-auth-deployment
-
-- ❓ **Auth: login form UI** (`TASK-auth-login-form-ui`)
-  - Owner: Frontend Team | Created: 2025-09-05
-  - Links: prd:PRD-auth-prd | impl:IMPL-auth-implementation-plan
-
-- ❓ **Auth: cookie storage & http client** (`TASK-auth-cookie-storage-http-client`)
-  - Owner: Frontend Team | Created: 2025-09-05
-  - Links: prd:PRD-auth-prd | impl:IMPL-auth-implementation-plan
+- ❓ **Master Tasks Index** (`0000_MASTER_TASKS`)
+  - Owner: system | Created: 2025-09-06
 
 ---
 
@@ -138,26 +116,9 @@ This repo uses documentation to drive code generation, decisions, evaluation, an
 ---
 
 ## Usage
-
-### Context Generation
-- **Generate context**: `python3 builder/cli.py plan:auto <file>` → creates `pack_context.json` and `context.md`
-- **Enhanced context**: `python3 builder/cli.py ctx:build-enhanced <file> --purpose implement`
-- **Explain selection**: `python3 builder/cli.py ctx:explain` → shows why items were selected
-- **Generate prompts**: `python3 builder/cli.py ctx:pack` → creates prompt blocks for AI
-
-### Documentation Management
-- **Create documents**: `python3 builder/cli.py doc:new <type> --title "Title"`
-- **Set links**: `python3 builder/cli.py doc:set-links <file> --prd PRD-001 --arch ARCH-001`
-- **Validate docs**: `python3 builder/cli.py doc:check` → validates front-matter and structure
-- **Update index**: `python3 builder/cli.py doc:index` → regenerates this index
-
-### Quality Assurance
-- **Documentation quality**: `pnpm run docs:all` → markdown linting and spell checking
-- **Code evaluation**: `python3 builder/cli.py eval:objective <file>` → measure code quality
-- **Interactive evaluation**: `python3 builder/cli.py eval:objective <file> --server`
-- **Rules checking**: `python3 builder/cli.py rules:check "src/**/*.ts" --feature auth`
-
-### Context System
-- **Graph statistics**: `python3 builder/cli.py ctx:graph:stats` → shows node/edge counts
-- **Context diffing**: `python3 builder/cli.py ctx:diff <old.json> <new.json>` → compare contexts
-- **Budget management**: `python3 builder/cli.py ctx:budget` → manage token allocations
+- When editing a file, run `plan:auto <file>` → context.json merges rules + ADRs  
+- Cursor/AI gets that context and generates compliant code
+- Run `eval:objective <file>` → measure code quality objectively
+- Use `--server` flag for interactive Cursor evaluation
+- Use `doc:new <type> --title "Title"` → create new documents
+- Use `doc:index` → update this index
