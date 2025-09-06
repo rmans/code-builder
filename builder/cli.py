@@ -68,41 +68,20 @@ def cli():
 def adr_new(title, parent, related, tags):
     os.makedirs(ADRS, exist_ok=True)
     
-    # Get existing ADR IDs from both files and master file
-    existing_files = [p for p in glob.glob(os.path.join(ADRS, "ADR-*.md")) if "MASTER" not in p]
-    existing_ids = set()
+    # Generate standardized ADR ID: ADR-YYYY-MM-DD-slug
+    from datetime import datetime
     
-    # Add IDs from existing files
-    for p in existing_files:
-        adr_id = os.path.basename(p).replace('.md', '')
-        existing_ids.add(adr_id)
+    # Create slug from title
+    slug = re.sub(r'[^a-zA-Z0-9\s-]', '', title.lower())
+    slug = re.sub(r'\s+', '-', slug.strip())
+    slug = slug[:20]  # Limit slug length
     
-    # Add IDs from master file
-    master_file = os.path.join(ADRS, "0000_MASTER_ADR.md")
-    if os.path.exists(master_file):
-        with open(master_file, "r", encoding="utf-8") as f:
-            content = f.read()
-            # Extract ADR IDs from master file
-            import re
-            adr_matches = re.findall(r'\| (ADR-\d+) \|', content)
-            existing_ids.update(adr_matches)
+    # Generate date string
+    today = datetime.now()
+    date_str = today.strftime('%Y-%m-%d')
     
-    # Find next available ID
-    if existing_ids:
-        numeric_ids = []
-        for adr_id in existing_ids:
-            try:
-                numeric_id = int(adr_id.split('-')[1])
-                numeric_ids.append(numeric_id)
-            except (ValueError, IndexError):
-                continue
-        
-        if numeric_ids:
-            next_id = f"ADR-{max(numeric_ids)+1:04d}"
-        else:
-            next_id = "ADR-0001"
-    else:
-        next_id = "ADR-0001"
+    # Create standardized ADR ID
+    next_id = f"ADR-{date_str}-{slug}"
     ctx = {
         "id": next_id, "title": title, "date": _today(), "parent": parent,
         "related_files": list(related), "tags": tags,
@@ -764,10 +743,20 @@ def doc_new(dtype, title, owner, links, prd, arch, adr, impl, exec_, ux):
         click.echo("Error: --title is required and cannot be empty")
         raise SystemExit(1)
     
-    # Generate slug and ID
+    # Generate slug and ID using standardized format: TYPE-YYYY-MM-DD-slug
+    from datetime import datetime
+    
+    # Create slug from title
     slug = re.sub(r'[^a-zA-Z0-9\s-]', '', title.lower())
     slug = re.sub(r'\s+', '-', slug.strip())
-    doc_id = f"{dtype.upper()}-{slug[:20]}"  # Limit slug length
+    slug = slug[:20]  # Limit slug length
+    
+    # Generate date string
+    today = datetime.now()
+    date_str = today.strftime('%Y-%m-%d')
+    
+    # Create standardized ID
+    doc_id = f"{dtype.upper()}-{date_str}-{slug}"
     
     # Set default owner if not provided
     if not owner:
