@@ -11,6 +11,10 @@ jobs:
   discovery-scan:
     runs-on: ubuntu-latest
     continue-on-error: true  # G1: Warn-only mode, don't fail builds initially
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     
     steps:
       - name: Checkout code
@@ -138,30 +142,39 @@ jobs:
             
             summary += '\n📁 **Download artifacts** from the Actions tab to review the generated discovery context and documentation.';
             
-            // Create or update comment
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
-              comment.body.includes('Discovery Artifacts Generated')
-            );
-            
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: summary
-              });
-            } else {
-              await github.rest.issues.createComment({
+            try {
+              // Create or update comment
+              const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: summary
               });
+              
+              const botComment = comments.find(comment => 
+                comment.user.type === 'Bot' && 
+                comment.body.includes('Discovery Artifacts Generated')
+              );
+              
+              if (botComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: summary
+                });
+                console.log('✅ Updated existing comment');
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: summary
+                });
+                console.log('✅ Created new comment');
+              }
+            } catch (error) {
+              console.log('⚠️ Could not create/update comment:', error.message);
+              console.log('📝 Comment content would have been:');
+              console.log(summary);
+              // Don't fail the workflow if comment creation fails
             }

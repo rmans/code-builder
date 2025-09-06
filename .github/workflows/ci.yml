@@ -9,6 +9,10 @@ on:
 jobs:
   build-test-lint-rules:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -135,12 +139,25 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const summary = fs.readFileSync('evaluation_summary.md', 'utf8');
             
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: summary
-            });
+            try {
+              const summary = fs.readFileSync('evaluation_summary.md', 'utf8');
+              
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+              console.log('✅ Created evaluation comment');
+            } catch (error) {
+              console.log('⚠️ Could not create evaluation comment:', error.message);
+              console.log('📝 Comment content would have been:');
+              try {
+                const summary = fs.readFileSync('evaluation_summary.md', 'utf8');
+                console.log(summary);
+              } catch (readError) {
+                console.log('Could not read evaluation summary file');
+              }
+            }
         continue-on-error: true  # Don't fail CI if comment fails
