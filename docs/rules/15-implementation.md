@@ -29,6 +29,14 @@ alwaysApply: true
 - **Handle missing files** - check existence before processing
 - **Validate inputs** - ensure data is in expected format before use
 
+## Context Pack Validation
+- **Always generate fallback content** - if PRD/discovery data is missing, create default acceptance criteria
+- **Validate RULES_DIR path** - ensure rules directory path calculation is correct (use 3 dirname() calls)
+- **Check required fields** - context packs must have non-empty rules_markdown, acceptance_criteria, and code_excerpts
+- **Test file existence** - verify target files exist before attempting to extract code excerpts
+- **Provide meaningful defaults** - generate file-type-specific acceptance criteria when none are found
+- **Never return empty arrays** - always populate required fields with fallback content
+
 ## Terminal Usage
 - **Always open new terminal** - when executing commands, start fresh terminal session
 - **Avoid terminal reuse** - don't rely on previous terminal state or environment

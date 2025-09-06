@@ -4,7 +4,10 @@
     { "pattern": "throw\\s*['\"`]", "message": "Do not throw string literals; use Error or subclass" },
     { "pattern": "\\.test\\.(ts|js|tsx|jsx)$", "message": "Test files must be in tests/ directory, not in src/ or root" },
     { "pattern": "\\.spec\\.(ts|js|tsx|jsx)$", "message": "Spec files must be in tests/ directory, not in src/ or root" },
-    { "pattern": "test.*\\.(json|md|txt)$", "message": "Test artifacts must be in tests/data/ or tests/results/, not in root or src/" }
+    { "pattern": "test.*\\.(json|md|txt)$", "message": "Test artifacts must be in tests/data/ or tests/results/, not in root or src/" },
+    { "pattern": "\"rules_markdown\":\\s*\"\"", "message": "Context packs must have non-empty rules_markdown - check RULES_DIR path and rules loading" },
+    { "pattern": "\"acceptance_criteria\":\\s*\\[\\s*\\]", "message": "Context packs must have non-empty acceptance_criteria - implement fallback generation" },
+    { "pattern": "\"code_excerpts\":\\s*\\[\\s*\\]", "message": "Context packs must have non-empty code_excerpts - check target file exists and is readable" }
   ],
   "hints": [
     { "pattern": "axios\\.create\\(", "message": "Use shared http client instead of axios.create()" },

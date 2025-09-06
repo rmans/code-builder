@@ -2943,6 +2943,22 @@ def ctx_build(target_path, purpose, feature, stacks, token_limit, prd):
     
     context_package = make_serializable(context_package)
     
+    # Validate context pack before writing
+    from ..utils.context_validator import validate_context_pack
+    is_valid, errors, warnings = validate_context_pack(context_package)
+    
+    if warnings:
+        click.echo("\n⚠️  Context pack warnings:")
+        for warning in warnings:
+            click.echo(f"  {warning}")
+    
+    if errors:
+        click.echo("\n❌ Context pack validation errors:")
+        for error in errors:
+            click.echo(f"  {error}")
+        click.echo("\n💡 Fix these issues before proceeding.")
+        raise SystemExit(1)
+    
     # Write pack_context.json
     pack_context_path = os.path.join(CACHE, "pack_context.json")
     try:
@@ -4190,6 +4206,29 @@ def _get_item_changes(old_item, new_item):
 # -------------------- CONTEXT BUDGET --------------------
 
 # -------------------- CONTEXT EXPLAIN --------------------
+
+@cli.command("ctx:validate")
+@click.argument("context_file", default="builder/cache/pack_context.json")
+def ctx_validate(context_file):
+    """Validate a context pack file"""
+    from ..utils.context_validator import validate_context_pack_file
+    
+    is_valid, errors, warnings = validate_context_pack_file(context_file)
+    
+    if warnings:
+        click.echo("⚠️  Warnings:")
+        for warning in warnings:
+            click.echo(f"  {warning}")
+        click.echo()
+    
+    if errors:
+        click.echo("❌ Validation errors:")
+        for error in errors:
+            click.echo(f"  {error}")
+        click.echo("\n💡 Fix these issues to make the context pack valid.")
+        raise SystemExit(1)
+    else:
+        click.echo("✅ Context pack is valid!")
 
 @cli.command("ctx:pack")
 @click.option("--output", default="", help="Output file path (prints to stdout if not specified)")
