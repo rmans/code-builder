@@ -3,7 +3,14 @@ import os, json
 from jinja2 import Template
 
 def main():
-    ROOT = os.path.dirname(os.path.dirname(__file__))
+    # Import overlay paths for dual-mode support
+    try:
+        from ..overlay.paths import OverlayPaths
+        overlay_paths = OverlayPaths()
+        ROOT = overlay_paths.get_root()
+    except ImportError:
+        # Fallback for standalone mode
+        ROOT = os.path.dirname(os.path.dirname(__file__))
     TEMPL = os.path.join(ROOT, "docs", "templates", "spec.md.hbs")
     OUT   = os.path.join(ROOT, "docs", "SPEC_hello.md")
 

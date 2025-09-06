@@ -28,7 +28,14 @@ class DiscoveryEngine:
             question_set: Question set to use (new_product, existing_product, comprehensive)
         """
         self.root_path = Path(root_path).resolve()
-        self.cache_dir = self.root_path / "builder" / "cache" / "discovery"
+        # Use overlay paths if available
+        try:
+            from ..overlay.paths import OverlayPaths
+            overlay_paths = OverlayPaths()
+            cache_base = Path(overlay_paths.get_cache_dir())
+        except ImportError:
+            cache_base = self.root_path / "builder" / "cache"
+        self.cache_dir = cache_base / "discovery"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.question_set = question_set
         

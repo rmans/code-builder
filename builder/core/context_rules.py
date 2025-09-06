@@ -14,8 +14,16 @@ from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass
 from collections import defaultdict
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-RULES_DIR = os.path.join(ROOT, "docs", "rules")
+# Import overlay paths for dual-mode support
+try:
+    from ..overlay.paths import OverlayPaths
+    overlay_paths = OverlayPaths()
+    ROOT = overlay_paths.get_root()
+    RULES_DIR = overlay_paths.get_rules_dir()
+except ImportError:
+    # Fallback for standalone mode
+    ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    RULES_DIR = os.path.join(ROOT, "docs", "rules")
 
 @dataclass
 class RuleSource:

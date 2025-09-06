@@ -9,7 +9,14 @@ import json
 import yaml
 from typing import Dict, Any
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+# Import overlay paths for dual-mode support
+try:
+    from ..overlay.paths import OverlayPaths
+    overlay_paths = OverlayPaths()
+    ROOT = overlay_paths.get_root()
+except ImportError:
+    # Fallback for standalone mode
+    ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 CONFIG_PATH = os.path.join(ROOT, "docs", "eval", "config.yaml")
 
 def load_config() -> Dict[str, Any]:

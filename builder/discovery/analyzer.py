@@ -1259,7 +1259,12 @@ class CodeAnalyzer:
         }
         
         # Ensure cache directory exists
-        cache_dir = Path('builder/cache')
+        try:
+            from ..overlay.paths import OverlayPaths
+            overlay_paths = OverlayPaths()
+            cache_dir = Path(overlay_paths.get_cache_dir())
+        except ImportError:
+            cache_dir = Path('builder/cache')
         cache_dir.mkdir(exist_ok=True)
         
         # Write to discovery_report.json

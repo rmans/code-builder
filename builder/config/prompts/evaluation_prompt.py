@@ -9,7 +9,14 @@ import json
 from typing import Dict, Any, Optional
 from pathlib import Path
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+# Import overlay paths for dual-mode support
+try:
+    from ...overlay.paths import OverlayPaths
+    overlay_paths = OverlayPaths()
+    ROOT = overlay_paths.get_root()
+except ImportError:
+    # Fallback for standalone mode
+    ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 EVALUATION_RULES_PATH = os.path.join(ROOT, ".cursor", "rules", "evaluation.md")
 
 def load_evaluation_rules() -> str:

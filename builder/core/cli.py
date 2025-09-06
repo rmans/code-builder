@@ -10,11 +10,22 @@ import yaml
 import time
 import uuid
 
-ROOT  = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-DOCS  = os.path.join(ROOT, "docs")
-ADRS  = os.path.join(DOCS, "adrs")
-TEMPL = os.path.join(DOCS, "templates")
-CACHE = os.path.join(ROOT, "builder", "cache")
+# Import overlay paths for dual-mode support
+try:
+    from ..overlay.paths import OverlayPaths
+    overlay_paths = OverlayPaths()
+    ROOT = overlay_paths.get_root()
+    DOCS = overlay_paths.get_docs_dir()
+    ADRS = os.path.join(DOCS, "adrs")
+    TEMPL = overlay_paths.get_templates_dir()
+    CACHE = overlay_paths.get_cache_dir()
+except ImportError:
+    # Fallback for standalone mode
+    ROOT  = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    DOCS  = os.path.join(ROOT, "docs")
+    ADRS  = os.path.join(DOCS, "adrs")
+    TEMPL = os.path.join(DOCS, "templates")
+    CACHE = os.path.join(ROOT, "builder", "cache")
 
 def _today(): return datetime.date.today().isoformat()
 
@@ -3472,7 +3483,13 @@ def doc_set_links(file, prd, arch, adr, impl, exec_, ux):
 def doc_check(output, fail_fast):
     """Validate docs front-matter and required sections; write builder/cache/schema.json."""
     import subprocess, sys, os
-    ROOT = os.path.dirname(os.path.dirname(__file__))
+    # Use overlay paths if available, otherwise fallback
+    try:
+        from ..overlay.paths import OverlayPaths
+        overlay_paths = OverlayPaths()
+        ROOT = overlay_paths.get_root()
+    except ImportError:
+        ROOT = os.path.dirname(os.path.dirname(__file__))
     rc = subprocess.call([sys.executable, os.path.join(ROOT,"builder","evaluators","doc_schema.py")])
     sys.exit(rc)
 
@@ -5304,7 +5321,7 @@ def _auto_generate_discovery_context(discovery_context, inputs, question_set):
 @click.option("--team-size", help="Development team size")
 @click.option("--question-set", default="new_product", help="Question set to use (new_product, existing_product, comprehensive)")
 @click.option("--auto-generate", is_flag=True, help="Auto-generate discovery context")
-@click.option("--output", help="Output context file path (default: builder/cache/discovery_context.yml)")
+@click.option("--output", help="Output context file path (default: auto-detected based on mode)")
 def discover_new(interactive, batch, template, product, idea, problem, users, features, metrics, tech, timeline, team_size, question_set, auto_generate, output):
     """Create a new discovery context for product development"""
     try:
@@ -5323,7 +5340,13 @@ def discover_new(interactive, batch, template, product, idea, problem, users, fe
         
         # Set default output path if not provided
         if not output:
-            output = "builder/cache/discovery_context.yml"
+            try:
+                from ..overlay.paths import OverlayPaths
+                overlay_paths = OverlayPaths()
+                cache_dir = overlay_paths.get_cache_dir()
+            except ImportError:
+                cache_dir = "builder/cache"
+            output = os.path.join(cache_dir, "discovery_context.yml")
         
         # Get template-specific defaults
         template_defaults = _get_template_defaults(template)
