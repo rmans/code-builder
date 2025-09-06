@@ -1,15 +1,6 @@
 # Documentation Layer
 
-This repository uses a comprehensive documentation system to drive code generation, architectural decisions, and evaluation. The documentation is automatically indexed and cross-linked to provide intelligent context for AI-assisted development.
-
-## Features
-
-- **Auto-indexing**: Automatic discovery and indexing of all document types
-- **Cross-linking**: Intelligent linking between related documents
-- **ADR Integration**: Automatic discovery and linking of Architecture Decision Records
-- **Template System**: Standardized templates for all document types
-- **Validation**: Comprehensive validation of document structure and content
-- **CI Integration**: Automated documentation validation in pull requests
+This repo uses docs to drive codegen, decisions, and evaluation.
 
 ---
 
@@ -28,14 +19,11 @@ This repository uses a comprehensive documentation system to drive code generati
 ### 🏗️ Architecture
 *Architectural decisions and designs*
 
-- ❓ **Master Architecture Index** (`0000_MASTER_ARCH`)
-  - Owner: system | Created: 2025-09-06
-
 - 📝 **API Architecture Design** (`ARCH-2025-09-06-api-architecture-des`)
   - Owner: Dev Team | Created: 2025-09-06
 
-- 📝 **Test Architecture with Python and TypeScript** (`ARCH-2025-09-06-test-architecture-wi`)
-  - Owner: Dev Team | Created: 2025-09-06
+- ❓ **Master Architecture Index** (`0000_MASTER_ARCH`)
+  - Owner: system | Created: 2025-09-06
 
 ### 🔗 Integrations
 *Integration specifications and APIs*
@@ -48,10 +36,6 @@ This repository uses a comprehensive documentation system to drive code generati
 
 - ❓ **Master UX Index** (`0000_MASTER_UX`)
   - Owner: system | Created: 2025-09-06
-
-- 📝 **Test UX with React and TypeScript** (`UX-2025-09-06-test-ux-with-react-a`)
-  - Owner: UX Team | Created: 2025-09-06
-  - Links: adr:ADR-0002, ADR-2025-09-06-test-standardized-id
 
 ### ⚙️ Implementation
 *Implementation details and technical specs*
@@ -76,45 +60,6 @@ This repository uses a comprehensive documentation system to drive code generati
 
 - ❓ **Master Tasks Index** (`0000_MASTER_TASKS`)
   - Owner: system | Created: 2025-09-06
-
-### 📋 Architecture Decision Records
-*Architectural decisions and their rationale*
-
-- ❓ **Master ADR Index** (`0000_MASTER_ADR`)
-  - Owner: system | Created: 2025-09-06
-
-- 📝 **Technology Stack Selection** (`ADR-0001`)
-  - Owner: system | Created: 2025-09-06
-  - Status: proposed | Tags: technology, stack, payments
-
-- 📝 **Test ADR Duplicate Prevention** (`ADR-0002`)
-  - Owner: system | Created: 2025-09-06
-  - Status: proposed | Tags: technology, stack, payments
-
-- 📝 **Test Standardized ID Format** (`ADR-2025-09-06-test-standardized-id`)
-  - Owner: system | Created: 2025-09-06
-  - Status: proposed | Tags: technology, stack, payments
-
----
-
-## Document Types
-
-### Supported Document Types
-- **PRD** (Product Requirements Document): Product specifications and requirements
-- **ARCH** (Architecture): Architectural decisions and designs
-- **IMPL** (Implementation): Implementation details and technical specs
-- **EXEC** (Executive): Executive summaries and business documents
-- **UX** (User Experience): UX designs and user research
-- **INTEGRATIONS**: Integration specifications and APIs
-- **TASKS**: Task definitions and work items
-- **ADR** (Architecture Decision Record): Architectural decisions and rationale
-
-### Auto ADR Linking
-All document types automatically discover and link related ADRs based on:
-- **Content similarity**: Title, tags, and content matching
-- **Technology detection**: Automatic extraction of tech stack from titles
-- **Weighted scoring**: Title (40%), tags (30%), content (20%), tech (10%)
-- **Relevance threshold**: 10% minimum relevance for inclusion
 
 ---
 
