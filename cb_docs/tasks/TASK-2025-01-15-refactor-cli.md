@@ -55,9 +55,9 @@ builder/core/cli/
 - [x] Test context commands functionality
 
 ### Phase 4: 🔍 Extract Discovery Commands
-- [ ] Move `discover:*` commands to `discovery_commands.py`
-- [ ] Extract shared discovery utilities
-- [ ] Test discovery commands functionality
+- [x] Move `discover:*` commands to `discovery_commands.py`
+- [x] Extract shared discovery utilities
+- [x] Test discovery commands functionality
 
 ### Phase 5: 🤖 Extract Agent Commands
 - [ ] Move `agent:*` commands to `agent_commands.py`
