@@ -138,7 +138,8 @@ python3 builder/core/cli.py master:sync --dry-run
 ## Usage Guides
 - `USAGE-Cursor-Evaluation.md` = Complete evaluation workflow guide
 - `CURSOR-Custom-Commands.md` = Cursor integration setup
-- Comprehensive documentation for all 53 CLI commands
+- `instructions/cli-architecture.md` = Complete CLI architecture documentation
+- Comprehensive documentation for all 61 CLI commands
 
 ---
 
