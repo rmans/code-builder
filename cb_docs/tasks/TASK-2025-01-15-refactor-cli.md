@@ -60,9 +60,9 @@ builder/core/cli/
 - [x] Test discovery commands functionality
 
 ### Phase 5: 🤖 Extract Agent Commands
-- [ ] Move `agent:*` commands to `agent_commands.py`
-- [ ] Extract shared agent utilities
-- [ ] Test agent commands functionality
+- [x] Move `agent:*` commands to `agent_commands.py`
+- [x] Extract shared agent utilities
+- [x] Test agent commands functionality
 
 ### Phase 6: 🎭 Extract Orchestrator Commands
 - [ ] Move `orchestrator:*` commands to `orchestrator_commands.py`
