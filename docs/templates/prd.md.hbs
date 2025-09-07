@@ -1,0 +1,50 @@
+---
+type: prd
+id: {{id}}
+title: {{title}}
+status: draft
+owner: {{owner}}
+created: {{created}}
+# ABC Iteration Support (optional)
+requires_abc_iteration: {{requires_abc_iteration}}
+abc_target_file: "{{abc_target_file}}"
+abc_rounds: {{abc_rounds}}
+links:
+  arch: {{links.arch | default([])}}
+  ux: {{links.ux | default([])}}
+  impl: {{links.impl | default([])}}
+  exec: {{links.exec | default([])}}
+---
+
+# {{title}}
+
+## Overview
+<!-- Brief description of the product/feature -->
+
+## Problem Statement
+<!-- What problem does this solve? -->
+
+## Goals & Success Metrics
+<!-- What are we trying to achieve? How will we measure success? -->
+
+## User Stories
+<!-- Who are the users and what do they need? -->
+
+## Requirements
+### Functional Requirements
+<!-- What must the system do? -->
+
+### Non-Functional Requirements
+<!-- Performance, security, scalability, etc. -->
+
+## Constraints & Assumptions
+<!-- What limitations or assumptions are we working with? -->
+
+## Dependencies
+<!-- What other systems or features does this depend on? -->
+
+## Timeline
+<!-- High-level timeline and milestones -->
+
+## Acceptance Criteria
+<!-- How do we know when this is done? -->

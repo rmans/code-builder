@@ -34,9 +34,15 @@ fi
 
 echo "📁 Creating overlay structure..."
 
-# Create .cb directory (copy of entire project except cb_docs/)
-echo "   Copying project to .cb/..."
-rsync -av --exclude='.git' --exclude='docs' --exclude='.cb' --exclude='cb_docs' --exclude='__pycache__' --exclude='*.pyc' --exclude='.pytest_cache' --exclude='node_modules' . .cb/
+# Create .cb directory (only essential files)
+echo "   Creating .cb/ structure..."
+mkdir -p .cb
+
+# Copy only essential files
+echo "   Copying essential files..."
+cp -r builder .cb/
+mkdir -p .cb/cache  # Create empty cache directory
+mkdir -p .cb/bin
 
 # cb_docs directory already exists, skipping copy
 echo "   cb_docs/ already exists, skipping copy..."
@@ -136,7 +142,7 @@ echo "   2. Test: cb help"
 echo "   3. Add to shell: echo 'source .cb/activate' >> ~/.bashrc"
 echo ""
 echo "📁 Structure:"
-echo "   .cb/     - Complete project copy (runs from here)"
-echo "   cb_cb_docs/ - Documentation directory (outputs go here)"
+echo "   .cb/     - Essential overlay files (builder/, venv/, bin/, cache/)"
+echo "   cb_docs/ - Documentation directory (outputs go here)"
 echo ""
 echo "💡 The overlay system is now ready to use!"

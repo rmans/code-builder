@@ -1,12 +1,12 @@
 ---
-id: PRD-0000
-title: Master Product Requirements Index
+id: IMPL-0000
+title: Master Implementation Index
 status: accepted
 date: 2025-09-06
 tags:
 - index
-- prd
-type: prd
+- implementation
+type: impl
 owner: system
 created: '2025-09-06'
 links:
@@ -20,7 +20,7 @@ links:
   ux: []
 ---
 
-# PRD Index
+# Implementation Index
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|

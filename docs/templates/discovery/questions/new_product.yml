@@ -1,0 +1,153 @@
+# New Product Discovery Question Set
+# Minimal questions for new product development
+
+name: "New Product Discovery"
+description: "Essential questions for new product development"
+version: "1.0.0"
+
+# Required fields for new products
+required_fields:
+  - product_name
+  - main_idea
+  - problem_solved
+  - target_users
+  - key_features
+  - success_metrics
+
+# Minimal question set for new products
+questions:
+  # Product Identity
+  - id: product_name
+    question: "What is the name of this product?"
+    type: "text"
+    required: true
+    category: "identity"
+    
+  - id: main_idea
+    question: "What is the main idea for this product?"
+    type: "text"
+    required: true
+    category: "identity"
+    
+  # Problem & Solution
+  - id: problem_solved
+    question: "What problem does this product solve?"
+    type: "text"
+    required: true
+    category: "problem"
+    
+  - id: target_users
+    question: "Who are the target users? (be specific)"
+    type: "text"
+    required: true
+    category: "users"
+    
+  # Features (minimum 3)
+  - id: key_features
+    question: "What are the key features? (list at least 3)"
+    type: "text"
+    required: true
+    category: "features"
+    validation: "min_3_items"
+    
+  # Success Metrics
+  - id: success_metrics
+    question: "How will you measure success?"
+    type: "text"
+    required: true
+    category: "metrics"
+    
+  # Technical Preferences
+  - id: tech_stack_preferences
+    question: "What technology stack do you prefer?"
+    type: "text"
+    required: false
+    category: "technical"
+    
+  - id: deployment_preferences
+    question: "Where do you want to deploy this? (cloud, on-premise, etc.)"
+    type: "text"
+    required: false
+    category: "technical"
+    
+  # Timeline
+  - id: timeline
+    question: "What is your target timeline for the first version?"
+    type: "categorical"
+    options: ["1-3 months", "3-6 months", "6-12 months", "12+ months", "flexible"]
+    required: false
+    category: "timeline"
+    
+  # Team
+  - id: team_size
+    question: "What is the size of your development team?"
+    type: "categorical"
+    options: ["1-2", "3-5", "6-10", "11-20", "20+"]
+    required: false
+    category: "team"
+
+# Question categories
+categories:
+  identity:
+    name: "Product Identity"
+    description: "Basic product information"
+    priority: 1
+    
+  problem:
+    name: "Problem & Solution"
+    description: "What problem are you solving"
+    priority: 2
+    
+  users:
+    name: "Target Users"
+    description: "Who will use this product"
+    priority: 3
+    
+  features:
+    name: "Key Features"
+    description: "What the product does"
+    priority: 4
+    
+  metrics:
+    name: "Success Metrics"
+    description: "How to measure success"
+    priority: 5
+    
+  technical:
+    name: "Technical Preferences"
+    description: "Technology choices"
+    priority: 6
+    
+  timeline:
+    name: "Timeline"
+    description: "Project timeline"
+    priority: 7
+    
+  team:
+    name: "Team"
+    description: "Development team"
+    priority: 8
+
+# Validation rules
+validation:
+  min_3_items:
+    type: "min_items"
+    value: 3
+    message: "Please provide at least 3 key features"
+    
+  required_text:
+    type: "not_empty"
+    message: "This field is required"
+
+# Batch input mapping
+batch_mapping:
+  product_name: "product"
+  main_idea: "idea"
+  problem_solved: "problem"
+  target_users: "users"
+  key_features: "features"
+  success_metrics: "metrics"
+  tech_stack_preferences: "tech"
+  deployment_preferences: "deployment"
+  timeline: "timeline"
+  team_size: "team_size"
