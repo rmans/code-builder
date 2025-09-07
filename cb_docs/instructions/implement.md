@@ -606,6 +606,148 @@ Test fixtures are available in `tests/fixtures/`:
 #### Golden Snapshots
 Expected outputs are stored as golden snapshots for regression testing.
 
+## Agent-OS Bridge
+
+### Overview
+The Agent-OS Bridge provides a mapping layer between agent-friendly commands and the underlying Code Builder functionality. This bridge enables Cursor agents to interact with Code Builder through simple, intuitive commands.
+
+### Architecture
+
+#### Command Flow
+```
+Agent Command → Agent-OS Bridge → Code Builder Implementation → Output Files
+```
+
+#### Supported Commands
+- **`cb plan`** → Project planning with interview functionality
+- **`cb analyze`** → Project analysis and discovery
+- **`cb status`** → Project status and recommendations
+- **`cb commands`** → Available command listing
+
+### Implementation
+
+#### Agent-OS Bridge Module
+The bridge is implemented in `builder/overlay/agent_os_bridge.py` and provides:
+
+1. **Command Mapping**: Maps agent commands to full implementations
+2. **Parameter Translation**: Converts simple parameters to complex command parameters
+3. **Output Generation**: Creates structured output files for agents
+4. **Error Handling**: Graceful fallback when underlying commands fail
+
+#### Planning Command Flow
+```mermaid
+graph TD
+    A[Agent: @rules/plan-project] --> B[cb plan command]
+    B --> C{Analysis needed?}
+    C -->|Yes| D[Run cb analyze]
+    C -->|No| E[Skip analysis]
+    D --> F[Collect planning data]
+    E --> F
+    F --> G{Interactive mode?}
+    G -->|Yes| H[Collect user input]
+    G -->|No| I[Use persona defaults]
+    H --> J[Generate planning files]
+    I --> J
+    J --> K[interview.json]
+    J --> L[assumptions.md]
+    J --> M[decisions.md]
+    K --> N[Agent receives results]
+    L --> N
+    M --> N
+```
+
+#### Persona-Based Planning
+The planning command supports three personas:
+
+- **Developer (dev)**: Focus on technical implementation and code quality
+- **Project Manager (pm)**: Focus on project management and resource planning
+- **AI Specialist (ai)**: Focus on AI/ML capabilities and intelligent automation
+
+### Usage
+
+#### Basic Planning
+```bash
+# Interactive planning with developer persona
+cb plan
+
+# Non-interactive planning with project manager persona
+cb plan --persona pm --noninteractive
+
+# Auto-analyze then plan
+cb plan --auto-analyze --noninteractive
+```
+
+#### Agent Integration
+```bash
+# Agents can use @rules/plan-project
+@rules/plan-project
+
+# This triggers the full planning workflow
+```
+
+### Output Files
+
+#### Interview Responses (`cb_docs/planning/interview.json`)
+```json
+{
+  "persona": "dev",
+  "timestamp": "2025-01-15T12:00:00Z",
+  "planning_data": {
+    "product": "Code Builder Project",
+    "idea": "Automated code generation and project management",
+    "problem": "Manual project setup and maintenance is time-consuming",
+    "users": "Developers, project managers, technical teams",
+    "features": ["CLI interface", "Project analysis", "Automated workflows"],
+    "metrics": ["Development speed", "Code quality", "Project success rate"],
+    "tech": ["Python", "JavaScript", "Markdown"],
+    "timeline": "3-6 months",
+    "team_size": "2-5 developers"
+  },
+  "status": "completed"
+}
+```
+
+#### Assumptions Document (`cb_docs/planning/assumptions.md`)
+- Product assumptions
+- User assumptions
+- Technical assumptions
+- Feature assumptions
+- Risk assumptions
+
+#### Decisions Document (`cb_docs/planning/decisions.md`)
+- Architecture decisions
+- Feature decisions
+- Process decisions
+- Success criteria
+
+### Integration Points
+
+#### Command Registration
+Agent-OS bridge commands are registered with the main CLI:
+```python
+@cli.command("plan")
+@click.option("--persona", type=click.Choice(['dev', 'pm', 'ai']))
+@click.option("--noninteractive", is_flag=True)
+@click.option("--auto-analyze", is_flag=True)
+def plan_command(persona, noninteractive, auto_analyze):
+    # Implementation
+```
+
+#### @rules/ Integration
+The bridge automatically generates `@rules/` files for Cursor agent integration:
+- **Command-specific rules**: `@rules/plan-project`
+- **Usage instructions**: Clear agent instructions
+- **Expected outputs**: Documented output files
+
+### Error Handling
+
+The Agent-OS Bridge provides robust error handling:
+
+1. **Import Errors**: Clear messages when underlying commands are unavailable
+2. **Parameter Validation**: Ensures required parameters are provided
+3. **File System Errors**: Graceful handling of permission and path issues
+4. **Analysis Dependencies**: Automatic analysis triggering when needed
+
 ### Next Steps
 
 After scaffolding is complete:
@@ -613,5 +755,6 @@ After scaffolding is complete:
 2. **Rule Integration**: Set up rule merging with project rules ✅
 3. **Template System**: Create command templates ✅
 4. **Discovery Engine**: Enhanced project analysis ✅
-5. **State Management**: Implement state updates and persistence
-6. **Path Translation**: Use OverlayPaths for all new features
+5. **Agent-OS Bridge**: Agent command mapping ✅
+6. **State Management**: Implement state updates and persistence
+7. **Path Translation**: Use OverlayPaths for all new features

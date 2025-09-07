@@ -26,6 +26,9 @@ from . import (
 # Import simple router for command aliases
 from ...overlay import simple_router
 
+# Import agent-OS bridge for agent commands
+from ...overlay import agent_os_bridge
+
 __all__ = ['cli']
 
 if __name__ == "__main__":

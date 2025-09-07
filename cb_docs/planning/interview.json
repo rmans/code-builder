@@ -1,0 +1,28 @@
+{
+  "persona": "ai",
+  "planning_data": {
+    "features": [
+      "AI code generation",
+      "Intelligent analysis",
+      "Automated testing"
+    ],
+    "idea": "Intelligent code generation and project assistance",
+    "metrics": [
+      "Code generation accuracy",
+      "Development efficiency",
+      "Bug reduction"
+    ],
+    "problem": "Manual coding and project setup is inefficient",
+    "product": "AI-Powered Development Tool",
+    "team_size": "3-7 AI specialists",
+    "tech": [
+      "Machine learning",
+      "Python",
+      "AI frameworks"
+    ],
+    "timeline": "12-18 months",
+    "users": "AI researchers, developers, technical teams"
+  },
+  "status": "completed",
+  "timestamp": "2025-09-07T19:50:29.027081"
+}
