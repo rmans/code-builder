@@ -31,7 +31,12 @@
     { "pattern": "Path\\('\\.cb/commands'\\)", "message": "Do not read from .cb/commands/ during development - use cb_docs/commands/ instead" },
     { "pattern": "Path\\('\\.cb/engine/templates/commands'\\)", "message": "Do not read from .cb/engine/templates/commands/ during development - use cb_docs/templates/commands/ instead" },
     { "pattern": "json\\.dumps\\(.*\\)(?!.*default=)", "message": "JSON serialization without custom serializer - add default parameter for date objects" },
-    { "pattern": "yaml\\.safe_load\\(.*\\)(?!.*except)", "message": "YAML loading without error handling - wrap in try/except block" }
+    { "pattern": "yaml\\.safe_load\\(.*\\)(?!.*except)", "message": "YAML loading without error handling - wrap in try/except block" },
+    { "pattern": "^.{500,}$", "message": "File exceeds 500 lines - refactor into smaller modules following modular architecture rule" },
+    { "pattern": "def\\s+\\w+\\([^)]{100,}\\):", "message": "Function has too many parameters - refactor to use fewer parameters or data structures" },
+    { "pattern": "class\\s+\\w+.*:\\s*$", "message": "Large class detected - check if it exceeds 200 lines or 20 methods, consider splitting" },
+    { "pattern": "import.*\\n.*import.*\\n.*import.*\\n.*import.*\\n.*import.*\\n.*import.*\\n.*import.*\\n.*import.*\\n.*import.*\\n.*import", "message": "Too many imports in single file - consider splitting into focused modules" },
+    { "pattern": "@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command.*\\n.*@cli\\.command", "message": "Too many CLI commands in single file - split into focused command modules" }
   ],
   "hints": [
     { "pattern": "axios\\.create\\(", "message": "Use shared http client instead of axios.create()" },
