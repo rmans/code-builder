@@ -47,10 +47,10 @@ mkdir -p .cb/bin
 # cb_docs directory is the source of truth for documentation
 echo "   Using cb_docs/ as documentation source..."
 
-# Create virtual environment in .cb/ and install dependencies
+# Create virtual environment in root and install dependencies
 echo "   Creating virtual environment and installing dependencies..."
-python3 -m venv .cb/venv
-.cb/venv/bin/pip install -r requirements.txt
+python3 -m venv venv
+venv/bin/pip install -r requirements.txt
 
 # Create wrapper scripts
 echo "   Creating wrapper scripts..."
@@ -74,15 +74,15 @@ if [[ ":$PATH:" != *":$(pwd)/.cb/bin:"* ]]; then
 fi
 
 # Activate virtual environment
-if [ -f "$(pwd)/.cb/venv/bin/activate" ]; then
-    source "$(pwd)/.cb/venv/bin/activate"
+if [ -f "$(pwd)/venv/bin/activate" ]; then
+    source "$(pwd)/venv/bin/activate"
 fi
 
 # Set PYTHONPATH to include .cb
 export PYTHONPATH="$(pwd)/.cb:$PYTHONPATH"
 
 # Run the CLI from .cb/
-exec "$(pwd)/.cb/venv/bin/python" -m builder.core.cli "$@"
+exec "$(pwd)/venv/bin/python" -m builder.core.cli "$@"
 EOF
 
 chmod +x .cb/bin/cb
@@ -105,8 +105,8 @@ if [[ ":$PATH:" != *":$(pwd)/.cb/bin:"* ]]; then
 fi
 
 # Activate virtual environment
-if [ -f "$(pwd)/.cb/venv/bin/activate" ]; then
-    source "$(pwd)/.cb/venv/bin/activate"
+if [ -f "$(pwd)/venv/bin/activate" ]; then
+    source "$(pwd)/venv/bin/activate"
 fi
 
 echo "🔧 Code Builder Overlay activated!"
@@ -140,7 +140,7 @@ echo "   3. Add to shell: echo 'source .cb/activate' >> ~/.bashrc"
 echo ""
 echo "📁 Structure:"
 echo "   .cb/     - Essential overlay files (builder/, bin/, cache/)"
-echo "   .cb/venv/ - Virtual environment (created during installation)"
+echo "   venv/    - Virtual environment (created during installation)"
 echo "   cb_docs/ - Documentation directory (source of truth for docs)"
 echo ""
 echo "💡 The overlay system is now ready to use!"
