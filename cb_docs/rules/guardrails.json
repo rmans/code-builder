@@ -14,7 +14,11 @@
     { "pattern": "data\\.get\\(\"acceptance\"", "message": "Use 'acceptance_criteria' not 'acceptance' when accessing context pack data - field name mismatch causes validation failures" },
     { "pattern": "python3 -c \"\\n\\s+import", "message": "Python code in GitHub Actions must not be indented - remove leading whitespace to prevent IndentationError" },
     { "pattern": "python3 -c \"\\n\\s+with open", "message": "Python code in GitHub Actions must not be indented - remove leading whitespace to prevent IndentationError" },
-    { "pattern": "python3 -c \"\\n\\s+print", "message": "Python code in GitHub Actions must not be indented - remove leading whitespace to prevent IndentationError" }
+    { "pattern": "python3 -c \"\\n\\s+print", "message": "Python code in GitHub Actions must not be indented - remove leading whitespace to prevent IndentationError" },
+    { "pattern": "\\.cb/", "message": "Do not create files in .cb/ directory - this is only created by the installer. Use configuration paths instead (get_effective_docs_dir(), get_effective_cache_dir(), etc.)" },
+    { "pattern": "\"\\\\.cb/", "message": "Do not reference .cb/ directory in code - use configuration paths instead" },
+    { "pattern": "'\\\\.cb/", "message": "Do not reference .cb/ directory in code - use configuration paths instead" },
+    { "pattern": "`\\\\.cb/", "message": "Do not reference .cb/ directory in code - use configuration paths instead" }
   ],
   "hints": [
     { "pattern": "axios\\.create\\(", "message": "Use shared http client instead of axios.create()" },
