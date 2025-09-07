@@ -27,9 +27,35 @@ if [ ! -d ".git" ]; then
 fi
 
 # Check if already installed
-if [ -d ".cb" ] || [ -d "cb_docs" ]; then
+if [ -d ".cb" ]; then
     echo "⚠️  Overlay already exists. Reinstalling..."
-    rm -rf .cb cb_docs
+    rm -rf .cb
+fi
+
+# Ensure cb_docs exists and is complete (source of truth for documentation)
+if [ ! -d "cb_docs" ]; then
+    echo "⚠️  cb_docs/ not found. Creating from git history..."
+    git checkout 2bc80cc -- docs && cp -r docs cb_docs && rm -rf docs
+else
+    echo "   Checking cb_docs/ for missing files..."
+    # Check if key directories exist, restore if missing
+    if [ ! -d "cb_docs/rules" ]; then
+        echo "   Restoring missing cb_docs/rules/..."
+        git checkout 2bc80cc -- docs/rules && cp -r docs/rules cb_docs/ && rm -rf docs/rules
+    fi
+    if [ ! -d "cb_docs/templates" ]; then
+        echo "   Restoring missing cb_docs/templates/..."
+        git checkout 2bc80cc -- docs/templates && cp -r docs/templates cb_docs/ && rm -rf docs/templates
+    fi
+    if [ ! -d "cb_docs/adrs" ]; then
+        echo "   Restoring missing cb_docs/adrs/..."
+        git checkout 2bc80cc -- docs/adrs && cp -r docs/adrs cb_docs/ && rm -rf docs/adrs
+    fi
+    # Check for other key files
+    if [ ! -f "cb_docs/rules/guardrails.json" ]; then
+        echo "   Restoring missing guardrails.json..."
+        git checkout 2bc80cc -- docs/rules/guardrails.json && cp docs/rules/guardrails.json cb_docs/rules/ && rm -rf docs/rules/guardrails.json
+    fi
 fi
 
 echo "📁 Creating overlay structure..."
