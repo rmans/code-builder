@@ -50,9 +50,9 @@ builder/core/cli/
 - [x] Test document commands functionality
 
 ### Phase 3: 🧠 Extract Context Commands  
-- [ ] Move `ctx:*`, `context:*` commands to `context_commands.py`
-- [ ] Extract shared context utilities
-- [ ] Test context commands functionality
+- [x] Move `ctx:*`, `context:*` commands to `context_commands.py`
+- [x] Extract shared context utilities
+- [x] Test context commands functionality
 
 ### Phase 4: 🔍 Extract Discovery Commands
 - [ ] Move `discover:*` commands to `discovery_commands.py`
