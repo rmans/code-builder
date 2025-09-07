@@ -70,9 +70,9 @@ builder/core/cli/
 - [x] Test orchestrator commands functionality
 
 ### Phase 7: 📊 Extract Evaluation Commands
-- [ ] Move `eval:*`, `rules:*` commands to `evaluation_commands.py`
-- [ ] Extract shared evaluation utilities
-- [ ] Test evaluation commands functionality
+- [x] Move `eval:*`, `rules:*` commands to `evaluation_commands.py`
+- [x] Extract shared evaluation utilities
+- [x] Test evaluation commands functionality
 
 ### Phase 8: 🛠️ Extract Utility Commands
 - [ ] Move `commands:*`, `cleanup:*`, `yaml:*`, `fields:*` commands to `utility_commands.py`
