@@ -15,6 +15,7 @@ from . import (
     context_commands,
     discovery_commands,
     agent_commands,
+    agent_integration_commands,
     orchestrator_commands,
     evaluation_commands,
     utility_commands,
