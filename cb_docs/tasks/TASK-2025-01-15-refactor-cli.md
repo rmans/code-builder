@@ -65,9 +65,9 @@ builder/core/cli/
 - [x] Test agent commands functionality
 
 ### Phase 6: 🎭 Extract Orchestrator Commands
-- [ ] Move `orchestrator:*` commands to `orchestrator_commands.py`
-- [ ] Extract shared orchestrator utilities
-- [ ] Test orchestrator commands functionality
+- [x] Move `orchestrator:*` commands to `orchestrator_commands.py`
+- [x] Extract shared orchestrator utilities
+- [x] Test orchestrator commands functionality
 
 ### Phase 7: 📊 Extract Evaluation Commands
 - [ ] Move `eval:*`, `rules:*` commands to `evaluation_commands.py`
