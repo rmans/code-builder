@@ -1,0 +1,18 @@
+{
+  "project_name": "code-builder",
+  "analysis_depth": 3,
+  "ignore_patterns": [],
+  "ci_mode": true,
+  "timestamp": "1757273618.8103955",
+  "files_analyzed": 281,
+  "directories_found": 48,
+  "technologies_detected": [
+    "YAML",
+    "Python",
+    "JavaScript/TypeScript",
+    "JSON",
+    "Markdown",
+    "Shell Script"
+  ],
+  "structure": {}
+}

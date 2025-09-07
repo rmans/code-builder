@@ -289,6 +289,132 @@ cb command-name --option value
 ```
 ```
 
+## Simple Commands
+
+### Overview
+Simple commands provide easy-to-use aliases for common Code Builder operations. These commands are implemented in `builder/overlay/simple_router.py` and provide a simplified interface to the full command system.
+
+### Available Simple Commands
+
+#### `cb analyze`
+Analyze project structure and generate discovery report.
+
+**Usage:**
+```bash
+cb analyze [OPTIONS]
+```
+
+**Options:**
+- `--depth INTEGER` - Analysis depth (default: 3)
+- `--ignore TEXT` - Ignore files matching pattern
+- `--ci` - Non-interactive mode for CI/CD
+
+**Examples:**
+```bash
+# Basic analysis
+cb analyze
+
+# Deep analysis with custom ignore
+cb analyze --depth 5 --ignore "node_modules,dist"
+
+# CI mode
+cb analyze --ci
+```
+
+**Outputs:**
+- `cb_docs/discovery/analysis.json` - Detailed project analysis
+- `cb_docs/discovery/summary.md` - Human-readable summary
+
+#### `cb plan`
+Create project plan through guided interview.
+
+**Usage:**
+```bash
+cb plan [OPTIONS]
+```
+
+**Options:**
+- `--persona [dev|pm|ai]` - Interview persona (default: dev)
+- `--noninteractive` - Use defaults instead of prompts
+
+### Implementation Details
+
+#### Simple Router Architecture
+The simple router (`builder/overlay/simple_router.py`) provides:
+
+1. **Command Aliases**: Maps short commands to full implementations
+2. **Parameter Mapping**: Converts simple parameters to complex command parameters
+3. **Error Handling**: Graceful fallback when underlying commands fail
+4. **Dual Mode Support**: Works in both overlay and standalone modes
+
+#### Command Registration
+Simple commands are registered with the main CLI through the `@cli.command` decorator:
+
+```python
+@cli.command("analyze")
+@click.option("--depth", type=int, default=3)
+@click.option("--ignore", help="Ignore files matching pattern")
+@click.option("--ci", is_flag=True)
+def analyze_command(depth, ignore, ci):
+    # Implementation
+```
+
+#### @rules/ Integration
+Simple commands automatically generate `@rules/` files for Cursor agent integration:
+
+- **Command-specific rules**: `@rules/analyze-project`
+- **Project status rules**: `@rules/project-status`
+
+#### Dual Mode Support
+Simple commands work in both modes:
+
+- **Overlay Mode**: When `.cb/` directory exists
+- **Standalone Mode**: When running from any directory
+
+### Usage Examples
+
+#### Basic Project Analysis
+```bash
+# Analyze current project
+cb analyze
+
+# Analyze with specific depth
+cb analyze --depth 5
+
+# Analyze in CI mode
+cb analyze --ci
+```
+
+#### Project Planning
+```bash
+# Interactive planning
+cb plan
+
+# Developer persona planning
+cb plan --persona dev
+
+# Non-interactive planning
+cb plan --noninteractive
+```
+
+#### Agent Integration
+```bash
+# Get recommended command for agents
+cb agent:get-command
+
+# Create @rules/ files
+cb agent:integrate
+```
+
+### Error Handling
+
+Simple commands provide robust error handling:
+
+1. **Import Errors**: Clear messages when underlying commands are unavailable
+2. **Parameter Errors**: Validation and helpful error messages
+3. **File System Errors**: Graceful handling of permission and path issues
+4. **Fallback Suggestions**: Alternative commands when primary commands fail
+
 ### Next Steps
 
 After scaffolding is complete:

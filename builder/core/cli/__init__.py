@@ -23,6 +23,9 @@ from . import (
     workflow_commands,
 )
 
+# Import simple router for command aliases
+from ...overlay import simple_router
+
 __all__ = ['cli']
 
 if __name__ == "__main__":
