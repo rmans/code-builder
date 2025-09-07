@@ -415,11 +415,203 @@ Simple commands provide robust error handling:
 3. **File System Errors**: Graceful handling of permission and path issues
 4. **Fallback Suggestions**: Alternative commands when primary commands fail
 
+## Discovery Engine
+
+### Overview
+The Enhanced Discovery Engine provides comprehensive project analysis capabilities, detecting languages, frameworks, package managers, testing tools, and other project characteristics.
+
+### Features
+
+#### Language Detection
+- **Primary Language**: Identifies the main programming language
+- **All Languages**: Detects all languages present in the project
+- **File Counts**: Counts files by language type
+
+#### Framework Detection
+- **Web Frameworks**: Express, Flask, Django, FastAPI, React, Vue, Angular, etc.
+- **Testing Frameworks**: Jest, pytest, Mocha, etc.
+- **Build Tools**: Webpack, Vite, Rollup, etc.
+
+#### Package Manager Detection
+- **Primary Manager**: Identifies the main package manager
+- **All Managers**: Detects all package managers present
+- **Configuration Files**: Identifies package.json, requirements.txt, etc.
+
+#### Project Structure Analysis
+- **File Counts**: Total files and directories
+- **Size Analysis**: Project size in bytes
+- **Depth Control**: Configurable analysis depth (1-5)
+- **Ignore Patterns**: Customizable file/folder exclusions
+
+### Output Contract
+
+#### Report JSON (`cb_docs/discovery/report.json`)
+```json
+{
+  "project_info": {
+    "name": "project-name",
+    "type": "Node.js",
+    "file_count": 1234,
+    "directory_count": 567,
+    "size_bytes": 12345678,
+    "analysis_depth": 3,
+    "timestamp": "2025-01-15T12:00:00Z"
+  },
+  "languages": {
+    "primary": "JavaScript",
+    "detected": ["JavaScript", "TypeScript", "Markdown"],
+    "file_counts": {
+      "JavaScript": 100,
+      "TypeScript": 50,
+      "Markdown": 10
+    }
+  },
+  "frameworks": {
+    "detected": ["express", "react", "jest"],
+    "categories": {
+      "web": ["express"],
+      "frontend": ["react"],
+      "testing": ["jest"]
+    }
+  },
+  "package_managers": {
+    "primary": "npm",
+    "detected": ["npm", "yarn"],
+    "files": {
+      "npm": "package.json",
+      "yarn": "yarn.lock"
+    }
+  },
+  "testing": {
+    "runners": ["jest", "vitest"],
+    "config_files": ["jest.config.js", "vitest.config.ts"]
+  },
+  "linting": {
+    "tools": ["eslint", "prettier"],
+    "config_files": [".eslintrc.js", ".prettierrc"]
+  },
+  "build_tools": {
+    "detected": ["webpack", "vite"],
+    "config_files": ["webpack.config.js", "vite.config.ts"]
+  }
+}
+```
+
+#### Summary Markdown (`cb_docs/discovery/summary.md`)
+```markdown
+# Project Discovery Summary
+
+**Project:** project-name
+**Type:** Node.js
+**Files:** 1,234
+**Size:** 12,345,678 bytes
+
+## Languages
+**Primary:** JavaScript
+**Detected:** JavaScript, TypeScript, Markdown
+
+## Frameworks
+**Detected:** express, react, jest
+
+## Package Managers
+**Primary:** npm
+**Detected:** npm, yarn
+
+## Testing
+**Runners:** jest, vitest
+
+## Linting
+**Tools:** eslint, prettier
+
+## Build Tools
+**Detected:** webpack, vite
+```
+
+### Usage
+
+#### Basic Analysis
+```bash
+cb analyze
+```
+
+#### Advanced Options
+```bash
+# Deep analysis with custom ignore patterns
+cb analyze --depth 5 --ignore "node_modules,dist,coverage"
+
+# CI mode for automated environments
+cb analyze --ci
+```
+
+#### Programmatic Usage
+```python
+from builder.discovery.enhanced_engine import analyze_project_enhanced
+
+# Analyze current directory
+result = analyze_project_enhanced()
+
+# Analyze specific directory
+result = analyze_project_enhanced(
+    root_path="path/to/project",
+    depth=3,
+    ignore_patterns=["node_modules", "dist"],
+    ci_mode=True
+)
+```
+
+### Configuration
+
+#### Analysis Depth
+- **1**: Basic file scanning
+- **2**: Language detection
+- **3**: Framework detection (default)
+- **4**: Package manager analysis
+- **5**: Deep configuration analysis
+
+#### Ignore Patterns
+Common patterns to exclude:
+- `node_modules` - Node.js dependencies
+- `dist` - Build output
+- `coverage` - Test coverage reports
+- `.git` - Git repository data
+- `__pycache__` - Python cache
+
+### Integration Points
+
+#### State Management
+The discovery engine updates project state:
+```json
+{
+  "project_state": {
+    "discovered": true,
+    "last_discovery": "2025-01-15T12:00:00Z",
+    "analysis_depth": 3
+  }
+}
+```
+
+#### Command Integration
+- **Simple Router**: `cb analyze` command
+- **CLI Commands**: `discover:analyze` command
+- **Agent Integration**: `@rules/analyze-project`
+
+### Testing
+
+#### Fixture Repositories
+Test fixtures are available in `tests/fixtures/`:
+- **js-project**: Node.js/Express project
+- **py-project**: Python/Flask project
+- **mixed-project**: Multi-language project
+
+#### Golden Snapshots
+Expected outputs are stored as golden snapshots for regression testing.
+
 ### Next Steps
 
 After scaffolding is complete:
 1. **Command System**: Implement `commands:list`, `commands:refresh`, etc. ✅
 2. **Rule Integration**: Set up rule merging with project rules ✅
 3. **Template System**: Create command templates ✅
-4. **State Management**: Implement state updates and persistence
-5. **Path Translation**: Use OverlayPaths for all new features
+4. **Discovery Engine**: Enhanced project analysis ✅
+5. **State Management**: Implement state updates and persistence
+6. **Path Translation**: Use OverlayPaths for all new features

@@ -26,93 +26,35 @@ def analyze_command(depth, ignore, ci):
     This is a simple implementation that creates basic project analysis.
     """
     try:
-        import os
-        import json
-        from pathlib import Path
+        # Import the enhanced discovery engine
+        from ..discovery.enhanced_engine import analyze_project_enhanced
         
-        click.echo("🔍 Analyzing project structure...")
+        # Parse ignore patterns
+        ignore_patterns = []
+        if ignore:
+            ignore_patterns = [pattern.strip() for pattern in ignore.split(',')]
         
-        # Create discovery directory if it doesn't exist
-        discovery_dir = Path(overlay_paths.get_docs_dir()) / "discovery"
-        discovery_dir.mkdir(parents=True, exist_ok=True)
+        # Run enhanced analysis
+        results = analyze_project_enhanced(
+            root_path=".",
+            depth=depth,
+            ignore_patterns=ignore_patterns,
+            ci_mode=ci
+        )
         
-        # Basic project analysis
-        analysis = {
-            "project_name": Path.cwd().name,
-            "analysis_depth": depth,
-            "ignore_patterns": ignore or [],
-            "ci_mode": ci,
-            "timestamp": str(Path.cwd().stat().st_mtime),
-            "files_analyzed": 0,
-            "directories_found": 0,
-            "technologies_detected": [],
-            "structure": {}
-        }
-        
-        # Simple file analysis
-        files_analyzed = 0
-        directories_found = 0
-        technologies = set()
-        
-        for root, dirs, files in os.walk("."):
-            # Skip hidden directories and common ignore patterns
-            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['node_modules', 'venv', '__pycache__']]
-            
-            if root != ".":
-                directories_found += 1
-            
-            for file in files:
-                if not file.startswith('.') and not any(file.endswith(ext) for ext in ['.pyc', '.pyo', '.log']):
-                    files_analyzed += 1
-                    
-                    # Detect technologies by file extension
-                    if file.endswith('.py'):
-                        technologies.add('Python')
-                    elif file.endswith(('.js', '.ts')):
-                        technologies.add('JavaScript/TypeScript')
-                    elif file.endswith('.md'):
-                        technologies.add('Markdown')
-                    elif file.endswith('.json'):
-                        technologies.add('JSON')
-                    elif file.endswith('.yaml') or file.endswith('.yml'):
-                        technologies.add('YAML')
-                    elif file.endswith('.sh'):
-                        technologies.add('Shell Script')
-                    elif file.endswith('.go'):
-                        technologies.add('Go')
-                    elif file.endswith('.rs'):
-                        technologies.add('Rust')
-                    elif file.endswith('.java'):
-                        technologies.add('Java')
-                    elif file.endswith('.cpp') or file.endswith('.c'):
-                        technologies.add('C/C++')
-        
-        analysis["files_analyzed"] = files_analyzed
-        analysis["directories_found"] = directories_found
-        analysis["technologies_detected"] = list(technologies)
-        
-        # Save analysis results
-        analysis_file = discovery_dir / "analysis.json"
-        with open(analysis_file, 'w', encoding='utf-8') as f:
-            json.dump(analysis, f, indent=2)
-        
-        # Create summary
-        summary_file = discovery_dir / "summary.md"
-        with open(summary_file, 'w', encoding='utf-8') as f:
-            f.write(f"# Project Analysis Summary\n\n")
-            f.write(f"**Project:** {analysis['project_name']}\n")
-            f.write(f"**Files Analyzed:** {analysis['files_analyzed']}\n")
-            f.write(f"**Directories Found:** {analysis['directories_found']}\n")
-            f.write(f"**Technologies Detected:** {', '.join(analysis['technologies_detected'])}\n")
-            f.write(f"**Analysis Depth:** {analysis['analysis_depth']}\n")
-            f.write(f"**CI Mode:** {analysis['ci_mode']}\n")
+        # Display results
+        project_info = results["project_info"]
+        languages = results["languages"]
+        frameworks = results["frameworks"]
         
         click.echo(f"✅ Analysis complete!")
-        click.echo(f"📄 Results saved to: {analysis_file}")
-        click.echo(f"📊 Summary saved to: {summary_file}")
-        click.echo(f"🔍 Files analyzed: {files_analyzed}")
-        click.echo(f"📁 Directories found: {directories_found}")
-        click.echo(f"🛠️  Technologies: {', '.join(technologies) if technologies else 'None detected'}")
+        click.echo(f"📄 Results saved to: {overlay_paths.get_docs_dir()}/discovery/report.json")
+        click.echo(f"📊 Summary saved to: {overlay_paths.get_docs_dir()}/discovery/summary.md")
+        click.echo(f"🔍 Files analyzed: {project_info['file_count']:,}")
+        click.echo(f"📁 Directories found: {project_info['directory_count']:,}")
+        click.echo(f"🛠️  Languages: {', '.join(languages['detected']) if languages['detected'] else 'None detected'}")
+        if frameworks["detected"]:
+            click.echo(f"🏗️  Frameworks: {', '.join(frameworks['detected'])}")
         
     except Exception as e:
         click.echo(f"❌ Error during analysis: {e}")
