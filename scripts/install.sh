@@ -35,26 +35,58 @@ fi
 # Ensure cb_docs exists and is complete (source of truth for documentation)
 if [ ! -d "cb_docs" ]; then
     echo "⚠️  cb_docs/ not found. Creating from git history..."
-    git checkout 2bc80cc -- docs && cp -r docs cb_docs && rm -rf docs
+    if git checkout 2bc80cc -- docs 2>/dev/null; then
+        cp -r docs cb_docs && rm -rf docs
+        echo "   ✅ cb_docs/ created from git history"
+    else
+        echo "   ❌ Failed to restore from git history. Creating minimal cb_docs/..."
+        mkdir -p cb_docs/rules cb_docs/templates cb_docs/adrs
+        echo "   ⚠️  Please manually populate cb_docs/ with documentation"
+    fi
 else
     echo "   Checking cb_docs/ for missing files..."
     # Check if key directories exist, restore if missing
     if [ ! -d "cb_docs/rules" ]; then
         echo "   Restoring missing cb_docs/rules/..."
-        git checkout 2bc80cc -- docs/rules && cp -r docs/rules cb_docs/ && rm -rf docs/rules
+        if git checkout 2bc80cc -- docs/rules 2>/dev/null; then
+            cp -r docs/rules cb_docs/ && rm -rf docs/rules
+            echo "   ✅ cb_docs/rules/ restored"
+        else
+            echo "   ❌ Failed to restore rules/, creating empty directory"
+            mkdir -p cb_docs/rules
+        fi
     fi
     if [ ! -d "cb_docs/templates" ]; then
         echo "   Restoring missing cb_docs/templates/..."
-        git checkout 2bc80cc -- docs/templates && cp -r docs/templates cb_docs/ && rm -rf docs/templates
+        if git checkout 2bc80cc -- docs/templates 2>/dev/null; then
+            cp -r docs/templates cb_docs/ && rm -rf docs/templates
+            echo "   ✅ cb_docs/templates/ restored"
+        else
+            echo "   ❌ Failed to restore templates/, creating empty directory"
+            mkdir -p cb_docs/templates
+        fi
     fi
     if [ ! -d "cb_docs/adrs" ]; then
         echo "   Restoring missing cb_docs/adrs/..."
-        git checkout 2bc80cc -- docs/adrs && cp -r docs/adrs cb_docs/ && rm -rf docs/adrs
+        if git checkout 2bc80cc -- docs/adrs 2>/dev/null; then
+            cp -r docs/adrs cb_docs/ && rm -rf docs/adrs
+            echo "   ✅ cb_docs/adrs/ restored"
+        else
+            echo "   ❌ Failed to restore adrs/, creating empty directory"
+            mkdir -p cb_docs/adrs
+        fi
     fi
     # Check for other key files
     if [ ! -f "cb_docs/rules/guardrails.json" ]; then
         echo "   Restoring missing guardrails.json..."
-        git checkout 2bc80cc -- docs/rules/guardrails.json && cp docs/rules/guardrails.json cb_docs/rules/ && rm -rf docs/rules/guardrails.json
+        if git checkout 2bc80cc -- docs/rules/guardrails.json 2>/dev/null; then
+            cp docs/rules/guardrails.json cb_docs/rules/ && rm -rf docs/rules/guardrails.json
+            echo "   ✅ guardrails.json restored"
+        else
+            echo "   ❌ Failed to restore guardrails.json, creating minimal version"
+            mkdir -p cb_docs/rules
+            echo '{"forbiddenPatterns": [], "hints": []}' > cb_docs/rules/guardrails.json
+        fi
     fi
 fi
 
