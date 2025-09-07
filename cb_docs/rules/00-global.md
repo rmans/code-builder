@@ -17,6 +17,13 @@ alwaysApply: true
 - **One verification run maximum** unless user asks for more - additional runs are waste
 - **Always commit after successful completion** - commit changes when task is done successfully
 
+## Task Analysis and Planning
+- **Verify file paths and directory structures** - check existing codebase patterns before creating files
+- **Analyze existing usage before replacing modules** - understand current dependencies and usage patterns
+- **Check import paths and module structure** - verify actual import paths used by existing code
+- **When task specifications conflict with existing code** - prioritize working integration over literal interpretation
+- **Test basic functionality before comprehensive implementation** - validate core features work before adding complexity
+
 ## Rule Creation Guidelines
 - **Global rules** (`00-global.md`) - Universal coding principles, task execution, rule system guidelines
 - **Project rules** (`10-project.md`) - Project-specific conventions, naming, file organization, workflows

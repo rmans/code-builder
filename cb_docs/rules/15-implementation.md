@@ -66,3 +66,18 @@ alwaysApply: true
 - **Avoid terminal reuse** - don't rely on previous terminal state or environment
 - **Fresh shell for each command** - ensures clean environment and avoids hanging issues
 
+## Infrastructure Update Rules
+- **Before replacing core modules** - analyze existing usage and dependencies first
+- **Maintain backward compatibility** - when updating shared infrastructure, ensure existing code continues working
+- **Test integration with existing code** - verify new implementations work with existing systems before considering task complete
+- **Verify import paths and module structure** - check actual import paths used by existing code before creating files
+- **When specifications conflict with existing code** - prioritize working integration over literal task interpretation
+- **Always validate that new implementations work** - test basic functionality before comprehensive implementation
+
+## Testing Rules
+- **Check available testing frameworks** - verify what testing infrastructure exists before writing tests
+- **Create working validation scripts** - use simple validation scripts as fallback when formal testing isn't available
+- **Test basic functionality first** - verify core functionality works before writing comprehensive tests
+- **Test imports and dependencies** - ensure all imports work before writing complex test suites
+- **Use project's existing test infrastructure** - follow established testing patterns in the codebase
+
