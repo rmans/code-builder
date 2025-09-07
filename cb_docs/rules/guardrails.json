@@ -27,7 +27,11 @@
     { "pattern": "cat.*<<.*EOF.*cat.*<<.*MERGED_EOF", "message": "Nested heredocs detected - this causes syntax errors. Use external files or echo commands instead." },
     { "pattern": "cat.*>.*\\.cb/.*<<.*EOF", "message": "Writing to .cb/ directory without creating it first - add mkdir -p before file operations" },
     { "pattern": "install_.*\\.sh", "message": "Temporary install files detected - clean up debugging files after fixing issues" },
-    { "pattern": "setup_commands_.*\\.sh", "message": "Temporary setup files detected - clean up debugging files after fixing issues" }
+    { "pattern": "setup_commands_.*\\.sh", "message": "Temporary setup files detected - clean up debugging files after fixing issues" },
+    { "pattern": "Path\\('\\.cb/commands'\\)", "message": "Do not read from .cb/commands/ during development - use cb_docs/commands/ instead" },
+    { "pattern": "Path\\('\\.cb/engine/templates/commands'\\)", "message": "Do not read from .cb/engine/templates/commands/ during development - use cb_docs/templates/commands/ instead" },
+    { "pattern": "json\\.dumps\\(.*\\)(?!.*default=)", "message": "JSON serialization without custom serializer - add default parameter for date objects" },
+    { "pattern": "yaml\\.safe_load\\(.*\\)(?!.*except)", "message": "YAML loading without error handling - wrap in try/except block" }
   ],
   "hints": [
     { "pattern": "axios\\.create\\(", "message": "Use shared http client instead of axios.create()" },
