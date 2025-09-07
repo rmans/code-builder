@@ -44,8 +44,8 @@ cp -r builder .cb/
 mkdir -p .cb/cache  # Create empty cache directory
 mkdir -p .cb/bin
 
-# cb_docs directory already exists, skipping copy
-echo "   cb_docs/ already exists, skipping copy..."
+# cb_docs directory is the source of truth for documentation
+echo "   Using cb_docs/ as documentation source..."
 
 # Create virtual environment in .cb/
 echo "   Creating virtual environment..."
@@ -143,6 +143,6 @@ echo "   3. Add to shell: echo 'source .cb/activate' >> ~/.bashrc"
 echo ""
 echo "📁 Structure:"
 echo "   .cb/     - Essential overlay files (builder/, venv/, bin/, cache/)"
-echo "   cb_docs/ - Documentation directory (outputs go here)"
+echo "   cb_docs/ - Documentation directory (source of truth for docs)"
 echo ""
 echo "💡 The overlay system is now ready to use!"
