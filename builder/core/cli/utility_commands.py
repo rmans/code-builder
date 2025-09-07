@@ -253,24 +253,207 @@ def commands_sync(dry_run):
     
     return 0
 
-# Placeholder for other utility commands
+# Utility Commands
 @cli.command("cleanup:artifacts")
-@common_dry_run_option()
-def cleanup_artifacts(dry_run):
-    """Clean up test/example artifacts from the project."""
-    click.echo("🧹 Cleanup artifacts command - to be implemented")
+@click.option("--dry-run", is_flag=True, default=True, help="Show what would be cleaned up without actually deleting")
+@click.option("--clean", is_flag=True, help="Actually perform the cleanup")
+@click.option("--root", default=".", help="Root directory to scan")
+@click.option("--ignore-agents", is_flag=True, help="Ignore agent ownership and clean all artifacts")
+@click.option("--check-agents", is_flag=True, help="Check for active agents before cleanup")
+@click.option("--agent-workspaces", is_flag=True, help="Also clean up completed agent workspaces")
+def cleanup_artifacts(dry_run, clean, root, ignore_agents, check_agents, agent_workspaces):
+    """Clean up test/example artifacts outside of designated directories."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        
+        try:
+            from utils.cleanup_rules import ArtifactCleaner
+            from utils.agent_tracker import AgentTracker
+        except ImportError:
+            click.echo("❌ Required utility modules not available. Make sure utils/cleanup_rules.py and utils/agent_tracker.py exist.")
+            return 1
+        
+        respect_ownership = not ignore_agents
+        cleaner = ArtifactCleaner(root, respect_agent_ownership=respect_ownership)
+        
+        # Check for active agents if requested
+        if check_agents and not ignore_agents:
+            try:
+                agent_tracker = AgentTracker()
+                active_agents = agent_tracker.get_active_sessions()
+                if active_agents:
+                    click.echo(f"⚠️ Found {len(active_agents)} active agent sessions:")
+                    for session in active_agents:
+                        click.echo(f"   • {session.session_id}: {session.agent_id} ({len(session.created_files)} files)")
+                    click.echo("🛡️ Agent ownership protection enabled - will skip files created by active agents")
+                else:
+                    click.echo("✅ No active agents found - safe to clean all artifacts")
+            except Exception as e:
+                click.echo(f"⚠️ Could not check agent status: {e}")
+        
+        if respect_ownership:
+            click.echo("🛡️ Agent ownership protection enabled - will skip files created by active agents")
+        else:
+            click.echo("⚠️ Agent ownership protection disabled - will clean all artifacts")
+        
+        # Clean up agent workspaces if requested
+        if agent_workspaces:
+            click.echo("🧹 Cleaning up completed agent workspaces...")
+            try:
+                from utils.multi_agent_cursor import MultiAgentCursorManager
+                manager = MultiAgentCursorManager()
+                cleaned_workspaces = manager.cleanup_completed_workspaces()
+                if cleaned_workspaces:
+                    click.echo(f"✅ Cleaned up {len(cleaned_workspaces)} completed agent workspaces")
+                else:
+                    click.echo("ℹ️ No completed agent workspaces found")
+            except ImportError:
+                click.echo("⚠️ MultiAgentCursorManager not available - skipping workspace cleanup")
+            except Exception as e:
+                click.echo(f"⚠️ Error cleaning workspaces: {e}")
+        
+        if clean:
+            click.echo("🧹 Performing cleanup...")
+            cleaned_files = cleaner.cleanup()
+            if cleaned_files:
+                click.echo(f"✅ Cleaned up {len(cleaned_files)} files:")
+                for file_path in cleaned_files:
+                    click.echo(f"   • {file_path}")
+            else:
+                click.echo("ℹ️ No files needed cleanup")
+        else:
+            click.echo("🔍 Scanning for artifacts to clean up...")
+            artifacts = cleaner.scan()
+            if artifacts:
+                click.echo(f"Found {len(artifacts)} files that could be cleaned up:")
+                for file_path in artifacts:
+                    click.echo(f"   • {file_path}")
+                click.echo("\nUse --clean to actually perform the cleanup")
+            else:
+                click.echo("✅ No artifacts found that need cleanup")
+        
+    except Exception as e:
+        click.echo(f"❌ Error during cleanup: {e}")
+        return 1
+    
     return 0
 
 @cli.command("yaml:check")
 @click.argument("target", default=".")
-def yaml_check(target):
-    """Check YAML files for syntax errors."""
-    click.echo("📋 YAML check command - to be implemented")
+@click.option("--yaml-file", help="Validate specific YAML file")
+def yaml_check(target, yaml_file):
+    """Check for Python code issues in YAML files."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        
+        try:
+            from utils.yaml_python_validator import validate_yaml_python, find_python_in_yaml_files
+        except ImportError:
+            click.echo("❌ Required utility module not available. Make sure utils/yaml_python_validator.py exists.")
+            return 1
+        
+        if yaml_file:
+            # Validate specific YAML file
+            is_valid, errors, warnings = validate_yaml_python(yaml_file)
+            
+            click.echo(f"Validating Python code in YAML: {yaml_file}")
+            
+            if warnings:
+                for warning in warnings:
+                    click.echo(f"  ⚠️  {warning}")
+            
+            if errors:
+                for error in errors:
+                    click.echo(f"  ❌ {error}")
+            
+            if is_valid:
+                click.echo("  ✅ Python code in YAML is valid")
+            else:
+                click.echo("  ❌ Python code in YAML has issues")
+                return 1
+        else:
+            # Find Python issues in YAML files
+            click.echo(f"Checking for Python code issues in YAML files: {target}")
+            issues = find_python_in_yaml_files(target)
+            
+            if issues:
+                click.echo("\nFound Python code issues in YAML files:")
+                for file_path, file_issues in issues.items():
+                    click.echo(f"\n{file_path}:")
+                    for issue in file_issues:
+                        click.echo(f"  {issue}")
+                return 1
+            else:
+                click.echo("✅ No Python code issues found in YAML files")
+        
+    except Exception as e:
+        click.echo(f"❌ Error checking YAML files: {e}")
+        return 1
+    
     return 0
 
 @cli.command("fields:check")
 @click.argument("target", default=".")
-def fields_check(target):
-    """Check field consistency across documents."""
-    click.echo("📋 Fields check command - to be implemented")
+@click.option("--context-pack", help="Validate specific context pack file")
+def fields_check(target, context_pack):
+    """Check for field name consistency issues."""
+    try:
+        import sys
+        import os
+        # Add the builder directory to the path to import from utils
+        builder_dir = os.path.join(os.path.dirname(__file__), '..')
+        sys.path.insert(0, os.path.abspath(builder_dir))
+        
+        try:
+            from utils.field_name_validator import validate_context_pack_fields, find_field_name_issues
+        except ImportError:
+            click.echo("❌ Required utility module not available. Make sure utils/field_name_validator.py exists.")
+            return 1
+        
+        if context_pack:
+            # Validate specific context pack
+            is_valid, errors, warnings = validate_context_pack_fields(context_pack)
+            
+            click.echo(f"Validating context pack: {context_pack}")
+            
+            if warnings:
+                for warning in warnings:
+                    click.echo(f"  ⚠️  {warning}")
+            
+            if errors:
+                for error in errors:
+                    click.echo(f"  ❌ {error}")
+            
+            if is_valid:
+                click.echo("  ✅ Context pack field names are valid")
+            else:
+                click.echo("  ❌ Context pack has field name issues")
+                return 1
+        else:
+            # Find field name issues in directory
+            click.echo(f"Checking for field name issues in: {target}")
+            issues = find_field_name_issues(target)
+            
+            if issues:
+                click.echo("\nFound field name issues:")
+                for file_path, file_issues in issues.items():
+                    click.echo(f"\n{file_path}:")
+                    for issue in file_issues:
+                        click.echo(f"  ❌ {issue}")
+                return 1
+            else:
+                click.echo("✅ No field name issues found")
+        
+    except Exception as e:
+        click.echo(f"❌ Error checking field names: {e}")
+        return 1
+    
     return 0

@@ -75,9 +75,9 @@ builder/core/cli/
 - [x] Test evaluation commands functionality
 
 ### Phase 8: 🛠️ Extract Utility Commands
-- [ ] Move `commands:*`, `cleanup:*`, `yaml:*`, `fields:*` commands to `utility_commands.py`
-- [ ] Extract shared utility functions
-- [ ] Test utility commands functionality
+- [x] Move `commands:*`, `cleanup:*`, `yaml:*`, `fields:*` commands to `utility_commands.py`
+- [x] Extract shared utility functions
+- [x] Test utility commands functionality
 
 ### Phase 9: 🔄 Extract Iteration Commands
 - [ ] Move `iter:*`, `plan:*` commands to `iteration_commands.py`
