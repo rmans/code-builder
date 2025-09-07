@@ -90,9 +90,9 @@ builder/core/cli/
 - [x] Test workflow commands functionality
 
 ### Phase 11: 🧹 Cleanup and Testing
-- [ ] Remove original `cli.py` file
-- [ ] Update imports throughout codebase
-- [ ] Run comprehensive tests
+- [x] Remove original `cli.py` file
+- [x] Update imports throughout codebase
+- [x] Run comprehensive tests
 - [ ] Update documentation
 
 ### Phase 12: 📚 Documentation
