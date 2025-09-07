@@ -18,7 +18,10 @@
     { "pattern": "\\.cb/", "message": "Do not create files in .cb/ directory - this is only created by the installer. Use configuration paths instead (get_effective_docs_dir(), get_effective_cache_dir(), etc.)" },
     { "pattern": "\"\\\\.cb/", "message": "Do not reference .cb/ directory in code - use configuration paths instead" },
     { "pattern": "'\\\\.cb/", "message": "Do not reference .cb/ directory in code - use configuration paths instead" },
-    { "pattern": "`\\\\.cb/", "message": "Do not reference .cb/ directory in code - use configuration paths instead" }
+    { "pattern": "`\\\\.cb/", "message": "Do not reference .cb/ directory in code - use configuration paths instead" },
+    { "pattern": "cp -r \\.cursor", "message": "Do not copy .cursor/rules/ during installation - this creates conflicts with project rules. Use rule merger instead." },
+    { "pattern": "cp -r.*\\.cursor", "message": "Do not copy .cursor directory during installation - this copies rules and creates conflicts. Use rule merger instead." },
+    { "pattern": "cp.*rules.*\\.cb", "message": "Do not copy rules to .cb/ directory - this creates conflicts with project rules. Use rule merger instead." }
   ],
   "hints": [
     { "pattern": "axios\\.create\\(", "message": "Use shared http client instead of axios.create()" },
