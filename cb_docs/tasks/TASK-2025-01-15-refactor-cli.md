@@ -80,9 +80,9 @@ builder/core/cli/
 - [x] Test utility commands functionality
 
 ### Phase 9: 🔄 Extract Iteration Commands
-- [ ] Move `iter:*`, `plan:*` commands to `iteration_commands.py`
-- [ ] Extract shared iteration utilities
-- [ ] Test iteration commands functionality
+- [x] Move `iter:*`, `plan:*` commands to `iteration_commands.py`
+- [x] Extract shared iteration utilities
+- [x] Test iteration commands functionality
 
 ### Phase 10: ⚙️ Extract Workflow Commands
 - [ ] Move `workflows:*` commands to `workflow_commands.py`
