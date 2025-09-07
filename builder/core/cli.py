@@ -7342,7 +7342,7 @@ def commands_list(output_format, status):
     import os
     from pathlib import Path
     
-    commands_dir = Path('.cb/commands')
+    commands_dir = Path('cb_docs/commands')
     if not commands_dir.exists():
         click.echo("❌ No commands directory found. Run 'cb commands:refresh' first.")
         return 1
@@ -7428,7 +7428,7 @@ def commands_show(command_name, output_format):
     import yaml
     from pathlib import Path
     
-    commands_dir = Path('.cb/commands')
+    commands_dir = Path('cb_docs/commands')
     if not commands_dir.exists():
         click.echo("❌ No commands directory found. Run 'cb commands:refresh' first.")
         return 1
@@ -7516,12 +7516,12 @@ def commands_show(command_name, output_format):
 @cli.command("commands:refresh")
 @click.option("--force", is_flag=True, help="Force refresh even if commands directory exists")
 def commands_refresh(force):
-    """Refresh commands from templates and sync to .cb/commands/."""
+    """Refresh commands from templates and sync to cb_docs/commands/."""
     import shutil
     from pathlib import Path
     
-    commands_dir = Path('.cb/commands')
-    templates_dir = Path('.cb/engine/templates/commands')
+    commands_dir = Path('cb_docs/commands')
+    templates_dir = Path('cb_docs/templates/commands')
     
     if not templates_dir.exists():
         click.echo("❌ No templates directory found. Run installer first.")
@@ -7573,7 +7573,7 @@ def commands_sync(dry_run):
     from pathlib import Path
     import subprocess
     
-    commands_dir = Path('.cb/commands')
+    commands_dir = Path('cb_docs/commands')
     if not commands_dir.exists():
         click.echo("❌ No commands directory found. Run 'cb commands:refresh' first.")
         return 1

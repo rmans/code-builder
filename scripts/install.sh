@@ -28,7 +28,19 @@ setup_commands() {
     mkdir -p .cb/engine/templates/commands
     mkdir -p .cb/commands
     
-    # Create basic command files in .cb/commands/
+    # Copy command files from cb_docs/ to .cb/commands/
+    if [ -d "cb_docs/commands" ]; then
+        echo "   📋 Copying commands from cb_docs/commands/ to .cb/commands/"
+        cp cb_docs/commands/*.md .cb/commands/ 2>/dev/null || true
+    fi
+    
+    # Copy templates from cb_docs/ to .cb/engine/templates/commands/
+    if [ -d "cb_docs/templates/commands" ]; then
+        echo "   📋 Copying templates from cb_docs/templates/commands/ to .cb/engine/templates/commands/"
+        cp cb_docs/templates/commands/*.md .cb/engine/templates/commands/ 2>/dev/null || true
+    fi
+    
+    # Create basic command files in .cb/commands/ if none exist
     echo "   📝 Creating command files..."
     
     # Create analyze-project command
