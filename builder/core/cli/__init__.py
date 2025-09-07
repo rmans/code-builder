@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+"""
+Code Builder CLI - Modular Command Structure
+
+This module provides a modular CLI structure for the Code Builder system.
+Commands are organized into logical modules based on functionality.
+"""
+
+import click
+from .base import cli
+
+# Import all command modules to register them
+from . import (
+    document_commands,
+    context_commands,
+    discovery_commands,
+    agent_commands,
+    orchestrator_commands,
+    evaluation_commands,
+    utility_commands,
+    iteration_commands,
+    workflow_commands,
+)
+
+__all__ = ['cli']
+
+if __name__ == "__main__":
+    cli()
