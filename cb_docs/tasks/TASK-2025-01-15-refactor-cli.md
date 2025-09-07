@@ -40,14 +40,14 @@ builder/core/cli/
 ## Phases
 
 ### Phase 1: 🚀 Setup Module Structure
-- [ ] Create `builder/core/cli/` directory
-- [ ] Create base module with common utilities
-- [ ] Set up module imports and CLI group registration
+- [x] Create `builder/core/cli/` directory
+- [x] Create base module with common utilities
+- [x] Set up module imports and CLI group registration
 
 ### Phase 2: 📝 Extract Document Commands
-- [ ] Move `doc:*`, `adr:*`, `master:*` commands to `document_commands.py`
-- [ ] Extract shared document utilities
-- [ ] Test document commands functionality
+- [x] Move `doc:*`, `adr:*`, `master:*` commands to `document_commands.py`
+- [x] Extract shared document utilities
+- [x] Test document commands functionality
 
 ### Phase 3: 🧠 Extract Context Commands  
 - [ ] Move `ctx:*`, `context:*` commands to `context_commands.py`
