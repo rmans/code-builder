@@ -70,6 +70,19 @@ cp -r builder .cb/
 cp -r .cursor .cb/  # Copy .cursor/rules for Code Builder
 cp .cursorrules .cb/  # Copy .cursorrules for Cursor configuration
 cp -r .github .cb/  # Copy .github/ for GitHub Actions and templates
+
+# Copy important configuration files
+cp .markdownlint.json .cb/  # Markdown linting configuration
+cp cspell.json .cb/  # Spell checking configuration
+cp eslint.config.js .cb/  # ESLint configuration
+cp pytest.ini .cb/  # Python testing configuration
+cp tsconfig.json .cb/  # TypeScript configuration
+cp tsconfig.build.json .cb/  # TypeScript build configuration
+cp vitest.config.ts .cb/  # Testing configuration
+cp package.json .cb/  # Node.js package configuration
+cp pnpm-workspace.yaml .cb/  # pnpm workspace configuration
+cp LICENSE .cb/  # License file
+
 mkdir -p .cb/cache  # Create empty cache directory
 mkdir -p .cb/bin
 
