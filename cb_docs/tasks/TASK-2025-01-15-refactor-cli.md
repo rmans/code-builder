@@ -85,9 +85,9 @@ builder/core/cli/
 - [x] Test iteration commands functionality
 
 ### Phase 10: ⚙️ Extract Workflow Commands
-- [ ] Move `workflows:*` commands to `workflow_commands.py`
-- [ ] Extract shared workflow utilities
-- [ ] Test workflow commands functionality
+- [x] Move `workflows:*` commands to `workflow_commands.py`
+- [x] Extract shared workflow utilities
+- [x] Test workflow commands functionality
 
 ### Phase 11: 🧹 Cleanup and Testing
 - [ ] Remove original `cli.py` file
