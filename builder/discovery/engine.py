@@ -20,12 +20,13 @@ from .validator import DiscoveryValidator
 class DiscoveryEngine:
     """Main engine for orchestrating code discovery processes."""
     
-    def __init__(self, root_path: str = ".", question_set: str = "comprehensive"):
+    def __init__(self, root_path: str = ".", question_set: str = "comprehensive", test_answers_file: Optional[str] = None):
         """Initialize the discovery engine.
         
         Args:
             root_path: Root directory of the project to analyze
             question_set: Question set to use (new_product, existing_product, comprehensive)
+            test_answers_file: Optional path to test answers JSON file for testing
         """
         self.root_path = Path(root_path).resolve()
         # Use overlay paths if available
@@ -38,9 +39,10 @@ class DiscoveryEngine:
         self.cache_dir = cache_base / "discovery"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.question_set = question_set
+        self.test_answers_file = test_answers_file
         
         # Initialize components
-        self.interview = DiscoveryInterview(question_set=question_set)
+        self.interview = DiscoveryInterview(question_set=question_set, test_answers_file=test_answers_file)
         self.analyzer = CodeAnalyzer()
         self.synthesizer = DiscoverySynthesizer()
         self.generators = DiscoveryGenerators()

@@ -10,6 +10,9 @@ import os
 import re
 from typing import Dict, List, Any, Optional
 from pathlib import Path
+from ..config.settings import get_config
+
+config = get_config()
 from datetime import datetime
 
 
@@ -480,11 +483,11 @@ class DiscoveryGenerators:
         
         # Look for ADR files in common locations
         adr_dirs = [
-            Path('docs/adrs'),
-            Path('docs/adr'),
+            Path('cb_docs/adrs'),
+            Path('cb_docs/adr'),
             Path('adrs'),
-            Path('docs/decisions'),
-            Path('docs/architecture/decisions')
+            Path('cb_docs/decisions'),
+            Path('cb_docs/architecture/decisions')
         ]
         
         for adr_dir in adr_dirs:
@@ -573,7 +576,7 @@ class DiscoveryGenerators:
             relevance_score = self._calculate_adr_relevance(adr, key_terms, synthesis_data)
             
             # Include ADR if relevance score is above threshold
-            if relevance_score > 0.1:  # 10% relevance threshold
+            if relevance_score > config.relevance_threshold_low:  # 10% relevance threshold
                 adr_id = adr.get('id', adr.get('file_name', '').replace('.md', ''))
                 if adr_id:
                     related_adrs.append(adr_id)
@@ -651,24 +654,24 @@ class DiscoveryGenerators:
         if title:
             title_matches = sum(1 for term in key_terms if term in title)
             title_score = title_matches / len(key_terms) if key_terms else 0
-            score += title_score * 0.4  # 40% weight for title
-            total_weight += 0.4
+            score += title_score * config.score_title_weight  # 40% weight for title
+            total_weight += config.score_title_weight
         
         # Check tags relevance
         tags = adr.get('tags', [])
         if tags:
             tag_matches = sum(1 for tag in tags if any(term in tag.lower() for term in key_terms))
             tag_score = tag_matches / len(tags) if tags else 0
-            score += tag_score * 0.3  # 30% weight for tags
-            total_weight += 0.3
+            score += tag_score * config.score_tags_weight  # 30% weight for tags
+            total_weight += config.score_tags_weight
         
         # Check content relevance
         content = adr.get('content', '').lower()
         if content:
             content_matches = sum(1 for term in key_terms if term in content)
             content_score = content_matches / len(key_terms) if key_terms else 0
-            score += content_score * 0.2  # 20% weight for content
-            total_weight += 0.2
+            score += content_score * config.score_content_weight  # 20% weight for content
+            total_weight += config.score_content_weight
         
         # Check technology stack relevance
         detected = synthesis_data.get('detected', {})
@@ -680,8 +683,8 @@ class DiscoveryGenerators:
         if tech_terms and content:
             tech_matches = sum(1 for tech in tech_terms if tech in content)
             tech_score = tech_matches / len(tech_terms) if tech_terms else 0
-            score += tech_score * 0.1  # 10% weight for technology
-            total_weight += 0.1
+            score += tech_score * config.score_tech_weight  # 10% weight for technology
+            total_weight += config.score_tech_weight
         
         # Normalize score
         return score / total_weight if total_weight > 0 else 0.0
@@ -760,8 +763,8 @@ class DiscoveryGenerators:
         prd_artifacts = {}
         
         try:
-            # Ensure docs/prd directory exists
-            prd_dir = Path('docs/prd')
+            # Ensure cb_docs/prd directory exists
+            prd_dir = Path('cb_docs/prd')
             prd_dir.mkdir(parents=True, exist_ok=True)
             
             # Discover existing ADRs and find related ones
@@ -791,7 +794,7 @@ class DiscoveryGenerators:
     
     def _update_master_prd_file(self, prd_id: str, synthesis_data: Dict[str, Any]) -> None:
         """Update the master PRD file with the new PRD entry."""
-        master_file = Path('docs/prd/0000_MASTER_PRD.md')
+        master_file = Path('cb_docs/prd/0000_MASTER_PRD.md')
         if not master_file.exists():
             return
         

@@ -15,6 +15,9 @@ from typing import Dict, List, Set, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta
 
+# Import configuration system
+from ..config.settings import get_config
+
 
 @dataclass
 class AgentSession:
@@ -32,7 +35,11 @@ class AgentSession:
 class AgentTracker:
     """Tracks agent sessions and file ownership for safe cleanup."""
     
-    def __init__(self, cache_dir: str = "builder/cache"):
+    def __init__(self, cache_dir: str = None):
+        # Use configuration system for cache directory
+        config = get_config()
+        if cache_dir is None:
+            cache_dir = config.get_effective_cache_dir()
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.sessions_file = self.cache_dir / "agent_sessions.json"

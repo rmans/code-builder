@@ -2,6 +2,6 @@
   "version": "0.2",
   "useGitignore": true,
   "ignorePaths": ["node_modules", "dist", "coverage", ".venv", "builder/cache"],
-  "files": ["README.md", "docs/**/*.md", "src/**/*.{ts,tsx}"],
+  "files": ["README.md", "cb_docs/**/*.md", "src/**/*.{ts,tsx}"],
   "reporters": [["@cspell/cspell-json-reporter", { "outFile": "builder/cache/cspell.json" }]]
 }

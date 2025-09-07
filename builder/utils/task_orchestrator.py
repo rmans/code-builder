@@ -20,6 +20,9 @@ from datetime import datetime, timedelta
 from enum import Enum
 import networkx as nx
 
+# Import configuration system
+from ..config.settings import get_config
+
 
 class TaskStatus(Enum):
     """Task execution status."""
@@ -87,7 +90,11 @@ class Agent:
 class TaskOrchestrator:
     """Orchestrates task execution with dependency management."""
     
-    def __init__(self, cache_dir: str = "builder/cache"):
+    def __init__(self, cache_dir: str = None):
+        # Use configuration system for cache directory
+        config = get_config()
+        if cache_dir is None:
+            cache_dir = config.get_effective_cache_dir()
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         
@@ -546,7 +553,8 @@ class TaskOrchestrator:
         """Select ABC winner based on objective scores (automated selection)."""
         try:
             # Look for variant files in cache
-            cache_dir = Path("builder/cache")
+            config = get_config()
+            cache_dir = Path(config.get_effective_cache_dir())
             variant_files = {
                 "A": cache_dir / "variant_A.ts",
                 "B": cache_dir / "variant_B.ts", 

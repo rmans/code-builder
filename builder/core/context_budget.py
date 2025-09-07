@@ -25,20 +25,23 @@ class BudgetItem:
 class ContextBudgetManager:
     """Token-aware budget manager for context selection"""
     
-    # Per-purpose budget percentages
-    BUDGET_PERCENTAGES = {
-        'rules': 0.15,      # 15%
-        'acceptance': 0.25, # 25%
-        'adr': 0.15,        # 15%
-        'integration': 0.15, # 15%
-        'arch': 0.10,       # 10%
-        'code': 0.20        # 20% (code + test)
-    }
-    
-    # Token estimation factor
-    TOKEN_FACTOR = 1.3
-    
     def __init__(self, total_budget: int = 8000):
+        from ..config.settings import get_config
+        self.config = get_config()
+        
+        # Per-purpose budget percentages
+        self.BUDGET_PERCENTAGES = {
+            'rules': self.config.budget_rules,      # 15%
+            'acceptance': self.config.budget_acceptance, # 25%
+            'adr': self.config.budget_adr,        # 15%
+            'integration': self.config.budget_integration, # 15%
+            'arch': self.config.budget_arch,       # 10%
+            'code': self.config.budget_code        # 20% (code + test)
+        }
+        
+        # Token estimation factor
+        self.TOKEN_FACTOR = self.config.budget_token_factor
+        
         self.total_budget = total_budget
         self.budget_allocations = self._calculate_budget_allocations()
     

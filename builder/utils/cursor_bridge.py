@@ -18,15 +18,15 @@ try:
 except ImportError:
     HAS_PYPERCLIP = False
 
-# Import overlay paths for dual-mode support
-try:
-    from ..overlay.paths import OverlayPaths
-    overlay_paths = OverlayPaths()
-    ROOT = overlay_paths.get_root()
-except ImportError:
-    # Fallback for standalone mode
-    ROOT = os.path.dirname(os.path.dirname(__file__))
-CONFIG_PATH = os.path.join(ROOT, "docs", "eval", "config.yaml")
+# Import configuration and overlay paths for dual-mode support
+from ..config.settings import get_config
+from ..overlay.paths import OverlayPaths
+
+# Initialize configuration and paths
+config = get_config()
+overlay_paths = OverlayPaths()
+ROOT = overlay_paths.get_root()
+CONFIG_PATH = os.path.join(overlay_paths.get_docs_dir(), "eval", "config.yaml")
 
 def load_config() -> Dict[str, Any]:
     """Load evaluation configuration"""
@@ -117,7 +117,7 @@ def parse_cursor_response(clipboard_or_file: Union[str, Path]) -> Dict[str, Any]
     
     return data
 
-def watch_for_cursor(poll_interval: float = 1.0, timeout: float = 60.0) -> Optional[Dict[str, Any]]:
+def watch_for_cursor(poll_interval: float = None, timeout: float = None) -> Optional[Dict[str, Any]]:
     """
     Monitor clipboard for Cursor JSON response.
     
@@ -128,6 +128,14 @@ def watch_for_cursor(poll_interval: float = 1.0, timeout: float = 60.0) -> Optio
     Returns:
         Parsed evaluation data or None if timeout
     """
+    from ..config.settings import get_config
+    
+    config = get_config()
+    if poll_interval is None:
+        poll_interval = config.network_poll_interval
+    if timeout is None:
+        timeout = config.network_timeout
+    
     if not HAS_PYPERCLIP:
         print("Warning: pyperclip not available. Install with: pip install pyperclip")
         return None
@@ -179,8 +187,8 @@ def merge_evaluations(objective: Dict[str, Any], subjective: Dict[str, Any],
         config = load_config()
         artifact_type = objective.get('artifact_type', 'code')
         artifact_weights = config.get('artifact_weights', {}).get(artifact_type, {
-            'objective': 0.7, 
-            'subjective': 0.3
+            'objective': config.eval_objective_weight, 
+            'subjective': config.eval_subjective_weight
         })
     else:
         artifact_weights = weights
@@ -210,16 +218,16 @@ def merge_evaluations(objective: Dict[str, Any], subjective: Dict[str, Any],
         else:
             # Use subjective score if no objective equivalent
             blended_scores[dimension] = subj_scores[dimension]
-            confidence_factors.append(0.5)  # Medium confidence for subjective-only
+            confidence_factors.append(config.eval_confidence_threshold)  # Medium confidence for subjective-only
     
     # Calculate overall blended score
-    obj_overall = obj_scores.get('overall', 50)
-    subj_overall = subjective.get('overall_score', 50)
+    obj_overall = obj_scores.get('overall', config.eval_default_score)
+    subj_overall = subjective.get('overall_score', config.eval_default_score)
     overall_blended = (obj_overall * artifact_weights['objective'] + 
                       subj_overall * artifact_weights['subjective'])
     
     # Calculate confidence bounds
-    avg_confidence = sum(confidence_factors) / len(confidence_factors) if confidence_factors else 0.5
+    avg_confidence = sum(confidence_factors) / len(confidence_factors) if confidence_factors else config.eval_confidence_threshold
     confidence_interval = 10 * (1 - avg_confidence)  # Wider interval for lower confidence
     
     return {

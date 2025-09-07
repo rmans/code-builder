@@ -44,7 +44,7 @@ class ArtifactCleaner:
         self.rules = self._load_cleanup_rules()
         self.designated_dirs = {
             "test": ["test/", "tests/", "spec/", "specs/"],
-            "example": ["examples/", "docs/examples/", "sample/", "samples/"],
+            "example": ["examples/", "cb_docs/examples/", "sample/", "samples/"],
             "cache": ["builder/cache/", ".cache/", "node_modules/", ".git/"],
             "venv": [".venv/", "venv/", "env/", ".env/"]
         }
@@ -62,7 +62,7 @@ class ArtifactCleaner:
                 name="test_documents",
                 pattern=r"^(PRD|ARCH|IMPL|EXEC|UX|INTEGRATIONS|TASKS|ADR)-\d{4}-\d{2}-\d{2}-test-",
                 description="Test documents with test- prefix",
-                directories_to_ignore=["test/", "tests/", "docs/examples/"],
+                directories_to_ignore=["test/", "tests/", "cb_docs/examples/"],
                 file_extensions=[".md"]
             ),
             
@@ -71,7 +71,7 @@ class ArtifactCleaner:
                 name="example_documents",
                 pattern=r"^(PRD|ARCH|IMPL|EXEC|UX|INTEGRATIONS|TASKS|ADR)-\d{4}-\d{2}-\d{2}-example-",
                 description="Example documents with example- prefix",
-                directories_to_ignore=["examples/", "docs/examples/", "sample/"],
+                directories_to_ignore=["examples/", "cb_docs/examples/", "sample/"],
                 file_extensions=[".md"]
             ),
             
@@ -107,7 +107,7 @@ class ArtifactCleaner:
                 name="empty_templates",
                 pattern=r"^(PRD|ARCH|IMPL|EXEC|UX|INTEGRATIONS|TASKS|ADR)-\d{4}-\d{2}-\d{2}-.*\.md$",
                 description="Empty template documents",
-                directories_to_ignore=["templates/", "docs/templates/"],
+                directories_to_ignore=["templates/", "cb_docs/templates/"],
                 file_extensions=[".md"]
             )
         ]

@@ -84,12 +84,12 @@ def test_detector():
         "src/utils/http.ts",
         "test/hello.test.ts",
         "vitest.config.ts",
-        "docs/SPEC_hello.md",
-        "docs/adrs/ADR-0001.md",
-        "docs/adrs/ADR-0002.md",
-        "docs/rules/00-global.md",
-        "docs/rules/10-project.md",
-        "docs/eval/config.yaml",
+        "cb_docs/SPEC_hello.md",
+        "cb_docs/adrs/ADR-0001.md",
+        "cb_docs/adrs/ADR-0002.md",
+        "cb_docs/rules/00-global.md",
+        "cb_docs/rules/10-project.md",
+        "cb_docs/eval/config.yaml",
         "package.json",
         "README.md"
     ]

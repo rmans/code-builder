@@ -38,7 +38,7 @@ def demonstrate_cursor_agents():
     
     # Load tasks from files
     print("\n📋 Loading tasks from TASK-*.md files...")
-    parser = TaskFileParser("docs/tasks")
+    parser = TaskFileParser("cb_docs/tasks")
     orchestrator_tasks = parser.load_tasks_from_files()
     
     for task in orchestrator_tasks:

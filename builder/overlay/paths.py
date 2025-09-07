@@ -9,16 +9,18 @@ Code runs from .cb/ and outputs to cb_docs/
 import os
 from pathlib import Path
 from typing import Optional
+from builder.config.settings import get_config
 
 
 class OverlayPaths:
     """Manages path resolution for overlay and standalone modes."""
     
     def __init__(self):
-        self.cb_mode = os.environ.get("CB_MODE", "standalone")
-        self.cb_docs_dir = os.environ.get("CB_DOCS_DIR")
-        self.cb_cache_dir = os.environ.get("CB_CACHE_DIR")
-        self.cb_engine_dir = os.environ.get("CB_ENGINE_DIR")
+        self.config = get_config()
+        self.cb_mode = self.config.mode
+        self.cb_docs_dir = os.environ.get(self.config.cb_docs_dir_env)
+        self.cb_cache_dir = os.environ.get(self.config.cb_cache_dir_env)
+        self.cb_engine_dir = os.environ.get(self.config.cb_engine_dir_env)
     
     def is_overlay_mode(self) -> bool:
         """Check if we're running in overlay mode."""
@@ -42,13 +44,14 @@ class OverlayPaths:
         """Get the documentation directory."""
         if self.is_overlay_mode() and self.cb_docs_dir:
             return self.cb_docs_dir
-        return os.path.join(self.get_root(), 'docs')
+        # Use configuration for docs directory
+        return os.path.join(self.get_root(), self.config.docs_dir)
     
     def get_cache_dir(self) -> str:
         """Get the cache directory."""
         if self.is_overlay_mode() and self.cb_cache_dir:
             return self.cb_cache_dir
-        return os.path.join(self.get_root(), 'builder', 'cache')
+        return os.path.join(self.get_root(), self.config.cache_dir)
     
     def get_templates_dir(self) -> str:
         """Get the templates directory."""
@@ -56,8 +59,8 @@ class OverlayPaths:
             # Overlay mode: use cb_docs/templates
             return os.path.join(self.cb_docs_dir, 'templates')
         else:
-            # Standalone mode: use docs/templates
-            return os.path.join(self.get_root(), 'docs', 'templates')
+            # Use configuration for templates directory
+            return os.path.join(self.get_root(), self.config.templates_dir)
     
     def get_rules_dir(self) -> str:
         """Get the rules directory."""
@@ -65,8 +68,8 @@ class OverlayPaths:
             # Overlay mode: use cb_docs/rules
             return os.path.join(self.cb_docs_dir, 'rules')
         else:
-            # Standalone mode: use docs/rules
-            return os.path.join(self.get_root(), 'docs', 'rules')
+            # Use configuration for rules directory
+            return os.path.join(self.get_root(), self.config.rules_dir)
     
     def get_engine_dir(self) -> str:
         """Get the engine directory."""
@@ -80,9 +83,9 @@ class OverlayPaths:
             # Overlay mode: use cb_docs
             return [self.cb_docs_dir] if os.path.exists(self.cb_docs_dir) else []
         else:
-            # Standalone mode: use docs
-            docs = os.path.join(self.get_root(), 'docs')
-            return [docs] if os.path.exists(docs) else []
+            # Use configuration for docs directory
+            docs_dir = os.path.join(self.get_root(), self.config.docs_dir)
+            return [docs_dir] if os.path.exists(docs_dir) else []
     
     def ensure_dirs(self) -> None:
         """Ensure all required directories exist."""

@@ -88,7 +88,7 @@ def create_example_tasks():
             task_id="create-docs",
             name="Create Documentation",
             description="Generate API and user documentation",
-            command="echo 'Docs created' > docs/README.md",
+            command="echo 'Docs created' > cb_docs/README.md",
             working_directory=".",
             dependencies=["create-api"],
             estimated_duration=8,

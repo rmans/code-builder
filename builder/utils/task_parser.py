@@ -34,7 +34,7 @@ class TaskFile:
 class TaskFileParser:
     """Parses TASK-*.md files and extracts task information."""
     
-    def __init__(self, tasks_dir: str = "docs/tasks"):
+    def __init__(self, tasks_dir: str = "cb_docs/tasks"):
         self.tasks_dir = Path(tasks_dir)
     
     def find_task_files(self) -> List[Path]:

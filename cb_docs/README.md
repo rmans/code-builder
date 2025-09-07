@@ -50,20 +50,20 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 
 ---
 
-## ADRs (docs/adrs/)
+## ADRs (cb_docs/adrs/)
 - `0000_MASTER_ADR.md` = index of all decisions
 - Sub ADRs like `ADR-0001.md` created by `builder:adr:new`
 - Each ADR records context, decision, consequences, alternatives
 
 ---
 
-## Templates (docs/templates/)
+## Templates (cb_docs/templates/)
 - Jinja2 templates for ADRs and specs
 - Used by CLI to render files
 
 ---
 
-## Rules (docs/rules/)
+## Rules (cb_docs/rules/)
 - `00-global.md`, `10-project.md` = global + project-wide rules
 - `stack/` (e.g. typescript, react, http-client)
 - `feature/` (auth, content-engine, etc.)
@@ -71,7 +71,7 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 
 ---
 
-## Evaluation (docs/eval/)
+## Evaluation (cb_docs/eval/)
 - `config.yaml` = evaluation weights and configuration
 - Defines objective vs subjective weight distribution
 - Configures tool paths and scoring weights

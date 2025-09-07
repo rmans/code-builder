@@ -77,7 +77,7 @@ The Builder CLI is built around **8 core systems**:
 
       python3 -m builder adr:new "Create hello module" --parent ADR-0000 --related src/hello.ts --tags demo
 
-  Creates `docs/adrs/ADR-000X.md` and links it in `0000_MASTER_ADR.md`.
+  Creates `cb_docs/adrs/ADR-000X.md` and links it in `0000_MASTER_ADR.md`.
 
 ---
 
@@ -113,7 +113,7 @@ The Builder CLI is built around **8 core systems**:
 
       python3 builder/core/cli.py orchestrator:load-tasks
 
-  Loads tasks from TASK-*.md files in docs/tasks/ directory.
+  Loads tasks from TASK-*.md files in cb_docs/tasks/ directory.
 
 - `orchestrator:status`
 
@@ -235,7 +235,7 @@ Outputs `builder/cache/pack_context.json` and `context.md` with:
 
 - `doc:set-links`
 
-      python3 -m builder doc:set-links docs/arch/ARCH-001.md --prd PRD-001 --ux UX-001
+      python3 -m builder doc:set-links cb_docs/arch/ARCH-001.md --prd PRD-001 --ux UX-001
 
   Sets front-matter links without manual YAML editing.
 
@@ -415,7 +415,7 @@ The builder includes a comprehensive evaluation system:
 - Use **caching** for fast, consistent context generation
 
 ## Orchestrator Workflow
-1. **Define tasks** → Create TASK-*.md files in docs/tasks/
+1. **Define tasks** → Create TASK-*.md files in cb_docs/tasks/
 2. **Load tasks** → `python3 builder/core/cli.py orchestrator:load-tasks`
 3. **Check status** → `python3 builder/core/cli.py orchestrator:status`
 4. **Launch agents** → `python3 builder/core/cli.py orchestrator:multi-agent --launch-all`

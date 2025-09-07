@@ -10,22 +10,18 @@ import yaml
 import time
 import uuid
 
-# Import overlay paths for dual-mode support
-try:
-    from ..overlay.paths import OverlayPaths
-    overlay_paths = OverlayPaths()
-    ROOT = overlay_paths.get_root()
-    DOCS = overlay_paths.get_docs_dir()
-    ADRS = os.path.join(DOCS, "adrs")
-    TEMPL = overlay_paths.get_templates_dir()
-    CACHE = overlay_paths.get_cache_dir()
-except ImportError:
-    # Fallback for standalone mode
-    ROOT  = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    DOCS  = os.path.join(ROOT, "docs")
-    ADRS  = os.path.join(DOCS, "adrs")
-    TEMPL = os.path.join(DOCS, "templates")
-    CACHE = os.path.join(ROOT, "builder", "cache")
+# Import configuration and overlay paths for dual-mode support
+from ..config.settings import get_config
+from ..overlay.paths import OverlayPaths
+
+# Initialize configuration and paths
+config = get_config()
+overlay_paths = OverlayPaths()
+ROOT = overlay_paths.get_root()
+DOCS = overlay_paths.get_docs_dir()
+ADRS = os.path.join(DOCS, "adrs")
+TEMPL = overlay_paths.get_templates_dir()
+CACHE = overlay_paths.get_cache_dir()
 
 def _today(): return datetime.date.today().isoformat()
 
@@ -144,20 +140,20 @@ This repo uses docs to drive codegen, decisions, and evaluation.
         # Add existing sections
         readme_content += """---
 
-## ADRs (docs/adrs/)
+## ADRs (cb_docs/adrs/)
 - `0000_MASTER_ADR.md` = index of all decisions
 - Sub ADRs like `ADR-0001.md` created by `builder:adr:new`
 - Each ADR records context, decision, consequences, alternatives
 
 ---
 
-## Templates (docs/templates/)
+## Templates (cb_docs/templates/)
 - Jinja2 templates for ADRs and specs
 - Used by CLI to render files
 
 ---
 
-## Rules (docs/rules/)
+## Rules (cb_docs/rules/)
 - `00-global.md`, `10-project.md` = global + project-wide rules
 - `stack/` (e.g. typescript, react, http-client)
 - `feature/` (auth, content-engine, etc.)
@@ -165,7 +161,7 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 
 ---
 
-## Evaluation (docs/eval/)
+## Evaluation (cb_docs/eval/)
 - `config.yaml` = evaluation weights and configuration
 - Defines objective vs subjective weight distribution
 - Configures tool paths and scoring weights
@@ -285,16 +281,9 @@ def _format_discovery_context(discovery_data):
 
 def _update_master_file(doc_type, doc_id, title, status="draft", domain=""):
     """Update the master index file for a document type"""
-    master_files = {
-        'adr': 'docs/adrs/0000_MASTER_ADR.md',
-        'prd': 'docs/prd/0000_MASTER_PRD.md',
-        'arch': 'docs/arch/0000_MASTER_ARCH.md', 
-        'exec': 'docs/exec/0000_MASTER_EXEC.md',
-        'impl': 'docs/impl/0000_MASTER_IMPL.md',
-        'integrations': 'docs/integrations/0000_MASTER_INTEGRATIONS.md',
-        'tasks': 'docs/tasks/0000_MASTER_TASKS.md',
-        'ux': 'docs/ux/0000_MASTER_UX.md'
-    }
+    from builder.config.settings import get_config
+    config = get_config()
+    master_files = config.get_master_files()
     
     master_file = master_files.get(doc_type)
     if not master_file or not os.path.exists(master_file):
@@ -516,10 +505,10 @@ def _is_prd_stale(prd_file, cache_file) -> bool:
 
 def _refresh_prd_context(prd_id: str, question_set: str, pack: bool, force: bool = False) -> None:
     """Refresh a single PRD context using existing refresh logic"""
-    from discovery.engine import DiscoveryEngine
-    from discovery.analyzer import CodeAnalyzer
-    from discovery.synthesizer import DiscoverySynthesizer
-    from discovery.validator import DiscoveryValidator
+    from ..discovery.engine import DiscoveryEngine
+    from ..discovery.analyzer import CodeAnalyzer
+    from ..discovery.synthesizer import DiscoverySynthesizer
+    from ..discovery.validator import DiscoveryValidator
     from discovery.generators import DiscoveryGenerators
     import yaml
     
@@ -556,7 +545,7 @@ def _refresh_prd_context(prd_id: str, question_set: str, pack: bool, force: bool
     prd_data['last_refreshed'] = engine._get_timestamp()
     
     # Update content hash
-    prd_file = Path("docs/prd") / f"{prd_id}.md"
+    prd_file = Path("cb_docs/prd") / f"{prd_id}.md"
     if prd_file.exists():
         with open(prd_file, 'r', encoding='utf-8') as f:
             prd_content = f.read()
@@ -807,7 +796,7 @@ def _generate_targeted_discovery_context(doc_id, doc_file, doc_type):
     """Generate targeted discovery context for ARCH and IMPL documents"""
     import yaml
     import hashlib
-    from discovery.engine import DiscoveryEngine
+    from ..discovery.engine import DiscoveryEngine
     from datetime import datetime
     
     try:
@@ -907,7 +896,7 @@ def _generate_lightweight_discovery_context(doc_id, doc_file, doc_type):
 def _analyze_architecture_context(target, doc_file):
     """Analyze architecture-specific context"""
     try:
-        from discovery.engine import DiscoveryEngine
+        from ..discovery.engine import DiscoveryEngine
         engine = DiscoveryEngine(question_set="comprehensive")
         
         # Run architecture-focused analysis
@@ -930,7 +919,7 @@ def _analyze_architecture_context(target, doc_file):
 def _analyze_implementation_context(target, doc_file):
     """Analyze implementation-specific context"""
     try:
-        from discovery.engine import DiscoveryEngine
+        from ..discovery.engine import DiscoveryEngine
         engine = DiscoveryEngine(question_set="comprehensive")
         
         # Run implementation-focused analysis
@@ -1105,7 +1094,7 @@ def _refresh_targeted_context(doc_id, doc_file, doc_type, pack, force=False):
         # Optional: Generate context pack
         if pack:
             try:
-                from discovery.engine import DiscoveryEngine
+                from ..discovery.engine import DiscoveryEngine
                 engine = DiscoveryEngine(question_set="comprehensive")
                 engine._try_auto_ctx_build(Path(cache_data.get('target_path', '.')))
             except Exception:
@@ -1324,10 +1313,15 @@ def plan_auto(path, stacks):
         click.echo(f"⚠️  Fallback: wrote builder/cache/context.json only")
 
 # -------------------- ABC ITERATION --------------------
-def _abc_params(base_t=0.6, base_p=0.9, round_idx=0, variant="A"):
-    adj = 0.0 if variant=="A" else (0.1 if variant=="B" else -0.1)
-    scale = max(0.05, 0.1 - round_idx*0.015)
-    return round(base_t*(1+adj*scale/0.1),2), round(base_p*(1+adj*scale/0.1),2)
+def _abc_params(base_t=None, base_p=None, round_idx=0, variant="A"):
+    if base_t is None:
+        base_t = config.ai_base_temp
+    if base_p is None:
+        base_p = config.ai_base_top_p
+    
+    adj = 0.0 if variant=="A" else (config.ai_temp_offset if variant=="B" else -config.ai_temp_offset)
+    scale = max(0.05, config.ai_temp_offset - round_idx*0.015)
+    return round(base_t*(1+adj*scale/config.ai_temp_offset),2), round(base_p*(1+adj*scale/config.ai_temp_offset),2)
 
 @cli.command("iter:run")
 @click.argument("target_path")
@@ -1335,7 +1329,7 @@ def _abc_params(base_t=0.6, base_p=0.9, round_idx=0, variant="A"):
 def iter_run(target_path, rounds):
     os.makedirs(os.path.dirname(target_path) or ".", exist_ok=True)
     history = []
-    base_t, base_p = 0.6, 0.9
+    base_t, base_p = config.ai_base_temp, config.ai_base_top_p
     best = {"score": -1, "content": "", "params": (base_t, base_p)}
     for r in range(rounds):
         variants = {}
@@ -1587,7 +1581,7 @@ def eval_complete(path, cursor_response):
             cursor_data = json.load(f)
         
         # Load config for weights
-        config_path = os.path.join(ROOT, "docs", "eval", "config.yaml")
+        config_path = os.path.join(overlay_paths.get_docs_dir(), "eval", "config.yaml")
         import yaml
         try:
             with open(config_path, "r", encoding="utf-8") as f:
@@ -1596,7 +1590,7 @@ def eval_complete(path, cursor_response):
             config = {}
         
         artifact_type = objective_data.get("artifact_type", "code")
-        artifact_weights = config.get("artifact_weights", {}).get(artifact_type, {"objective": 0.7, "subjective": 0.3})
+        artifact_weights = config.get("artifact_weights", {}).get(artifact_type, {"objective": config.eval_objective_weight, "subjective": config.eval_subjective_weight})
         
         # Blend scores
         objective_scores = objective_data.get("scores", {})
@@ -1689,18 +1683,18 @@ def _generate_ai_variants(content: str, learning_context: Dict) -> Dict[str, str
     variants["A"] = _generate_with_ai_params(improvement_prompt, 0, 0, baseline_temp, baseline_top_p)
     
     # Variant B: +10% temperature and top-p from baseline (more creative/exploratory)
-    variants["B"] = _generate_with_ai_params(improvement_prompt, 0.1, 0.1, baseline_temp, baseline_top_p)
+    variants["B"] = _generate_with_ai_params(improvement_prompt, config.ai_temp_offset, config.ai_top_p_offset, baseline_temp, baseline_top_p)
     
     # Variant C: -10% temperature and top-p from baseline (more focused/deterministic)
-    variants["C"] = _generate_with_ai_params(improvement_prompt, -0.1, -0.1, baseline_temp, baseline_top_p)
+    variants["C"] = _generate_with_ai_params(improvement_prompt, -config.ai_temp_offset, -config.ai_top_p_offset, baseline_temp, baseline_top_p)
     
     return variants
 
 def _get_baseline_params(learning_context: Dict) -> tuple[float, float]:
     """Get baseline temperature and top-p parameters based on learning context"""
     # Default baseline parameters
-    base_temp = 0.7
-    base_top_p = 0.9
+    base_temp = config.ai_default_temp
+    base_top_p = config.ai_default_top_p
     
     # Check if we have previous rounds to learn from
     if "rounds" in learning_context and learning_context["rounds"]:
@@ -1710,14 +1704,14 @@ def _get_baseline_params(learning_context: Dict) -> tuple[float, float]:
         
         if winner == "B":
             # B won - use B's parameters as new baseline (+10% from previous baseline)
-            new_temp = last_baseline["temp"] + 0.1
-            new_top_p = last_baseline["top_p"] + 0.1
+            new_temp = last_baseline["temp"] + config.ai_temp_offset
+            new_top_p = last_baseline["top_p"] + config.ai_top_p_offset
             return min(1.0, new_temp), min(1.0, new_top_p)
         elif winner == "C":
             # C won - use C's parameters as new baseline (-10% from previous baseline)
-            new_temp = last_baseline["temp"] - 0.1
-            new_top_p = last_baseline["top_p"] - 0.1
-            return max(0.1, new_temp), max(0.1, new_top_p)
+            new_temp = last_baseline["temp"] - config.ai_temp_offset
+            new_top_p = last_baseline["top_p"] - config.ai_top_p_offset
+            return max(config.ai_min_temp, new_temp), max(config.ai_min_top_p, new_top_p)
         else:
             # A won - keep the same baseline
             return last_baseline["temp"], last_baseline["top_p"]
@@ -1754,12 +1748,18 @@ Return only the improved code without explanations.
     
     return prompt
 
-def _generate_with_ai_params(prompt: str, temp_offset: float, top_p_offset: float, baseline_temp: float = 0.7, baseline_top_p: float = 0.9) -> str:
+def _generate_with_ai_params(prompt: str, temp_offset: float, top_p_offset: float, baseline_temp: float = None, baseline_top_p: float = None) -> str:
     """Generate content using AI with specific temperature and top-p parameters"""
     try:
+        # Use defaults if not provided
+        if baseline_temp is None:
+            baseline_temp = config.ai_default_temp
+        if baseline_top_p is None:
+            baseline_top_p = config.ai_default_top_p
+            
         # Calculate actual parameters based on baseline and offset
-        temp = max(0.1, min(1.0, baseline_temp + temp_offset))
-        top_p = max(0.1, min(1.0, baseline_top_p + top_p_offset))
+        temp = max(config.ai_min_temp, min(config.ai_max_temp, baseline_temp + temp_offset))
+        top_p = max(config.ai_min_top_p, min(config.ai_max_top_p, baseline_top_p + top_p_offset))
         
         # Simulate different generation styles based on parameters
         if temp_offset > 0:  # More creative (B variant)
@@ -2262,8 +2262,8 @@ def iter_cursor(target_path, rounds, auto_select):
             click.echo("  AI Generation Parameters:")
             click.echo(f"    Baseline: temp={baseline_temp:.2f}, top_p={baseline_top_p:.2f}")
             click.echo(f"    Variant A: temp={baseline_temp:.2f}, top_p={baseline_top_p:.2f} (baseline)")
-            click.echo(f"    Variant B: temp={baseline_temp + 0.1:.2f}, top_p={baseline_top_p + 0.1:.2f} (creative/exploratory)")
-            click.echo(f"    Variant C: temp={baseline_temp - 0.1:.2f}, top_p={baseline_top_p - 0.1:.2f} (focused/deterministic)")
+            click.echo(f"    Variant B: temp={baseline_temp + config.ai_temp_offset:.2f}, top_p={baseline_top_p + config.ai_top_p_offset:.2f} (creative/exploratory)")
+            click.echo(f"    Variant C: temp={baseline_temp - config.ai_temp_offset:.2f}, top_p={baseline_top_p - config.ai_top_p_offset:.2f} (focused/deterministic)")
             
             variant_paths = generate_variants(current_file, {"rounds": iteration_history} if iteration_history else {})
             
@@ -2526,7 +2526,7 @@ def doc_new(dtype, title, owner, links, prd, arch, adr, impl, exec_, ux, abc_ena
 @cli.command("doc:index")
 @click.option("--no-warn", is_flag=True, help="Disable warnings about missing link targets")
 def doc_index(no_warn):
-    """Generate documentation index in docs/README.md"""
+    """Generate documentation index in cb_docs/README.md"""
     import yaml
     from collections import defaultdict
     
@@ -2651,20 +2651,20 @@ This repo uses docs to drive codegen, decisions, and evaluation.
     # Add existing sections
     readme_content += """---
 
-## ADRs (docs/adrs/)
+## ADRs (cb_docs/adrs/)
 - `0000_MASTER_ADR.md` = index of all decisions
 - Sub ADRs like `ADR-0001.md` created by `builder:adr:new`
 - Each ADR records context, decision, consequences, alternatives
 
 ---
 
-## Templates (docs/templates/)
+## Templates (cb_docs/templates/)
 - Jinja2 templates for ADRs and specs
 - Used by CLI to render files
 
 ---
 
-## Rules (docs/rules/)
+## Rules (cb_docs/rules/)
 - `00-global.md`, `10-project.md` = global + project-wide rules
 - `stack/` (e.g. typescript, react, http-client)
 - `feature/` (auth, content-engine, etc.)
@@ -2672,7 +2672,7 @@ This repo uses docs to drive codegen, decisions, and evaluation.
 
 ---
 
-## Evaluation (docs/eval/)
+## Evaluation (cb_docs/eval/)
 - `config.yaml` = evaluation weights and configuration
 - Defines objective vs subjective weight distribution
 - Configures tool paths and scoring weights
@@ -3496,16 +3496,9 @@ def doc_check(output, fail_fast):
 @cli.command("doc:fix-master")
 def doc_fix_master():
     """Fix master files to include proper front-matter for doc:check compliance"""
-    master_files = {
-        'prd': 'docs/prd/0000_MASTER_PRD.md',
-        'arch': 'docs/arch/0000_MASTER_ARCH.md', 
-        'exec': 'docs/exec/0000_MASTER_EXEC.md',
-        'impl': 'docs/impl/0000_MASTER_IMPL.md',
-        'integrations': 'docs/integrations/0000_MASTER_INTEGRATIONS.md',
-        'tasks': 'docs/tasks/0000_MASTER_TASKS.md',
-        'ux': 'docs/ux/0000_MASTER_UX.md',
-        'adr': 'docs/adrs/0000_MASTER_ADR.md'
-    }
+    from builder.config.settings import get_config
+    config = get_config()
+    master_files = config.get_master_files()
     
     click.echo("🔧 Fixing master files front-matter...")
     
@@ -3932,7 +3925,7 @@ def _generate_cache_key(target_path, purpose, feature, stacks, token_limit):
     import os
     
     # Pack schema version (increment when structure changes)
-    PACK_SCHEMA_VERSION = "1.0"
+    PACK_SCHEMA_VERSION = config.schema_version
     
     # Get file hashes for docs and src directories
     def get_directory_hash(directory):
@@ -3957,20 +3950,20 @@ def _generate_cache_key(target_path, purpose, feature, stacks, token_limit):
     def get_rules_hash():
         """Get hash of all rules files"""
         rules_files = [
-            "docs/rules/00-global.md",
-            "docs/rules/10-project.md", 
-            "docs/rules/guardrails.json"
+            "cb_docs/rules/00-global.md",
+            "cb_docs/rules/10-project.md", 
+            "cb_docs/rules/guardrails.json"
         ]
         
         # Add feature-specific rules
         if feature:
-            feature_rules = f"docs/rules/feature/30-{feature}.md"
+            feature_rules = f"cb_docs/rules/feature/30-{feature}.md"
             if os.path.exists(feature_rules):
                 rules_files.append(feature_rules)
         
         # Add stack-specific rules
         for stack in stacks.split(','):
-            stack_rules = f"docs/rules/stack/20-{stack.strip()}.md"
+            stack_rules = f"cb_docs/rules/stack/20-{stack.strip()}.md"
             if os.path.exists(stack_rules):
                 rules_files.append(stack_rules)
         
@@ -5216,7 +5209,7 @@ def _create_discovery_context(inputs, template, question_set, auto_generate):
 
 def _auto_generate_discovery_context(discovery_context, inputs, question_set):
     """Auto-generate additional content for discovery context."""
-    from discovery.engine import DiscoveryEngine
+    from ..discovery.engine import DiscoveryEngine
     
     try:
         # Initialize discovery engine
@@ -5325,7 +5318,7 @@ def _auto_generate_discovery_context(discovery_context, inputs, question_set):
 def discover_new(interactive, batch, template, product, idea, problem, users, features, metrics, tech, timeline, team_size, question_set, auto_generate, output):
     """Create a new discovery context for product development"""
     try:
-        from discovery.engine import DiscoveryEngine
+        from ..discovery.engine import DiscoveryEngine
         import yaml
         from datetime import datetime
         
@@ -5414,20 +5407,21 @@ def discover_new(interactive, batch, template, product, idea, problem, users, fe
 @click.option("--target", help="Specific target path to analyze")
 @click.option("--feature", default="", help="Feature name for analysis")
 @click.option("--question-set", default="comprehensive", help="Question set to use (new_product, existing_product, comprehensive)")
+@click.option("--test-answers", help="Path to test answers JSON file for testing")
 @click.option("--output", default="builder/cache/discovery_analysis.json", help="Output analysis file path")
 @click.option("--batch", is_flag=True, help="Run in batch mode (non-interactive)")
-def discover_analyze(repo_root, target, feature, question_set, output, batch):
+def discover_analyze(repo_root, target, feature, question_set, test_answers, output, batch):
     """Analyze codebase using discovery engine"""
     try:
-        from discovery.engine import DiscoveryEngine
+        from ..discovery.engine import DiscoveryEngine
         import json
         
         if not repo_root and not target:
             click.echo("❌ Error: Must specify either --repo-root or --target")
             raise SystemExit(1)
         
-        # Initialize discovery engine with question set
-        engine = DiscoveryEngine(question_set=question_set)
+        # Initialize discovery engine with question set and test answers
+        engine = DiscoveryEngine(question_set=question_set, test_answers_file=test_answers)
         
         if repo_root:
             click.echo("🔍 Analyzing entire repository...")
@@ -5975,7 +5969,7 @@ def orchestrator_reset(confirm):
 
 
 @cli.command("orchestrator:load-tasks")
-@click.option("--tasks-dir", default="docs/tasks", help="Directory containing TASK-*.md files")
+@click.option("--tasks-dir", default="cb_docs/tasks", help="Directory containing TASK-*.md files")
 @click.option("--dry-run", is_flag=True, help="Show what would be loaded without actually loading")
 def orchestrator_load_tasks(tasks_dir, dry_run):
     """Load tasks from TASK-*.md files into the orchestrator."""
@@ -6052,7 +6046,7 @@ def orchestrator_load_tasks(tasks_dir, dry_run):
 
 
 @cli.command("orchestrator:execute-tasks")
-@click.option("--tasks-dir", default="docs/tasks", help="Directory containing TASK-*.md files")
+@click.option("--tasks-dir", default="cb_docs/tasks", help="Directory containing TASK-*.md files")
 @click.option("--max-cycles", type=int, help="Maximum number of orchestration cycles")
 @click.option("--cycle-delay", default=5.0, help="Delay between cycles in seconds")
 @click.option("--auto-load", is_flag=True, help="Automatically load tasks from files before executing")
@@ -6149,7 +6143,7 @@ def orchestrator_create_task_template(title, owner, links, prd, arch, adr, impl,
 
 @cli.command("orchestrator:multi-agent")
 @click.option("--task-ids", help="Comma-separated list of task IDs to launch agents for")
-@click.option("--tasks-dir", default="docs/tasks", help="Directory containing TASK-*.md files")
+@click.option("--tasks-dir", default="cb_docs/tasks", help="Directory containing TASK-*.md files")
 @click.option("--launch-all", is_flag=True, help="Launch agents for all available tasks")
 @click.option("--status", is_flag=True, help="Show status of all active agents")
 @click.option("--agent-status", help="Show status of specific agent")
@@ -6579,7 +6573,7 @@ def doc_abc(doc_path, enable, disable, target_file, rounds, run):
 def discover_validate(context_file, strict, lenient, min_features, min_idea_words, output):
     """Validate discovery context or analysis results"""
     try:
-        from discovery.validator import DiscoveryValidator
+        from ..discovery.validator import DiscoveryValidator
         import json
         import yaml
         
@@ -6726,10 +6720,10 @@ def discover_validate(context_file, strict, lenient, min_features, min_idea_word
 def discover_refresh(prd, regenerate_docs, regenerate_pack, question_set, force):
     """Refresh a single PRD by re-running analysis and synthesis"""
     import yaml
-    from discovery.engine import DiscoveryEngine
-    from discovery.analyzer import CodeAnalyzer
-    from discovery.synthesizer import DiscoverySynthesizer
-    from discovery.validator import DiscoveryValidator
+    from ..discovery.engine import DiscoveryEngine
+    from ..discovery.analyzer import CodeAnalyzer
+    from ..discovery.synthesizer import DiscoverySynthesizer
+    from ..discovery.validator import DiscoveryValidator
     from discovery.generators import DiscoveryGenerators
     
     try:
@@ -6821,13 +6815,14 @@ def discover_refresh(prd, regenerate_docs, regenerate_pack, question_set, force)
 @click.option("--auto-generate", is_flag=True, help="Auto-generate missing contexts")
 @click.option("--pack", is_flag=True, help="Generate context packs for refreshed documents")
 @click.option("--question-set", default="comprehensive", help="Question set to use for refresh")
+@click.option("--test-answers", help="Path to test answers JSON file for testing")
 @click.option("--type", default="all", help="Document type to scan (prd, adr, arch, exec, impl, integrations, tasks, ux, all)")
 @click.option("--force", is_flag=True, help="Force regeneration even if cache is valid")
-def discover_scan(auto_generate, pack, question_set, type, force):
+def discover_scan(auto_generate, pack, question_set, test_answers, type, force):
     """Scan all documents and refresh stale or missing contexts"""
     import yaml
     import hashlib
-    from discovery.engine import DiscoveryEngine
+    from ..discovery.engine import DiscoveryEngine
     
     try:
         # Determine document types to scan
@@ -6841,7 +6836,7 @@ def discover_scan(auto_generate, pack, question_set, type, force):
         # Find all document files
         all_files = []
         for doc_type in doc_types:
-            doc_dir = Path(f"docs/{doc_type}")
+            doc_dir = Path(f"cb_docs/{doc_type}")
             if doc_type == "adr":
                 # ADRs use different pattern
                 pattern = "ADR-*.md"
@@ -6866,7 +6861,7 @@ def discover_scan(auto_generate, pack, question_set, type, force):
         click.echo(f"📋 Total: {len(all_files)} documents")
         
         # Initialize discovery engine
-        engine = DiscoveryEngine(question_set=question_set)
+        engine = DiscoveryEngine(question_set=question_set, test_answers_file=test_answers)
         
         refreshed_count = 0
         up_to_date_count = 0
@@ -7134,16 +7129,19 @@ def master_sync(type, cleanup_refs, dry_run):
         sys.path.insert(0, os.path.abspath(builder_dir))
         
         # Document type mappings
-        doc_types = {
-            'prd': {'dir': 'docs/prd', 'prefix': 'PRD-', 'master': '0000_MASTER_PRD.md'},
-            'adr': {'dir': 'docs/adrs', 'prefix': 'ADR-', 'master': '0000_MASTER_ADR.md'},
-            'arch': {'dir': 'docs/arch', 'prefix': 'ARCH-', 'master': '0000_MASTER_ARCH.md'},
-            'exec': {'dir': 'docs/exec', 'prefix': 'EXEC-', 'master': '0000_MASTER_EXEC.md'},
-            'impl': {'dir': 'docs/impl', 'prefix': 'IMPL-', 'master': '0000_MASTER_IMPL.md'},
-            'integrations': {'dir': 'docs/integrations', 'prefix': 'INTEGRATIONS-', 'master': '0000_MASTER_INTEGRATIONS.md'},
-            'tasks': {'dir': 'docs/tasks', 'prefix': 'TASK-', 'master': '0000_MASTER_TASKS.md'},
-            'ux': {'dir': 'docs/ux', 'prefix': 'UX-', 'master': '0000_MASTER_UX.md'}
-        }
+        from builder.config.settings import get_config
+        config = get_config()
+        doc_dirs = config.get_doc_type_dirs()
+        doc_patterns = config.get_doc_type_patterns()
+        master_files = config.get_master_files()
+        
+        doc_types = {}
+        for doc_type in doc_dirs.keys():
+            doc_types[doc_type] = {
+                'dir': doc_dirs[doc_type],
+                'prefix': doc_patterns[doc_type].replace('{}', ''),
+                'master': os.path.basename(master_files[doc_type])
+            }
         
         # Determine which types to sync
         types_to_sync = [type] if type else list(doc_types.keys())

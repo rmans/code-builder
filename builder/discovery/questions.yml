@@ -4,11 +4,11 @@
 # Question sets for different product types
 question_sets:
   new_product:
-    file: "docs/templates/discovery/questions/new_product.yml"
+    file: "cb_docs/templates/discovery/questions/new_product.yml"
     description: "Minimal questions for new product development"
     
   existing_product:
-    file: "docs/templates/discovery/questions/existing_product.yml"
+    file: "cb_docs/templates/discovery/questions/existing_product.yml"
     description: "Questions for analyzing existing products"
     
   comprehensive:

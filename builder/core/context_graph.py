@@ -251,7 +251,7 @@ class ContextGraph:
         """Scan project directory and build graph"""
         project_path = Path(project_root)
         
-        # Scan for markdown files in docs/
+        # Scan for markdown files in cb_docs/
         docs_path = project_path / "docs"
         if docs_path.exists():
             for md_file in docs_path.rglob("*.md"):

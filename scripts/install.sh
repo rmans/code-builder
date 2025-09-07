@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Code Builder Overlay Installer
-# Simple approach: .cb/ = project copy, cb_docs/ = docs/ copy
+# Simple approach: .cb/ = project copy, cb_cb_docs/ = cb_docs/ copy
 
 set -e
 
@@ -34,13 +34,12 @@ fi
 
 echo "📁 Creating overlay structure..."
 
-# Create .cb directory (copy of entire project except docs/)
+# Create .cb directory (copy of entire project except cb_docs/)
 echo "   Copying project to .cb/..."
 rsync -av --exclude='.git' --exclude='docs' --exclude='.cb' --exclude='cb_docs' --exclude='__pycache__' --exclude='*.pyc' --exclude='.pytest_cache' --exclude='node_modules' . .cb/
 
-# Create cb_docs directory (copy of docs/)
-echo "   Copying docs to cb_docs/..."
-cp -r docs cb_docs
+# cb_docs directory already exists, skipping copy
+echo "   cb_docs/ already exists, skipping copy..."
 
 # Create virtual environment in .cb/
 echo "   Creating virtual environment..."
@@ -125,7 +124,7 @@ if ! grep -q "^\.cb/" .gitignore 2>/dev/null; then
     echo "" >> .gitignore
     echo "# Code Builder Overlay" >> .gitignore
     echo ".cb/" >> .gitignore
-    echo "cb_docs/" >> .gitignore
+    echo "cb_cb_docs/" >> .gitignore
 fi
 
 echo ""
@@ -138,6 +137,6 @@ echo "   3. Add to shell: echo 'source .cb/activate' >> ~/.bashrc"
 echo ""
 echo "📁 Structure:"
 echo "   .cb/     - Complete project copy (runs from here)"
-echo "   cb_docs/ - Documentation directory (outputs go here)"
+echo "   cb_cb_docs/ - Documentation directory (outputs go here)"
 echo ""
 echo "💡 The overlay system is now ready to use!"

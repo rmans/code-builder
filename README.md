@@ -441,7 +441,7 @@ All tasks follow a standardized 5-phase execution workflow:
 All tasks are created using the Jinja2 template system with `doc:new tasks`, which includes the standardized 5-phase agent workflow.
 
 ### Task File Format
-Tasks are defined in `docs/tasks/TASK-*.md` files with YAML frontmatter:
+Tasks are defined in `cb_docs/tasks/TASK-*.md` files with YAML frontmatter:
 
 ```yaml
 ---
@@ -467,7 +467,7 @@ mkdir -p src tests docs && echo "Project structure created" > setup.log
 ## Acceptance Criteria
 - [ ] `src/` directory created
 - [ ] `tests/` directory created  
-- [ ] `docs/` directory created
+- [ ] `cb_docs/` directory created
 - [ ] `setup.log` file created
 ```
 
@@ -476,7 +476,7 @@ mkdir -p src tests docs && echo "Project structure created" > setup.log
 ## Directory Structure
 
     code-builder/
-    ├── 📁 docs/                    # Documentation system (8 document types)
+    ├── 📁 cb_docs/                    # Documentation system (8 document types)
     │   ├── 📁 adrs/               # Architecture Decision Records
     │   │   └── 0000_MASTER_ADR.md # Master ADR index (auto-synced)
     │   ├── 📁 arch/               # Architecture documents  
@@ -743,4 +743,4 @@ python3 -m builder iter:finish src/hello.ts --winner B --scores-file cursor_resp
 - **Force rebuild**: `--force` flag to bypass cache
 - **Performance optimization**: Fast context generation
 
-See [docs/USAGE-Cursor-Evaluation.md](docs/USAGE-Cursor-Evaluation.md) for detailed usage instructions.
+See [cb_docs/USAGE-Cursor-Evaluation.md](cb_docs/USAGE-Cursor-Evaluation.md) for detailed usage instructions.

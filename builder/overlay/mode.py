@@ -9,6 +9,9 @@ standalone mode, or if this is a new project.
 import os
 from typing import Literal
 
+# Import configuration system
+from ..config.settings import get_config
+
 
 def detect_mode() -> Literal['overlay', 'standalone', 'new']:
     """
@@ -40,16 +43,19 @@ def set_mode_environment() -> None:
     mode = detect_mode()
     os.environ['CB_MODE'] = mode
     
+    # Use configuration system for path construction
+    config = get_config()
+    
     if mode == 'overlay':
         os.environ['CB_OVERLAY_MODE'] = 'true'
-        os.environ['CB_DOCS_DIR'] = os.path.join(os.getcwd(), 'cb_docs')
-        os.environ['CB_CACHE_DIR'] = os.path.join(os.getcwd(), '.cb', 'cache')
-        os.environ['CB_ENGINE_DIR'] = os.path.join(os.getcwd(), '.cb', 'engine')
+        os.environ['CB_DOCS_DIR'] = config.get_effective_docs_dir()
+        os.environ['CB_CACHE_DIR'] = config.get_effective_cache_dir()
+        os.environ['CB_ENGINE_DIR'] = config.get_effective_engine_dir()
     elif mode == 'standalone':
         os.environ['CB_OVERLAY_MODE'] = 'false'
-        os.environ['CB_DOCS_DIR'] = os.path.join(os.getcwd(), 'docs')
-        os.environ['CB_CACHE_DIR'] = os.path.join(os.getcwd(), 'builder', 'cache')
-        os.environ['CB_ENGINE_DIR'] = os.path.join(os.getcwd(), 'builder')
+        os.environ['CB_DOCS_DIR'] = config.get_effective_docs_dir()
+        os.environ['CB_CACHE_DIR'] = config.get_effective_cache_dir()
+        os.environ['CB_ENGINE_DIR'] = config.get_effective_engine_dir()
     else:  # new
         os.environ['CB_OVERLAY_MODE'] = 'false'
         # Don't set other vars for new projects
@@ -70,17 +76,14 @@ def get_mode_info() -> dict:
         'has_cb_docs_dir': os.path.exists('cb_docs'),
     }
     
-    if mode == 'overlay':
+    # Use configuration system for path construction
+    config = get_config()
+    
+    if mode in ['overlay', 'standalone']:
         info.update({
-            'docs_dir': os.path.join(os.getcwd(), 'cb_docs'),
-            'cache_dir': os.path.join(os.getcwd(), '.cb', 'cache'),
-            'engine_dir': os.path.join(os.getcwd(), '.cb', 'engine'),
-        })
-    elif mode == 'standalone':
-        info.update({
-            'docs_dir': os.path.join(os.getcwd(), 'docs'),
-            'cache_dir': os.path.join(os.getcwd(), 'builder', 'cache'),
-            'engine_dir': os.path.join(os.getcwd(), 'builder'),
+            'docs_dir': config.get_effective_docs_dir(),
+            'cache_dir': config.get_effective_cache_dir(),
+            'engine_dir': config.get_effective_engine_dir(),
         })
     
     return info

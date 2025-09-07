@@ -9,18 +9,18 @@ import json
 import yaml
 from typing import Dict, Any
 
-# Import overlay paths for dual-mode support
-try:
-    from ..overlay.paths import OverlayPaths
-    overlay_paths = OverlayPaths()
-    ROOT = overlay_paths.get_root()
-except ImportError:
-    # Fallback for standalone mode
-    ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-CONFIG_PATH = os.path.join(ROOT, "docs", "eval", "config.yaml")
+# Import configuration system
+from ..config.settings import get_config
+from ..overlay.paths import OverlayPaths
+
+# Initialize configuration and paths
+config = get_config()
+overlay_paths = OverlayPaths()
+ROOT = overlay_paths.get_root()
+CONFIG_PATH = os.path.join(overlay_paths.get_docs_dir(), "eval", "config.yaml")
 
 def load_config() -> Dict[str, Any]:
-    """Load evaluation configuration from docs/eval/config.yaml"""
+    """Load evaluation configuration from cb_docs/eval/config.yaml"""
     try:
         with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
@@ -55,7 +55,7 @@ def parse_vitest_report(path: str) -> Dict[str, float]:
     passed_tests = data.get('numPassedTests', 0)
     
     if total_tests == 0:
-        return {"tests": 50.0, "coverage": 50.0}
+        return {"tests": config.eval_default_score, "coverage": config.eval_default_score}
     
     # Test pass rate (0-100)
     test_score = (passed_tests / total_tests) * 100
@@ -72,9 +72,9 @@ def parse_vitest_report(path: str) -> Dict[str, float]:
                 total_statements += len(statements)
                 covered_statements += sum(1 for v in statements.values() if v > 0)
         
-        coverage_score = (covered_statements / total_statements * 100) if total_statements > 0 else 50.0
+        coverage_score = (covered_statements / total_statements * 100) if total_statements > 0 else config.eval_default_score
     else:
-        coverage_score = 50.0
+        coverage_score = config.eval_default_score
     
     return {
         "tests": test_score,
@@ -88,7 +88,7 @@ def parse_coverage_report(path: str) -> Dict[str, float]:
     # Extract line coverage percentage
     total = data.get('total', {})
     lines = total.get('lines', {})
-    coverage_pct = lines.get('pct', 50.0)
+    coverage_pct = lines.get('pct', config.eval_default_score)
     
     return {"coverage": coverage_pct}
 
@@ -97,7 +97,7 @@ def parse_eslint_report(path: str) -> Dict[str, float]:
     data = safe_json_parse(path)
     
     if not isinstance(data, list):
-        return {"lint": 50.0}
+        return {"lint": config.eval_default_score}
     
     total_errors = sum(file_data.get('errorCount', 0) for file_data in data)
     total_warnings = sum(file_data.get('warningCount', 0) for file_data in data)
@@ -112,7 +112,7 @@ def parse_markdownlint_report(path: str) -> Dict[str, float]:
     data = safe_json_parse(path)
     
     if not isinstance(data, list):
-        return {"markdown": 50.0}
+        return {"markdown": config.eval_default_score}
     
     total_violations = sum(len(file_data.get('violations', [])) for file_data in data)
     
@@ -143,14 +143,14 @@ def check_guardrails() -> Dict[str, float]:
     """Check guardrails compliance - simplified version"""
     try:
         # Simple guardrails check to avoid hanging
-        guardrails_path = os.path.join(ROOT, "docs", "rules", "guardrails.json")
+        guardrails_path = os.path.join(overlay_paths.get_rules_dir(), "guardrails.json")
         if os.path.exists(guardrails_path):
             data = safe_json_parse(guardrails_path)
             forbidden_patterns = data.get('forbiddenPatterns', [])
             # Simple check - return neutral score for now
-            return {"guardrails": 50.0}
+            return {"guardrails": config.eval_default_score}
         else:
-            return {"guardrails": 50.0}
+            return {"guardrails": config.eval_default_score}
     except Exception:
         return {"guardrails": 50.0}
 
@@ -165,11 +165,11 @@ def evaluate_code(path: str) -> Dict[str, float]:
     
     # Initialize scores with neutral values
     scores = {
-        "tests": 50.0,
-        "coverage": 50.0,
-        "lint": 50.0,
-        "spell": 50.0,
-        "guardrails": 50.0
+        "tests": config.eval_default_score,
+        "coverage": config.eval_default_score,
+        "lint": config.eval_default_score,
+        "spell": config.eval_default_score,
+        "guardrails": config.eval_default_score
     }
     
     # Parse vitest report (contains both tests and coverage)
@@ -217,8 +217,8 @@ def evaluate_doc(path: str, doc_type: str) -> Dict[str, float]:
     
     # Initialize scores with neutral values
     scores = {
-        "spell": 50.0,
-        "markdown": 50.0
+        "spell": config.eval_default_score,
+        "markdown": config.eval_default_score
     }
     
     # Parse cspell report
@@ -236,8 +236,8 @@ def evaluate_doc(path: str, doc_type: str) -> Dict[str, float]:
     # Calculate weighted overall score for documentation
     # Use only relevant weights for docs
     doc_weights = {
-        "spell": objective_weights.get('spell', 0.5),
-        "markdown": objective_weights.get('markdown', 0.5)
+        "spell": objective_weights.get('spell', config.eval_confidence_threshold),
+        "markdown": objective_weights.get('markdown', config.eval_confidence_threshold)
     }
     
     # Normalize weights to sum to 1.0
@@ -265,7 +265,7 @@ def main():
     
     # Test doc evaluation
     print("\n--- Documentation Evaluation ---")
-    doc_scores = evaluate_doc("docs/", "prd")
+    doc_scores = evaluate_doc(overlay_paths.get_docs_dir(), "prd")
     print(f"Doc scores: {doc_scores}")
 
 if __name__ == "__main__":

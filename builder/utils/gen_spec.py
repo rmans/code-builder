@@ -3,18 +3,18 @@ import os, json
 from jinja2 import Template
 
 def main():
-    # Import overlay paths for dual-mode support
-    try:
-        from ..overlay.paths import OverlayPaths
-        overlay_paths = OverlayPaths()
-        ROOT = overlay_paths.get_root()
-    except ImportError:
-        # Fallback for standalone mode
-        ROOT = os.path.dirname(os.path.dirname(__file__))
-    TEMPL = os.path.join(ROOT, "docs", "templates", "spec.md.hbs")
-    OUT   = os.path.join(ROOT, "docs", "SPEC_hello.md")
+    # Import configuration and overlay paths for dual-mode support
+    from ..config.settings import get_config
+    from ..overlay.paths import OverlayPaths
+    
+    # Initialize configuration and paths
+    config = get_config()
+    overlay_paths = OverlayPaths()
+    ROOT = overlay_paths.get_root()
+    TEMPL = os.path.join(overlay_paths.get_templates_dir(), "spec.md.hbs")
+    OUT   = os.path.join(overlay_paths.get_docs_dir(), "SPEC_hello.md")
 
-    with open(os.path.join(ROOT, "builder", "cache", "context.json"), "r") as f:
+    with open(os.path.join(overlay_paths.get_cache_dir(), "context.json"), "r") as f:
         ctx = json.load(f)
     ctx.update({
       "name": "hello module",

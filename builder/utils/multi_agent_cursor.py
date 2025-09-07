@@ -14,11 +14,18 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from .task_orchestrator import Task, TaskOrchestrator
 
+# Import configuration system
+from ..config.settings import get_config
+
 
 class MultiAgentCursorManager:
     """Manages multiple Cursor agents working on different tasks."""
     
-    def __init__(self, cache_dir: str = "builder/cache"):
+    def __init__(self, cache_dir: str = None):
+        # Use configuration system for cache directory
+        config = get_config()
+        if cache_dir is None:
+            cache_dir = config.get_effective_cache_dir()
         self.cache_dir = Path(cache_dir)
         self.agents_dir = self.cache_dir / "multi_agents"
         self.agents_dir.mkdir(parents=True, exist_ok=True)

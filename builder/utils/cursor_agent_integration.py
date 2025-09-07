@@ -10,6 +10,9 @@ from typing import Dict, List, Optional, Any
 from .task_orchestrator import TaskOrchestrator, Task, Agent, TaskStatus, AgentStatus
 from .multi_agent_cursor import MultiAgentCursorManager
 
+# Import configuration system
+from ..config.settings import get_config
+
 
 class CursorAgent:
     """Represents a Cursor agent with specific capabilities."""
@@ -39,7 +42,11 @@ class CursorAgent:
 class CursorAgentOrchestrator:
     """Orchestrates Cursor agents for task execution."""
     
-    def __init__(self, cache_dir: str = "builder/cache"):
+    def __init__(self, cache_dir: str = None):
+        # Use configuration system for cache directory
+        config = get_config()
+        if cache_dir is None:
+            cache_dir = config.get_effective_cache_dir()
         self.cache_dir = cache_dir
         self.base_orchestrator = TaskOrchestrator(cache_dir)
         self.multi_agent_manager = MultiAgentCursorManager(cache_dir)

@@ -7,7 +7,7 @@ import path from 'path';
 function lintMarkdown() {
   try {
     // Run markdownlint-cli2 and capture output
-    const output = execSync('pnpm exec markdownlint-cli2 "docs/**/*.md" --config .markdownlint.json', {
+    const output = execSync('pnpm exec markdownlint-cli2 "cb_docs/**/*.md" --config .markdownlint.json', {
       encoding: 'utf8',
       stdio: 'pipe'
     });
@@ -28,7 +28,7 @@ function lintMarkdown() {
         continue;
       }
       
-      // Parse error lines like: "docs/file.md:123 MD001/rule-name Description [Context: "..."]"
+      // Parse error lines like: "cb_docs/file.md:123 MD001/rule-name Description [Context: "..."]"
       const match = line.match(/^([^:]+):(\d+)(?::(\d+))?\s+([^\s]+)\s+(.+?)(?:\s+\[Context:\s*"([^"]*)"\])?$/);
       if (match) {
         const [, file, lineNum, colNum, rule, description, context] = match;

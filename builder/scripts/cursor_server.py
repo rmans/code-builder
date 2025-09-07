@@ -32,8 +32,11 @@ app = Flask(__name__)
 evaluations: Dict[str, Dict[str, Any]] = {}
 
 # Server configuration
-SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 5000
+from ..config.settings import get_config
+
+config = get_config()
+SERVER_HOST = config.network_server_host
+SERVER_PORT = config.network_server_port
 BASE_URL = f"http://{SERVER_HOST}:{SERVER_PORT}"
 
 def ensure_cache_dir():
@@ -191,7 +194,7 @@ def complete_single_evaluation(eval_id: str):
         
         # Load configuration for weights
         import yaml
-        with open('docs/eval/config.yaml', 'r') as f:
+        with open('cb_docs/eval/config.yaml', 'r') as f:
             config = yaml.safe_load(f)
         
         # Merge evaluations
@@ -248,7 +251,7 @@ def create_evaluation(artifact_path: str, eval_type: str = "single", **kwargs) -
             objective_scores = evaluate_doc(artifact_path, artifact_type)
     except Exception as e:
         print(f"⚠️  Objective evaluation failed: {e}")
-        objective_scores = {"overall": 50.0, "error": str(e)}
+        objective_scores = {"overall": config.eval_default_score, "error": str(e)}
     
     # Generate prompt
     if eval_type == "single":

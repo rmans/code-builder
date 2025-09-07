@@ -14,15 +14,17 @@ from pathlib import Path
 class DiscoveryInterview:
     """Conducts initial interview phase of code discovery."""
     
-    def __init__(self, question_set: str = "comprehensive"):
+    def __init__(self, question_set: str = "comprehensive", test_answers_file: Optional[str] = None):
         """Initialize the discovery interview.
         
         Args:
             question_set: Question set to use (new_product, existing_product, comprehensive)
+            test_answers_file: Optional path to test answers JSON file for testing
         """
         self.question_set = question_set
         self.questions = self._load_questions(question_set)
         self.patterns = self._load_patterns()
+        self.test_answers = self._load_test_answers(test_answers_file) if test_answers_file else None
     
     def conduct(self, target: Path, options: Optional[Dict] = None, batch_kwargs: Optional[Dict] = None) -> Dict[str, Any]:
         """Conduct interview for the target path.
@@ -307,6 +309,12 @@ class DiscoveryInterview:
             question_text = question.get('question')
             question_type = question.get('type', 'text')
             
+            # Check if we have test answers for this question
+            if self.test_answers and self._get_test_answer(question_id):
+                answers[question_id] = self._get_test_answer(question_id)
+                continue
+            
+            # Use original logic for questions not in test answers
             if question_id == 'purpose':
                 answers[question_id] = self._determine_purpose(target)
             elif question_id == 'complexity':
@@ -704,3 +712,42 @@ class DiscoveryInterview:
             {'id': 'functional', 'pattern': 'function '},
             {'id': 'modular', 'pattern': 'import '}
         ]
+    
+    def _load_test_answers(self, test_answers_file: str) -> Optional[Dict[str, Any]]:
+        """Load test answers from JSON file.
+        
+        Args:
+            test_answers_file: Path to test answers JSON file
+            
+        Returns:
+            Test answers dictionary or None if file not found
+        """
+        try:
+            import json
+            test_path = Path(test_answers_file)
+            if test_path.exists():
+                with open(test_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                return data.get('discovery_answers', {})
+        except Exception as e:
+            print(f"Warning: Could not load test answers from {test_answers_file}: {e}")
+        return None
+    
+    def _get_test_answer(self, question_id: str) -> Any:
+        """Get test answer for a specific question ID.
+        
+        Args:
+            question_id: The question ID to look up
+            
+        Returns:
+            Test answer value or None if not found
+        """
+        if not self.test_answers:
+            return None
+        
+        # Search through all categories for the question
+        for category, answers in self.test_answers.items():
+            if isinstance(answers, dict) and question_id in answers:
+                return answers[question_id]
+        
+        return None
