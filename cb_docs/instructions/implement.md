@@ -130,6 +130,66 @@ Ensure proper permissions:
 chmod -R 755 .cb/ .cursor/
 ```
 
+### Path Translation Layer
+
+The Code Builder uses a dual-mode path resolution system that works in both overlay and standalone modes. This ensures consistent behavior regardless of how the system is deployed.
+
+#### OverlayPaths Usage
+
+```python
+from .cb.engine.builder.overlay.paths import OverlayPaths, overlay_paths
+
+# Use global instance
+paths = overlay_paths
+
+# Or create new instance
+paths = OverlayPaths()
+
+# Get mode information
+if paths.is_overlay_mode():
+    print("Running in overlay mode")
+else:
+    print("Running in standalone mode")
+
+# Get common paths
+root = paths.cb_root()
+docs_dir = paths.cb_docs_dir()
+rules_dir = paths.cursor_rules_dir()
+tasks_index = paths.tasks_index()
+logs_dir = paths.logs_dir()
+cache_dir = paths.cache_dir()
+
+# Ensure all directories exist
+paths.ensure_directories()
+
+# Validate configuration
+if paths.validate():
+    print("All paths are valid and accessible")
+```
+
+#### Convenience Functions
+
+```python
+from .cb.engine.builder.overlay.paths import (
+    cb_root, cursor_rules_dir, cb_docs_dir, 
+    tasks_index, logs_dir
+)
+
+# Direct access to common paths
+root = cb_root()
+docs = cb_docs_dir()
+rules = cursor_rules_dir()
+```
+
+#### Validation
+
+Test the path resolution system:
+
+```bash
+# Validate OverlayPaths configuration
+python3 .cb/engine/builder/overlay/paths.py validate
+```
+
 ### Next Steps
 
 After scaffolding is complete:
@@ -137,3 +197,4 @@ After scaffolding is complete:
 2. **Rule Integration**: Set up rule merging with project rules
 3. **Template System**: Create command templates
 4. **State Management**: Implement state updates and persistence
+5. **Path Translation**: Use OverlayPaths for all new features
