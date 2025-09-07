@@ -42,6 +42,8 @@ mkdir -p .cb
 echo "   Copying essential files..."
 cp -r builder .cb/
 cp -r .cursor .cb/  # Copy .cursor/rules for Code Builder
+cp .cursorrules .cb/  # Copy .cursorrules for Cursor configuration
+cp -r .github .cb/  # Copy .github/ for GitHub Actions and templates
 mkdir -p .cb/cache  # Create empty cache directory
 mkdir -p .cb/bin
 
