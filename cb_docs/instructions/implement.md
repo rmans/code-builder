@@ -216,10 +216,83 @@ bash scripts/install.sh
 - `.cb/.cursor/rules/` - @rules/ files and merged rules
 - `.cb/bin/merge-rules` - Rule merger script
 
+### Command Utilities
+
+The CLI now includes a comprehensive `commands:*` family for managing command definitions:
+
+#### Available Commands
+- **`cb commands:list`** - List all available commands with filtering and multiple output formats
+- **`cb commands:show <name>`** - Show detailed information about a specific command
+- **`cb commands:refresh`** - Refresh commands from templates and sync to `.cb/commands/`
+- **`cb commands:sync`** - Sync commands with rule merger and update `@rules/` files
+
+#### Features
+- **Multiple Output Formats**: Table (default), JSON, YAML for `commands:list`
+- **Status Filtering**: Filter by `active`, `inactive`, or `all` commands
+- **Detailed Views**: Full, metadata-only, or usage-only views for `commands:show`
+- **Template Management**: Copy from `.cb/engine/templates/commands/` to `.cb/commands/`
+- **Rule Integration**: Automatically sync with rule merger for `@rules/` files
+- **Error Handling**: Consistent error codes and helpful messages
+
+#### Usage Examples
+```bash
+# List all active commands in table format
+cb commands:list
+
+# List commands in JSON format
+cb commands:list --format json
+
+# Show detailed information about a command
+cb commands:show analyze-project
+
+# Show only usage information
+cb commands:show analyze-project --format usage
+
+# Refresh commands from templates
+cb commands:refresh --force
+
+# Sync with rule merger
+cb commands:sync
+```
+
+#### Command File Structure
+Commands are defined in `.cb/commands/*.md` files with YAML frontmatter:
+```yaml
+---
+id: command-name
+title: Command Title
+description: Brief description
+status: active
+created: 2025-01-15
+updated: 2025-01-15
+owner: system
+domain: discovery
+priority: 8
+agent_type: backend
+dependencies: []
+tags: [discovery, analysis, project]
+---
+
+# Command: Command Title
+
+## Description
+Detailed description...
+
+## Usage
+```bash
+cb command-name
+```
+
+## Examples
+```bash
+cb command-name --option value
+```
+```
+
 ### Next Steps
 
 After scaffolding is complete:
-1. **Command System**: Implement `commands:list`, `commands:refresh`, etc.
+1. **Command System**: Implement `commands:list`, `commands:refresh`, etc. ✅
 2. **Rule Integration**: Set up rule merging with project rules ✅
 3. **Template System**: Create command templates ✅
 4. **State Management**: Implement state updates and persistence
