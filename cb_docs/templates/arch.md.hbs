@@ -1,0 +1,47 @@
+---
+type: arch
+id: {{id}}
+title: {{title}}
+status: draft
+owner: {{owner}}
+created: {{created}}
+# ABC Iteration Support (optional)
+requires_abc_iteration: {{requires_abc_iteration}}
+abc_target_file: "{{abc_target_file}}"
+abc_rounds: {{abc_rounds}}
+links:
+  prd: {{links.prd | default([])}}
+  adr: {{links.adr | default([])}}
+  ux: {{links.ux | default([])}}
+  impl: {{links.impl | default([])}}
+  exec: {{links.exec | default([])}}
+---
+
+# {{title}}
+
+## Context
+<!-- What is the background and context for this architecture? -->
+
+## Decision
+<!-- What architectural decision are we making? -->
+
+## Rationale
+<!-- Why did we choose this approach? -->
+
+## Alternatives Considered
+<!-- What other options did we evaluate? -->
+
+## Consequences
+<!-- What are the positive and negative consequences? -->
+
+## Implementation Plan
+<!-- How will this be implemented? -->
+
+## Dependencies
+<!-- What does this architecture depend on? -->
+
+## Risks & Mitigation
+<!-- What could go wrong and how will we handle it? -->
+
+## Review & Approval
+<!-- Who needs to review and approve this architecture? -->

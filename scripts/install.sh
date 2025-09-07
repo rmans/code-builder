@@ -41,6 +41,7 @@ mkdir -p .cb
 # Copy only essential files
 echo "   Copying essential files..."
 cp -r builder .cb/
+cp -r .cursor .cb/  # Copy .cursor/rules for Code Builder
 mkdir -p .cb/cache  # Create empty cache directory
 mkdir -p .cb/bin
 
