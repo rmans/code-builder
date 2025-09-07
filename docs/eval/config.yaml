@@ -1,0 +1,30 @@
+# Code Builder Evaluation Configuration
+# Defines weights and paths for the ABC iteration evaluation system
+
+artifact_weights:
+  code:
+    objective: 0.7
+    subjective: 0.3
+  prd:
+    objective: 0.3
+    subjective: 0.7
+  adr:
+    objective: 0.2
+    subjective: 0.8
+  task:
+    objective: 0.4
+    subjective: 0.6
+
+objective_weights:
+  tests: 0.3
+  coverage: 0.2
+  lint: 0.2
+  spell: 0.1
+  guardrails: 0.2
+
+reporter_paths:
+  vitest: builder/cache/vitest.json
+  coverage: builder/cache/coverage.json
+  eslint: builder/cache/eslint.json
+  markdownlint: builder/cache/markdownlint.json
+  cspell: builder/cache/cspell.json

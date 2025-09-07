@@ -1,0 +1,290 @@
+---
+title: "{{product | default('Product')}} Development Roadmap"
+type: "roadmap"
+status: "{{status | default('draft')}}"
+created: "{{created_date | default('2024-01-01')}}"
+updated: "{{updated_date | default(created_date)}}"
+owner: "{{owner | default('Product Owner')}}"
+related_files:
+  - "builder/cache/discovery_context.yml"
+  - "{{prd | default('')}}"
+  - "{{arch | default('')}}"
+  - "{{adr | default('')}}"
+  - "{{impl | default('')}}"
+  - "{{exec | default('')}}"
+  - "{{ux | default('')}}"
+tags:
+  - roadmap
+  - planning
+  - "{{product | lower | default('product')}}"
+  - discovery
+---
+
+# {{product | default('Product')}} Development Roadmap
+
+**Product:** {{product | default('Product')}}  
+**Owner:** {{owner | default('Product Owner')}}  
+**Status:** {{status | default('draft')}}  
+**Created:** {{created_date | default('2024-01-01')}}  
+**Last Updated:** {{updated_date | default(created_date)}}
+
+## Executive Summary
+
+{{summary | default('This roadmap outlines the development plan for ' + (product | default('the product')) + ' based on discovery analysis and requirements.')}}
+
+### Key Objectives
+{{#each objectives}}
+- {{this}}
+{{/each}}
+
+### Success Metrics
+{{#each success_metrics}}
+- **{{metric | default('Metric')}}**: {{target | default('Target value')}} - {{description | default('Description')}}
+{{/each}}
+
+## Discovery Insights
+
+### Key Findings
+{{#each discovery_insights}}
+- {{this}}
+{{/each}}
+
+### Recommendations
+{{#each discovery_recommendations}}
+- {{this}}
+{{/each}}
+
+### Risk Factors
+{{#each risk_factors}}
+- **{{risk | default('Risk')}}**: {{impact | default('Impact')}} - {{mitigation | default('Mitigation strategy')}}
+{{/each}}
+
+## Development Phases
+
+### Phase 1: Foundation ({{phase1_duration | default('Weeks 1-4')}})
+**Objective:** {{phase1_objective | default('Establish foundation and core infrastructure')}}
+
+#### Deliverables
+{{#each phase1_deliverables}}
+- {{this}}
+{{/each}}
+
+#### Key Features
+{{#each phase1_features}}
+- **{{feature | default('Feature')}}**: {{description | default('Description')}} - {{effort | default('Effort')}}
+{{/each}}
+
+#### Success Criteria
+{{#each phase1_success_criteria}}
+- {{this}}
+{{/each}}
+
+#### Dependencies
+{{#each phase1_dependencies}}
+- {{this}}
+{{/each}}
+
+### Phase 2: Core Features ({{phase2_duration | default('Weeks 5-12')}})
+**Objective:** {{phase2_objective | default('Implement core product features')}}
+
+#### Deliverables
+{{#each phase2_deliverables}}
+- {{this}}
+{{/each}}
+
+#### Key Features
+{{#each phase2_features}}
+- **{{feature | default('Feature')}}**: {{description | default('Description')}} - {{effort | default('Effort')}}
+{{/each}}
+
+#### Success Criteria
+{{#each phase2_success_criteria}}
+- {{this}}
+{{/each}}
+
+#### Dependencies
+{{#each phase2_dependencies}}
+- {{this}}
+{{/each}}
+
+### Phase 3: Enhancement ({{phase3_duration | default('Weeks 13-20')}})
+**Objective:** {{phase3_objective | default('Enhance and optimize the product')}}
+
+#### Deliverables
+{{#each phase3_deliverables}}
+- {{this}}
+{{/each}}
+
+#### Key Features
+{{#each phase3_features}}
+- **{{feature | default('Feature')}}**: {{description | default('Description')}} - {{effort | default('Effort')}}
+{{/each}}
+
+#### Success Criteria
+{{#each phase3_success_criteria}}
+- {{this}}
+{{/each}}
+
+#### Dependencies
+{{#each phase3_dependencies}}
+- {{this}}
+{{/each}}
+
+### Phase 4: Launch ({{phase4_duration | default('Weeks 21-24')}})
+**Objective:** {{phase4_objective | default('Prepare for and execute product launch')}}
+
+#### Deliverables
+{{#each phase4_deliverables}}
+- {{this}}
+{{/each}}
+
+#### Key Features
+{{#each phase4_features}}
+- **{{feature | default('Feature')}}**: {{description | default('Description')}} - {{effort | default('Effort')}}
+{{/each}}
+
+#### Success Criteria
+{{#each phase4_success_criteria}}
+- {{this}}
+{{/each}}
+
+#### Dependencies
+{{#each phase4_dependencies}}
+- {{this}}
+{{/each}}
+
+## Timeline
+
+### Milestones
+{{#each milestones}}
+- **{{date | default('Date')}}**: {{milestone | default('Milestone')}} - {{description | default('Description')}}
+{{/each}}
+
+### Key Dates
+{{#each key_dates}}
+- **{{date | default('Date')}}**: {{event | default('Event')}} - {{description | default('Description')}}
+{{/each}}
+
+### Dependencies Timeline
+{{#each dependency_timeline}}
+- **{{dependency | default('Dependency')}}**: {{start_date | default('Start')}} - {{end_date | default('End')}} - {{owner | default('Owner')}}
+{{/each}}
+
+## Resource Requirements
+
+### Team Structure
+{{#each team_roles}}
+- **{{role | default('Role')}}**: {{count | default('Count')}} - {{responsibilities | default('Responsibilities')}}
+{{/each}}
+
+### Skills Required
+{{#each required_skills}}
+- {{this}}
+{{/each}}
+
+### External Dependencies
+{{#each external_dependencies}}
+- **{{dependency | default('Dependency')}}**: {{description | default('Description')}} - {{owner | default('Owner')}} - {{timeline | default('Timeline')}}
+{{/each}}
+
+## Risk Management
+
+### Technical Risks
+{{#each technical_risks}}
+- **{{risk | default('Risk')}}**: {{probability | default('Probability')}} - {{impact | default('Impact')}} - {{mitigation | default('Mitigation')}}
+{{/each}}
+
+### Business Risks
+{{#each business_risks}}
+- **{{risk | default('Risk')}}**: {{probability | default('Probability')}} - {{impact | default('Impact')}} - {{mitigation | default('Mitigation')}}
+{{/each}}
+
+### Resource Risks
+{{#each resource_risks}}
+- **{{risk | default('Risk')}}**: {{probability | default('Probability')}} - {{impact | default('Impact')}} - {{mitigation | default('Mitigation')}}
+{{/each}}
+
+## Quality Assurance
+
+### Testing Strategy
+{{testing_strategy | default('Overall testing approach and strategy.')}}
+
+### Quality Gates
+{{#each quality_gates}}
+- **{{gate | default('Gate')}}**: {{criteria | default('Criteria')}} - {{timing | default('Timing')}}
+{{/each}}
+
+### Performance Targets
+{{#each performance_targets}}
+- **{{target | default('Target')}}**: {{value | default('Value')}} - {{measurement | default('Measurement')}}
+{{/each}}
+
+## Monitoring and Metrics
+
+### Success Metrics
+{{#each success_metrics}}
+- **{{metric | default('Metric')}}**: {{target | default('Target')}} - {{measurement | default('Measurement')}}
+{{/each}}
+
+### Progress Tracking
+{{#each progress_metrics}}
+- **{{metric | default('Metric')}}**: {{description | default('Description')}} - {{frequency | default('Frequency')}}
+{{/each}}
+
+### Review Schedule
+{{review_schedule | default('When and how often to review progress and adjust the roadmap.')}}
+
+## Communication Plan
+
+### Stakeholder Updates
+{{#each stakeholder_updates}}
+- **{{stakeholder | default('Stakeholder')}}**: {{frequency | default('Frequency')}} - {{format | default('Format')}} - {{content | default('Content')}}
+{{/each}}
+
+### Reporting
+{{#each reporting}}
+- **{{report | default('Report')}}**: {{frequency | default('Frequency')}} - {{audience | default('Audience')}} - {{content | default('Content')}}
+{{/each}}
+
+## Discovery Context
+
+This roadmap was informed by discovery analysis. Key findings include:
+
+### Technical Insights
+{{#each technical_insights}}
+- {{this}}
+{{/each}}
+
+### Business Insights
+{{#each business_insights}}
+- {{this}}
+{{/each}}
+
+### User Insights
+{{#each user_insights}}
+- {{this}}
+{{/each}}
+
+### Market Insights
+{{#each market_insights}}
+- {{this}}
+{{/each}}
+
+## Appendices
+
+### Glossary
+{{#each glossary}}
+- **{{term | default('Term')}}**: {{definition | default('Definition')}}
+{{/each}}
+
+### References
+{{#each references}}
+- {{this}}
+{{/each}}
+
+### Discovery Context
+This roadmap was generated from discovery analysis. See `builder/cache/discovery_context.yml` for the complete discovery context and analysis results.
+
+---
+
+*This roadmap is a living document that should be updated as the project progresses and new information becomes available.*
