@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Code Builder Overlay Installer
+# Code Builder Overlay Installer - Minimal Version
 # Simple approach: .cb/ = project copy, cb_cb_docs/ = cb_docs/ copy
 
 set -e
@@ -264,6 +264,7 @@ else
             mkdir -p cb_docs/rules
         fi
     fi
+    # Check for templates
     if [ ! -d "cb_docs/templates" ]; then
         echo "   Restoring missing cb_docs/templates/..."
         if git checkout 2bc80cc -- docs/templates 2>/dev/null; then
@@ -274,6 +275,7 @@ else
             mkdir -p cb_docs/templates
         fi
     fi
+    # Check for adrs
     if [ ! -d "cb_docs/adrs" ]; then
         echo "   Restoring missing cb_docs/adrs/..."
         if git checkout 2bc80cc -- docs/adrs 2>/dev/null; then
@@ -284,64 +286,91 @@ else
             mkdir -p cb_docs/adrs
         fi
     fi
-    # Check for other key files
+    # Check for guardrails.json
     if [ ! -f "cb_docs/rules/guardrails.json" ]; then
-        echo "   Restoring missing guardrails.json..."
+        echo "   Restoring missing cb_docs/rules/guardrails.json..."
         if git checkout 2bc80cc -- docs/rules/guardrails.json 2>/dev/null; then
             cp docs/rules/guardrails.json cb_docs/rules/ && rm -rf docs/rules/guardrails.json
-            echo "   ✅ guardrails.json restored"
+            echo "   ✅ cb_docs/rules/guardrails.json restored"
         else
             echo "   ❌ Failed to restore guardrails.json, creating minimal version"
             mkdir -p cb_docs/rules
-            echo '{"forbiddenPatterns": [], "hints": []}' > cb_docs/rules/guardrails.json
+            echo '{"forbiddenPatterns": []}' > cb_docs/rules/guardrails.json
         fi
     fi
 fi
 
-echo "📁 Creating overlay structure..."
+echo "   ✅ cb_docs/ is complete"
 
-# Create .cb directory (only essential files)
-echo "   Creating .cb/ structure..."
-mkdir -p .cb
+# Create .cb directory structure
+echo "   Creating .cb directory structure..."
+mkdir -p .cb/commands
+mkdir -p .cb/instructions
+mkdir -p .cb/engine/templates/commands
+mkdir -p .cb/cache/command_state
+mkdir -p .cursor/rules
 
-# Copy only essential files
-echo "   Copying essential files..."
-cp -r builder .cb/
-cp -r .cursor .cb/  # Copy .cursor/rules for Code Builder
-cp .cursorrules .cb/  # Copy .cursorrules for Cursor configuration
-cp -r .github .cb/  # Copy .github/ for GitHub Actions and templates
+# Create state files
+echo "   Creating state files..."
+cat > .cb/cache/command_state/state.json << 'EOF'
+{
+  "version": "1.0.0",
+  "created": "2025-01-15T00:00:00Z",
+  "updated": "2025-01-15T00:00:00Z",
+  "project_state": {
+    "overlay_mode": true,
+    "cb_docs_dir": "cb_docs",
+    "cache_dir": ".cb/cache",
+    "engine_dir": ".cb"
+  },
+  "command_history": [],
+  "active_tasks": [],
+  "completed_tasks": [],
+  "cache_metadata": {
+    "last_cleanup": "2025-01-15T00:00:00Z",
+    "size_bytes": 0
+  }
+}
+EOF
 
-# Copy important configuration files
-cp .markdownlint.json .cb/  # Markdown linting configuration
-cp cspell.json .cb/  # Spell checking configuration
-cp eslint.config.js .cb/  # ESLint configuration
-cp pytest.ini .cb/  # Python testing configuration
-cp tsconfig.json .cb/  # TypeScript configuration
-cp tsconfig.build.json .cb/  # TypeScript build configuration
-cp vitest.config.ts .cb/  # Testing configuration
-cp package.json .cb/  # Node.js package configuration
-cp pnpm-workspace.yaml .cb/  # pnpm workspace configuration
-cp LICENSE .cb/  # License file
+cat > .cb/cache/command_state/metrics.json << 'EOF'
+{
+  "version": "1.0.0",
+  "created": "2025-01-15T00:00:00Z",
+  "updated": "2025-01-15T00:00:00Z",
+  "command_metrics": {
+    "total_commands": 0,
+    "successful_commands": 0,
+    "failed_commands": 0,
+    "average_execution_time_ms": 0
+  },
+  "discovery_metrics": {
+    "total_discoveries": 0,
+    "successful_discoveries": 0,
+    "failed_discoveries": 0,
+    "average_discovery_time_ms": 0
+  },
+  "performance_metrics": {
+    "total_execution_time_ms": 0,
+    "peak_memory_usage_mb": 0,
+    "cache_hit_rate": 0.0
+  },
+  "session_metrics": {
+    "current_session_start": "2025-01-15T00:00:00Z",
+    "total_sessions": 1,
+    "average_session_duration_minutes": 0
+  }
+}
+EOF
 
-mkdir -p .cb/cache  # Create empty cache directory
+# Create .cb/bin directory and cb executable
+echo "   Creating .cb/bin directory and cb executable..."
 mkdir -p .cb/bin
 
-# cb_docs directory is the source of truth for documentation
-echo "   Using cb_docs/ as documentation source..."
-
-# Create virtual environment in root and install dependencies
-echo "   Creating virtual environment and installing dependencies..."
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-
-# Create wrapper scripts
-echo "   Creating wrapper scripts..."
-
-# .cb/bin/cb - main CLI wrapper
-mkdir -p .cb/bin
+# .cb/bin/cb - main CLI executable
 cat > .cb/bin/cb << 'EOF'
 #!/bin/bash
-# Code Builder Overlay CLI Wrapper
+# Code Builder Overlay CLI
 
 # Set overlay environment
 export CB_OVERLAY_MODE=true
