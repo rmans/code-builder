@@ -190,11 +190,37 @@ Test the path resolution system:
 python3 .cb/engine/builder/overlay/paths.py validate
 ```
 
+### Install Hook - setup_commands()
+
+The installer now includes a `setup_commands()` function that:
+
+1. **Creates Command Files**: Generates `analyze-project.md` and `plan-project.md` in `.cb/commands/`
+2. **Rule Merger**: Creates `.cb/bin/merge-rules` script that:
+   - Detects existing project rules (`.cursor/rules/`, `docs/rules/`, `.cursorrules`)
+   - Merges project rules with Code Builder rules (project rules have higher priority)
+   - Creates `merged_rules.md` with proper precedence
+3. **@rules/ Files**: Generates individual `@rules/` files for each command
+4. **Idempotent**: Safe to run multiple times
+
+**Usage:**
+```bash
+# The function runs automatically during installation
+bash scripts/install.sh
+
+# Or run the rule merger manually
+.cb/bin/merge-rules
+```
+
+**Output:**
+- `.cb/commands/*.md` - Command definitions
+- `.cb/.cursor/rules/` - @rules/ files and merged rules
+- `.cb/bin/merge-rules` - Rule merger script
+
 ### Next Steps
 
 After scaffolding is complete:
 1. **Command System**: Implement `commands:list`, `commands:refresh`, etc.
-2. **Rule Integration**: Set up rule merging with project rules
-3. **Template System**: Create command templates
+2. **Rule Integration**: Set up rule merging with project rules ✅
+3. **Template System**: Create command templates ✅
 4. **State Management**: Implement state updates and persistence
 5. **Path Translation**: Use OverlayPaths for all new features
