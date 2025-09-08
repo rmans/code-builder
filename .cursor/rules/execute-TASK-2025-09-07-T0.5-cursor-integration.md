@@ -1,0 +1,132 @@
+---
+id: execute-TASK-2025-09-07-T0.5-cursor-integration
+title: Integrate Existing Cursor Agent System
+description: Wire command system to CursorAgentOrchestrator and MultiAgentCursorManager
+status: active
+created: 2025-09-08
+updated: 2025-09-08
+owner: system
+domain: cursor
+priority: 9
+agent_type: backend
+dependencies: T0.4
+tags: [cursor, integration, agents]
+---
+
+# Command: Integrate Existing Cursor Agent System
+
+## Description
+Wire command system to CursorAgentOrchestrator and MultiAgentCursorManager
+
+## Usage
+```bash
+cb execute-TASK-2025-09-07-T0.5-cursor-integration
+# or
+@rules/execute-TASK-2025-09-07-T0.5-cursor-integration
+```
+
+## Outputs
+- Task execution results
+- Updated task status
+- Generated artifacts (if applicable)
+
+## Flags
+- `--phase PHASE` - Execute specific phase only
+- `--skip-phases PHASES` - Skip specific phases (comma-separated)
+- `--dry-run` - Show execution plan without running
+- `--interactive` - Interactive mode with confirmations
+- `--force` - Force execution even if dependencies not met
+
+## Examples
+```bash
+# Execute complete task
+cb execute-TASK-2025-09-07-T0.5-cursor-integration
+
+# Execute specific phase
+cb execute-TASK-2025-09-07-T0.5-cursor-integration --phase implementation
+
+# Dry run
+cb execute-TASK-2025-09-07-T0.5-cursor-integration --dry-run
+
+# Interactive mode
+cb execute-TASK-2025-09-07-T0.5-cursor-integration --interactive
+```
+
+## Task Details
+
+---
+id: TASK-2025-09-07-T0.5-cursor-integration
+title: Integrate Existing Cursor Agent System
+description: Wire command system to CursorAgentOrchestrator and MultiAgentCursorManager
+status: completed
+created: 2025-09-07
+updated: 2025-01-15
+owner: platform-agent
+domain: cursor
+priority: 9
+agent_type: backend
+dependencies: [T0.4]
+tags: [cursor, integration, agents]
+---
+
+# Task: Integrate Existing Cursor Agent System
+
+## Phases
+### Phase 1: 🚀 Implementation
+- [x] Reuse `builder/utils/cursor_agent_integration.py`, `builder/utils/multi_agent_cursor.py`
+- [x] Provide `get_command_for_agent()` → `@rules/execute-TASK-###` or `@rules/project-status`
+
+### Phase 2: 🧪 Testing
+- [x] Start sample agent (existing example) and verify command suggestion
+
+### Phase 3: 📚 Documentation
+- [x] Document hooks in `current.md` behavior
+
+### Phase 4: 🧹 Cleanup
+- [x] Ensure no duplicate event handlers
+
+### Phase 5: 💾 Commit
+- [x] `git add . && git commit -m "feat(cursor): hook command system to orchestrator"`
+
+## Acceptance Criteria
+- [x] Agents receive a valid `@rules/*` for current context
+
+## Completion Summary
+
+**✅ TASK COMPLETED SUCCESSFULLY!**
+
+### Final Results
+- **CommandAgentIntegration class** created with context-aware command selection
+- **3 new CLI commands** added: `agent:get-command`, `agent:create-rules`, `agent:integrate`
+- **@rules/ file generation** working for both command-specific and project status
+- **Context-aware scoring** system implemented for intelligent command selection
+- **Full integration** with existing CursorAgentOrchestrator and MultiAgentCursorManager
+
+### Key Features Implemented
+- **Context Detection**: Automatically detects project state (discovered, analyzed, planned, etc.)
+- **Command Selection**: Intelligent scoring system based on priority, dependencies, and context
+- **Rules Generation**: Automatic creation of `@rules/` files for Cursor agents
+- **CLI Interface**: Complete command-line interface for testing and management
+- **Error Handling**: Robust error handling with graceful degradation
+
+### Generated Files
+- `.cursor/rules/execute-analyze-project.md` - Command-specific rules
+- `.cursor/rules/project-status.md` - Project status rules
+- `cb_docs/instructions/cursor-agent-integration.md` - Comprehensive documentation
+
+### Integration Points
+- **Command System**: Connects to `cb_docs/commands/` for command metadata
+- **Agent Systems**: Integrates with existing agent orchestration
+- **Path Resolution**: Uses OverlayPaths for consistent path handling
+- **Configuration**: Leverages configuration system for settings
+
+### Testing Results
+- ✅ Basic integration working
+- ✅ Context-aware command selection verified
+- ✅ @rules/ file generation working
+- ✅ CLI commands functional
+- ✅ No duplicate event handlers
+- ✅ Clean module imports
+
+**The Cursor Agent Integration is now complete and ready for production use!**
+

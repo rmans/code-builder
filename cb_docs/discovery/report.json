@@ -1,589 +1,67 @@
 {
   "configuration": {
-    "categories": [
-      "ci_cd",
-      "documentation"
-    ],
-    "files": {
-      "ci_cd": [
-        ".github/workflows/"
-      ],
-      "documentation": [
-        "README.md",
-        "LICENSE"
-      ]
-    },
-    "total_config_files": 3
+    "categories": [],
+    "files": {},
+    "total_config_files": 0
   },
   "dependencies": {
-    "dev_dependencies": {
-      "@cspell/cspell-json-reporter": "^9.2.1",
-      "@eslint/js": "^9.35.0",
-      "@types/bcryptjs": "^2.4.6",
-      "@types/jsonwebtoken": "^9.0.10",
-      "@types/node": "^24.3.1",
-      "@typescript-eslint/eslint-plugin": "^8.42.0",
-      "@typescript-eslint/parser": "^8.42.0",
-      "@vitest/coverage-v8": "3.2.4",
-      "cspell": "^8.19.4",
-      "eslint": "^9.35.0",
-      "globby": "^14.1.0",
-      "markdownlint": "^0.33.0",
-      "markdownlint-cli": "^0.45.0",
-      "markdownlint-cli2": "^0.12.1",
-      "npm-run-all": "^4.1.5",
-      "typescript": "^5.9.2",
-      "vitest": "^3.2.4"
-    },
-    "external": {
-      "axios": "^1.11.0",
-      "bcryptjs": "^2.4.3",
-      "jsonwebtoken": "^9.0.2",
-      "python": [
-        "click",
-        "pyyaml",
-        "jinja2",
-        "flask",
-        "requests",
-        "networkx"
-      ]
-    },
+    "dev_dependencies": {},
+    "external": {},
     "internal": {},
-    "total_count": 26
+    "total_count": 0
   },
   "frameworks": {
-    "confidence": {
-      "angular": 0.8,
-      "django": 0.8,
-      "express": 0.8,
-      "fastapi": 0.8,
-      "flask": 0.8,
-      "next": 0.8,
-      "nuxt": 0.8,
-      "react": 0.8,
-      "svelte": 0.8,
-      "vue": 0.8
-    },
-    "detected": [
-      "next",
-      "vue",
-      "nuxt",
-      "svelte",
-      "flask",
-      "express",
-      "react",
-      "django",
-      "fastapi",
-      "angular"
-    ],
-    "indicators": {
-      "angular": "package.json",
-      "django": "requirements.txt",
-      "express": "package.json",
-      "fastapi": "requirements.txt",
-      "flask": "requirements.txt",
-      "next": "package.json",
-      "nuxt": "package.json",
-      "react": "package.json",
-      "svelte": "package.json",
-      "vue": "package.json"
-    }
+    "confidence": {},
+    "detected": [],
+    "indicators": {}
   },
   "languages": {
-    "detected": [
-      "JSON",
-      "Markdown",
-      "YAML",
-      "JavaScript",
-      "INI",
-      "TypeScript",
-      "Shell",
-      "Config",
-      "PowerShell",
-      "Fish",
-      "Python"
-    ],
-    "extensions": {
-      ".12": 2,
-      ".cfg": 1,
-      ".csh": 1,
-      ".csv": 1,
-      ".fish": 1,
-      ".hbs": 9,
-      ".ini": 2,
-      ".js": 4,
-      ".json": 36,
-      ".map": 2,
-      ".md": 79,
-      ".ps1": 1,
-      ".py": 62,
-      ".pyc": 3,
-      ".sample": 14,
-      ".save": 1,
-      ".sh": 3,
-      ".tag": 1,
-      ".test": 1,
-      ".ts": 9,
-      ".txt": 1,
-      ".yaml": 5,
-      ".yml": 11
-    },
-    "file_counts": {
-      "Config": 1,
-      "Fish": 1,
-      "INI": 2,
-      "JSON": 36,
-      "JavaScript": 4,
-      "Markdown": 79,
-      "PowerShell": 1,
-      "Python": 62,
-      "Shell": 3,
-      "TypeScript": 9,
-      "YAML": 16
-    },
-    "primary": "Markdown"
+    "detected": [],
+    "extensions": {},
+    "file_counts": {},
+    "primary": null
   },
   "lint_formatters": {
-    "categories": {
-      "javascript": [
-        "eslint"
-      ]
-    },
-    "config_files": {
-      "eslint": "eslint.config.js"
-    },
-    "detected": [
-      "eslint"
-    ]
+    "categories": {},
+    "config_files": {},
+    "detected": []
   },
   "metadata": {
     "analysis_depth": 3,
-    "analysis_duration": 1.2135937213897705,
-    "ci_mode": true,
+    "analysis_duration": 0.0018351078033447266,
+    "ci_mode": false,
     "ignore_patterns": [],
-    "timestamp": "2025-09-07T19:35:47.761428"
+    "timestamp": "2025-09-08T12:22:31.786945"
   },
   "monorepo_hints": {
-    "detected": [
-      "lerna",
-      "yarn-workspaces",
-      "multiple-package-json",
-      "pnpm-workspaces"
-    ],
-    "indicators": {
-      "lerna": "package.json",
-      "multiple-package-json": 626,
-      "pnpm-workspaces": "pnpm-workspace.yaml",
-      "yarn-workspaces": "package.json"
-    },
-    "is_monorepo": true,
-    "workspace_count": 626
+    "detected": [],
+    "indicators": {},
+    "is_monorepo": false,
+    "workspace_count": 0
   },
   "package_managers": {
-    "detected": [
-      "yarn",
-      "pnpm",
-      "npm",
-      "pip"
-    ],
-    "files": {
-      "npm": "package.json",
-      "pip": "requirements.txt",
-      "pnpm": "package.json",
-      "yarn": "package.json"
-    },
-    "primary": "pnpm"
+    "detected": [],
+    "files": {},
+    "primary": null
   },
   "project_info": {
-    "directory_count": 5615,
-    "file_count": 2320,
-    "name": "code-builder",
-    "path": "/home/rmans/projects/code-builder",
-    "size_bytes": 59276956,
-    "type": "Node.js"
+    "directory_count": 0,
+    "file_count": 0,
+    "name": "empty_project",
+    "path": "/tmp/tmplkfclv0m/empty_project",
+    "size_bytes": 0,
+    "type": "Mixed/Unknown"
   },
   "structure": {
     "depth": 3,
-    "directories": {
-      ".cb": {
-        "file_count": 12,
-        "size_bytes": 7239,
-        "subdir_count": 7
-      },
-      ".cb/.cursor": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 1
-      },
-      ".cb/.github": {
-        "file_count": 1,
-        "size_bytes": 9758,
-        "subdir_count": 1
-      },
-      ".cb/bin": {
-        "file_count": 2,
-        "size_bytes": 4150,
-        "subdir_count": 0
-      },
-      ".cb/builder": {
-        "file_count": 3,
-        "size_bytes": 16379,
-        "subdir_count": 10
-      },
-      ".cb/cache": {
-        "file_count": 3,
-        "size_bytes": 829,
-        "subdir_count": 1
-      },
-      ".cb/commands": {
-        "file_count": 1,
-        "size_bytes": 967,
-        "subdir_count": 0
-      },
-      ".cb/engine": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 1
-      },
-      ".cursor": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 1
-      },
-      ".cursor/rules": {
-        "file_count": 4,
-        "size_bytes": 10511,
-        "subdir_count": 0
-      },
-      ".git": {
-        "file_count": 9,
-        "size_bytes": 24596,
-        "subdir_count": 6
-      },
-      ".git/branches": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 0
-      },
-      ".git/hooks": {
-        "file_count": 14,
-        "size_bytes": 25821,
-        "subdir_count": 0
-      },
-      ".git/info": {
-        "file_count": 2,
-        "size_bytes": 299,
-        "subdir_count": 0
-      },
-      ".git/logs": {
-        "file_count": 1,
-        "size_bytes": 41184,
-        "subdir_count": 1
-      },
-      ".git/objects": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 258
-      },
-      ".git/refs": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 3
-      },
-      ".github": {
-        "file_count": 1,
-        "size_bytes": 9758,
-        "subdir_count": 1
-      },
-      ".github/workflows": {
-        "file_count": 4,
-        "size_bytes": 25973,
-        "subdir_count": 0
-      },
-      ".pytest_cache": {
-        "file_count": 3,
-        "size_bytes": 530,
-        "subdir_count": 1
-      },
-      ".pytest_cache/v": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 1
-      },
-      ".venv": {
-        "file_count": 1,
-        "size_bytes": 178,
-        "subdir_count": 4
-      },
-      ".venv/bin": {
-        "file_count": 16,
-        "size_bytes": 24082010,
-        "subdir_count": 0
-      },
-      ".venv/include": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 1
-      },
-      ".venv/lib": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 1
-      },
-      ".vscode": {
-        "file_count": 1,
-        "size_bytes": 552,
-        "subdir_count": 0
-      },
-      "builder": {
-        "file_count": 3,
-        "size_bytes": 16379,
-        "subdir_count": 10
-      },
-      "builder/__pycache__": {
-        "file_count": 2,
-        "size_bytes": 1990,
-        "subdir_count": 0
-      },
-      "builder/cache": {
-        "file_count": 24,
-        "size_bytes": 179288,
-        "subdir_count": 5
-      },
-      "builder/config": {
-        "file_count": 3,
-        "size_bytes": 13701,
-        "subdir_count": 2
-      },
-      "builder/core": {
-        "file_count": 8,
-        "size_bytes": 391466,
-        "subdir_count": 2
-      },
-      "builder/discovery": {
-        "file_count": 10,
-        "size_bytes": 271551,
-        "subdir_count": 1
-      },
-      "builder/evaluators": {
-        "file_count": 4,
-        "size_bytes": 15969,
-        "subdir_count": 1
-      },
-      "builder/overlay": {
-        "file_count": 6,
-        "size_bytes": 31778,
-        "subdir_count": 1
-      },
-      "builder/scripts": {
-        "file_count": 5,
-        "size_bytes": 28446,
-        "subdir_count": 0
-      },
-      "builder/test_data": {
-        "file_count": 1,
-        "size_bytes": 472,
-        "subdir_count": 0
-      },
-      "builder/utils": {
-        "file_count": 14,
-        "size_bytes": 129226,
-        "subdir_count": 1
-      },
-      "cb_docs": {
-        "file_count": 4,
-        "size_bytes": 30839,
-        "subdir_count": 15
-      },
-      "cb_docs/adrs": {
-        "file_count": 2,
-        "size_bytes": 868,
-        "subdir_count": 0
-      },
-      "cb_docs/arch": {
-        "file_count": 2,
-        "size_bytes": 398,
-        "subdir_count": 0
-      },
-      "cb_docs/commands": {
-        "file_count": 2,
-        "size_bytes": 1898,
-        "subdir_count": 0
-      },
-      "cb_docs/discovery": {
-        "file_count": 3,
-        "size_bytes": 3537,
-        "subdir_count": 0
-      },
-      "cb_docs/eval": {
-        "file_count": 1,
-        "size_bytes": 618,
-        "subdir_count": 0
-      },
-      "cb_docs/examples": {
-        "file_count": 3,
-        "size_bytes": 19960,
-        "subdir_count": 0
-      },
-      "cb_docs/exec": {
-        "file_count": 2,
-        "size_bytes": 389,
-        "subdir_count": 0
-      },
-      "cb_docs/impl": {
-        "file_count": 2,
-        "size_bytes": 404,
-        "subdir_count": 0
-      },
-      "cb_docs/instructions": {
-        "file_count": 3,
-        "size_bytes": 33407,
-        "subdir_count": 0
-      },
-      "cb_docs/integrations": {
-        "file_count": 2,
-        "size_bytes": 405,
-        "subdir_count": 0
-      },
-      "cb_docs/prd": {
-        "file_count": 2,
-        "size_bytes": 386,
-        "subdir_count": 0
-      },
-      "cb_docs/rules": {
-        "file_count": 10,
-        "size_bytes": 42532,
-        "subdir_count": 2
-      },
-      "cb_docs/tasks": {
-        "file_count": 35,
-        "size_bytes": 43600,
-        "subdir_count": 0
-      },
-      "cb_docs/templates": {
-        "file_count": 10,
-        "size_bytes": 15046,
-        "subdir_count": 2
-      },
-      "cb_docs/ux": {
-        "file_count": 2,
-        "size_bytes": 364,
-        "subdir_count": 0
-      },
-      "node_modules": {
-        "file_count": 2,
-        "size_bytes": 31663,
-        "subdir_count": 21
-      },
-      "node_modules/.bin": {
-        "file_count": 14,
-        "size_bytes": 16934,
-        "subdir_count": 0
-      },
-      "node_modules/.pnpm": {
-        "file_count": 1,
-        "size_bytes": 166171,
-        "subdir_count": 564
-      },
-      "node_modules/.vite": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 1
-      },
-      "node_modules/.vite-temp": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 0
-      },
-      "node_modules/@cspell": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 1
-      },
-      "node_modules/@eslint": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 1
-      },
-      "node_modules/@types": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 3
-      },
-      "node_modules/@typescript-eslint": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 2
-      },
-      "node_modules/@vitest": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 1
-      },
-      "scripts": {
-        "file_count": 2,
-        "size_bytes": 16386,
-        "subdir_count": 0
-      },
-      "src": {
-        "file_count": 1,
-        "size_bytes": 254,
-        "subdir_count": 0
-      },
-      "tests": {
-        "file_count": 1,
-        "size_bytes": 284,
-        "subdir_count": 7
-      },
-      "tests/__pycache__": {
-        "file_count": 1,
-        "size_bytes": 445,
-        "subdir_count": 0
-      },
-      "tests/data": {
-        "file_count": 10,
-        "size_bytes": 9224,
-        "subdir_count": 0
-      },
-      "tests/fixtures": {
-        "file_count": 0,
-        "size_bytes": 0,
-        "subdir_count": 2
-      },
-      "tests/integration": {
-        "file_count": 2,
-        "size_bytes": 16584,
-        "subdir_count": 0
-      },
-      "tests/results": {
-        "file_count": 3,
-        "size_bytes": 14686,
-        "subdir_count": 0
-      },
-      "tests/scripts": {
-        "file_count": 2,
-        "size_bytes": 10164,
-        "subdir_count": 0
-      },
-      "tests/unit": {
-        "file_count": 8,
-        "size_bytes": 60873,
-        "subdir_count": 1
-      }
-    },
+    "directories": {},
     "files": {},
-    "organization_pattern": "src-based"
+    "organization_pattern": "flat"
   },
   "test_runners": {
-    "config_files": {
-      "pytest": "pytest.ini",
-      "vitest": "vitest.config.ts"
-    },
+    "config_files": {},
     "coverage_indicators": [],
-    "detected": [
-      "vitest",
-      "pytest"
-    ],
-    "test_file_count": 28
+    "detected": [],
+    "test_file_count": 0
   }
 }

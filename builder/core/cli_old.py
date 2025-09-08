@@ -1944,7 +1944,7 @@ def _analyze_iteration_context(iteration_context: Dict) -> Dict:
     
     # Identify consistently weak metrics that need attention
     for metric, values in context["weak_metrics"].items():
-        avg_score = sum(values) / len(values)
+        avg_score = float(sum(values)) / float(len(values))
         if avg_score < 50:  # Low average score
             context["improvement_areas"].append(f"metric_{metric}")
     
@@ -2040,7 +2040,7 @@ def _generate_feedback_driven_variant(content: str, learning_context: Dict, vari
     
     # Apply general improvements for consistently weak metrics
     for metric, values in weak_metrics.items():
-        if values and sum(values) / len(values) < 50:
+        if values and float(sum(values)) / float(len(values)) < 50:
             enhanced_content = _apply_weak_metric_improvement(
                 enhanced_content, metric, variant_type
             )
@@ -3440,7 +3440,7 @@ def _show_context_summary(context_package, budget_summary, token_limit):
     # Show budget utilization
     total_budget = sum(summary['budget_limit'] for summary in budget_summary.values())
     used_budget = sum(summary['used_tokens'] for summary in budget_summary.values())
-    utilization = (used_budget / total_budget * 100) if total_budget > 0 else 0
+    utilization = (float(used_budget) / float(total_budget) * 100) if total_budget > 0 else 0
     
     click.echo(f"\n💰 Budget Utilization: {utilization:.1f}%")
     
@@ -3815,7 +3815,7 @@ def ctx_explain(input, selection):
         
         # Summary statistics
         total_items = len(all_items)
-        avg_score = sum(item['score'] for item in all_items) / total_items if total_items > 0 else 0
+        avg_score = float(sum(item['score'] for item in all_items)) / float(total_items) if total_items > 0 else 0
         
         # Count by type
         type_counts = {}
@@ -3849,7 +3849,7 @@ def ctx_explain(input, selection):
             click.echo(f"\n💰 Budget Utilization:")
             total_budget = sum(summary.get('budget_limit', 0) for summary in budget_summary.values())
             used_budget = sum(summary.get('used_tokens', 0) for summary in budget_summary.values())
-            utilization = (used_budget / total_budget * 100) if total_budget > 0 else 0
+            utilization = (float(used_budget) / float(total_budget) * 100) if total_budget > 0 else 0
             click.echo(f"  Used: {used_budget}/{total_budget} tokens ({utilization:.1f}%)")
             
             for budget_type, summary in budget_summary.items():

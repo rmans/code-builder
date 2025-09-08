@@ -1,0 +1,169 @@
+---
+id: execute-TASK-2025-09-07-T3.4-task-command-gen
+title: Per-Task Command Generator
+description: Generate `.cb/commands/execute-TASK-###.md` + `.cursor/rules/execute-TASK-###`
+status: active
+created: 2025-09-08
+updated: 2025-09-08
+owner: system
+domain: commands
+priority: 9
+agent_type: backend
+dependencies: T3.1, T3.3
+tags: [tasks, rules, generator]
+---
+
+# Command: Per-Task Command Generator
+
+## Description
+Generate `.cb/commands/execute-TASK-###.md` + `.cursor/rules/execute-TASK-###`
+
+## Usage
+```bash
+cb execute-TASK-2025-09-07-T3.4-task-command-gen
+# or
+@rules/execute-TASK-2025-09-07-T3.4-task-command-gen
+```
+
+## Outputs
+- Task execution results
+- Updated task status
+- Generated artifacts (if applicable)
+
+## Flags
+- `--phase PHASE` - Execute specific phase only
+- `--skip-phases PHASES` - Skip specific phases (comma-separated)
+- `--dry-run` - Show execution plan without running
+- `--interactive` - Interactive mode with confirmations
+- `--force` - Force execution even if dependencies not met
+
+## Examples
+```bash
+# Execute complete task
+cb execute-TASK-2025-09-07-T3.4-task-command-gen
+
+# Execute specific phase
+cb execute-TASK-2025-09-07-T3.4-task-command-gen --phase implementation
+
+# Dry run
+cb execute-TASK-2025-09-07-T3.4-task-command-gen --dry-run
+
+# Interactive mode
+cb execute-TASK-2025-09-07-T3.4-task-command-gen --interactive
+```
+
+## Task Details
+
+---
+id: TASK-2025-09-07-T3.4-task-command-gen
+title: Per-Task Command Generator
+description: Generate `.cb/commands/execute-TASK-###.md` + `.cursor/rules/execute-TASK-###`
+status: pending
+created: 2025-09-07
+updated: 2025-09-07
+owner: backend-agent
+domain: commands
+priority: 9
+agent_type: backend
+dependencies: [T3.1, T3.3]
+tags: [tasks, rules, generator]
+---
+
+# Task: Per-Task Command Generator
+
+## Phases
+### Phase 1: 🚀 Implementation
+- [x] `builder/overlay/command_generator.py` → `generate_task_commands(tasks)`
+
+### Phase 2: 🧪 Testing
+- [x] Parity with `tasks/index.json` (every task ↔ command)
+
+### Phase 3: 📚 Documentation
+- [x] Add generator details to `implement.md`
+
+### Phase 4: 🧹 Cleanup
+- [x] Regeneration safe + idempotent
+
+### Phase 5: 💾 Commit
+- [x] Commit
+
+## Acceptance Criteria
+- [x] Running generator yields runnable `@rules/execute-TASK-###` for all tasks
+
+## Completion Summary
+
+**Status:** ✅ COMPLETED  
+**Updated:** 2025-09-07
+
+### What Was Implemented
+
+**Per-Task Command Generator:**
+- **Command Generator Module**: Created `builder/overlay/command_generator.py`
+- **Individual Commands**: Generates `.cb/commands/execute-TASK-###.md` for each task
+- **@rules/ Integration**: Creates `.cursor/rules/execute-TASK-###.md` for Cursor
+- **CLI Command**: Added `cb generate-task-commands` with --force option
+
+### Key Features
+
+**Command Generation:**
+- **Task Discovery**: Reads tasks from `cb_docs/tasks/index.json`
+- **Metadata Extraction**: Parses task frontmatter for command details
+- **Consistent Structure**: All generated commands follow the same format
+- **Dependency Mapping**: Includes task dependencies in command metadata
+
+**Task Processing:**
+- **Automatic Processing**: Processes all tasks in the index
+- **Metadata Integration**: Uses task title, description, domain, priority, tags
+- **Command Structure**: Generates both command and @rules/ files
+- **Idempotent Operation**: Safe to run multiple times
+
+**CLI Integration:**
+- **Command Registration**: Integrated with main CLI system
+- **Help System**: Full help and documentation
+- **Force Option**: --force flag for regeneration
+- **Error Handling**: Consistent error reporting
+
+### Generated Files
+
+**Command Files:**
+- `.cb/commands/execute-TASK-2025-09-07-F01.md`
+- `.cb/commands/execute-TASK-2025-09-07-F02.md`
+- `.cb/commands/execute-TASK-2025-09-07-F03.md`
+- `.cb/commands/execute-TASK-2025-09-07-F04.md`
+
+**@rules/ Files:**
+- `.cursor/rules/execute-TASK-2025-09-07-F01.md`
+- `.cursor/rules/execute-TASK-2025-09-07-F02.md`
+- `.cursor/rules/execute-TASK-2025-09-07-F03.md`
+- `.cursor/rules/execute-TASK-2025-09-07-F04.md`
+
+**Code Changes:**
+- `builder/overlay/command_generator.py` - Main generator module
+- `builder/overlay/paths.py` - Added commands_dir() method
+- `builder/core/cli/__init__.py` - Added command generator import
+- `cb_docs/instructions/implement.md` - Added comprehensive documentation
+
+### Testing Results
+
+**Command Generation:**
+- ✅ Successfully generated commands for all 4 tasks
+- ✅ Both .cb/commands/ and .cursor/rules/ files created
+- ✅ Task metadata correctly extracted and used
+- ✅ Command structure consistent across all tasks
+
+**CLI Integration:**
+- ✅ `cb generate-task-commands` command works correctly
+- ✅ --force flag enables regeneration
+- ✅ Safe operation (warns if commands exist)
+- ✅ Idempotent (can run multiple times safely)
+
+**@rules/ Integration:**
+- ✅ All generated @rules/ files are runnable
+- ✅ Proper frontmatter and command structure
+- ✅ Cursor agent integration ready
+- ✅ Command aliases work correctly
+
+### Ready for Production
+
+The Per-Task Command Generator is now complete and ready for production use. Each task now has its own individual command that can be executed via CLI or @rules/ integration, enabling granular task execution and Cursor agent automation.
+

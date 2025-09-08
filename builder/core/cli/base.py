@@ -12,6 +12,13 @@ import json
 from datetime import datetime, date
 from pathlib import Path
 
+# Import telemetry for command tracking
+try:
+    from ...telemetry.command_tracker import track_command, get_command_tracker
+    TELEMETRY_AVAILABLE = True
+except ImportError:
+    TELEMETRY_AVAILABLE = False
+
 # Main CLI group
 @click.group()
 def cli():
@@ -24,6 +31,15 @@ from ...overlay.task_generator import (
     list_task_templates_cli,
     validate_task_template_cli
 )
+
+# Import quality commands
+try:
+    from .quality_commands import quality_gates, quality_check, quality_report
+    cli.add_command(quality_gates)
+    cli.add_command(quality_check)
+    cli.add_command(quality_report)
+except ImportError:
+    pass
 
 # Register task generator commands
 cli.add_command(generate_task_cli)
@@ -106,3 +122,51 @@ def common_dry_run_option():
         is_flag=True,
         help='Show what would be done without making changes'
     )
+
+# Status command
+@cli.command("status")
+@click.option("--format", "output_format", type=click.Choice(['table', 'json', 'yaml']), default='table', help='Output format')
+@click.option("--verbose", is_flag=True, help='Show detailed information')
+@click.option("--metrics", is_flag=True, help='Include performance metrics')
+def status_command(output_format, verbose, metrics):
+    """Display current project status and metrics."""
+    try:
+        if TELEMETRY_AVAILABLE:
+            tracker = get_command_tracker()
+            status_data = tracker.get_status_summary()
+            
+            if output_format == 'json':
+                click.echo(safe_json_dumps(status_data))
+            elif output_format == 'yaml':
+                click.echo(yaml.dump(status_data, default_flow_style=False))
+            else:
+                # Table format
+                click.echo("📊 Code Builder Status")
+                click.echo("=" * 50)
+                click.echo(f"Total Commands: {status_data['total_commands']}")
+                click.echo(f"Success Rate: {status_data['success_rate']:.1%}")
+                click.echo(f"Avg Execution Time: {status_data['avg_execution_time']:.1f}ms")
+                click.echo(f"Last Updated: {status_data['last_updated']}")
+                
+                if verbose and status_data['recent_commands']:
+                    click.echo("\n📋 Recent Commands:")
+                    for cmd in status_data['recent_commands']:
+                        status_icon = "✅" if cmd['success'] else "❌"
+                        click.echo(f"  {status_icon} {cmd['command_id']} ({cmd['execution_time_ms']:.1f}ms)")
+                
+                if metrics and status_data['most_used']:
+                    click.echo("\n🔥 Most Used Commands:")
+                    for cmd in status_data['most_used']:
+                        click.echo(f"  {cmd['command_id']}: {cmd['count']} times")
+        else:
+            click.echo("📊 Code Builder Status")
+            click.echo("=" * 50)
+            click.echo("Telemetry not available - basic status only")
+            click.echo("Project Root: " + str(get_project_root()))
+            click.echo("Cache Dir: " + str(get_cache_dir()))
+            
+    except Exception as e:
+        click.echo(f"❌ Error getting status: {e}")
+        return 1
+    
+    return 0

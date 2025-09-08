@@ -1,0 +1,8 @@
+{
+  "tests": 100.0,
+  "coverage": 50.0,
+  "lint": 98,
+  "spell": 0,
+  "guardrails": 50.0,
+  "overall": 69.6
+}

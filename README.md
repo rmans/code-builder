@@ -61,6 +61,22 @@ Code Builder is built around **8 core systems** working together:
 - **Validation commands**: Integrated quality gates for PRs
 - **Reviewer guidance**: Clear instructions for context evaluation
 
+### 9. **Telemetry & Metrics System** 🆕
+- **Command tracking**: Automatic logging of all CLI command executions
+- **Performance monitoring**: Execution time tracking and performance analytics
+- **Usage analytics**: Command frequency, success rates, and usage patterns
+- **Sensitive data protection**: Automatic redaction of passwords, API keys, and tokens
+- **File rotation**: Automatic cleanup of large log files with configurable size limits
+- **Status dashboard**: Real-time project status with comprehensive metrics
+
+### 10. **Quality Gates System** 🆕
+- **Release validation**: 10 comprehensive checks for release readiness
+- **Idempotency testing**: Ensures operations produce consistent results
+- **Parity validation**: Consistency between index and rules files
+- **Determinism checks**: Non-interactive operations produce consistent output
+- **UX validation**: Rules file format and usability standards
+- **Test suite integration**: Comprehensive testing across all major components
+
 ---
 
 ## Why
@@ -77,16 +93,26 @@ Code Builder is built around **8 core systems** working together:
 
 ## 📊 System Statistics
 
-- **53 CLI Commands** across 8 categories
-- **34 Python Modules** in the builder system  
-- **41 Markdown Files** for comprehensive documentation
+- **104+ CLI Commands** across 8 categories
+- **40+ Python Modules** in the builder system  
+- **50+ Markdown Files** for comprehensive documentation
 - **8 Document Types** with automated master synchronization
 - **8 Core Systems** working together seamlessly
 - **Multi-language Support** (Python, TypeScript, JavaScript)
 - **Comprehensive Testing** (Unit, Integration, E2E)
+- **Quality Gates** with 10 validation checks
+- **Telemetry System** with metrics collection and command history
 
 ## Recent Improvements
 
+### 🎯 Quality Gates & Telemetry (Latest)
+- **Quality Gates System**: 10 comprehensive validation checks for release readiness
+- **Telemetry & Metrics**: Command execution tracking, performance monitoring, and usage analytics
+- **Command History**: Detailed logging of CLI command executions with sensitive data redaction
+- **Status Dashboard**: Real-time project status with metrics and recent command history
+- **Test Suites**: Comprehensive test infrastructure for discovery, context, orchestrator, and more
+
+### 🔧 Core System Enhancements
 - **Fixed import issues**: Resolved `rules_loader` and `artifact_detector` import paths in evaluation prompts
 - **Enhanced Cursor integration**: Improved chat workflow with proper guidance and session management
 - **Multi-agent support**: Better task orchestration and agent management capabilities
@@ -113,10 +139,15 @@ Run these commands after cloning:
     pnpm run test:all   # run all tests (TypeScript + Python)
     pnpm run docs:all   # validate documentation
     pnpm run rules:check "tests/**/*.ts" --feature auth --stacks typescript,react
+    
+    # New: Check project status and run quality gates
+    python -m builder.core.cli status                    # View project status and metrics
+    python -m builder.core.cli quality:gates --verbose   # Run quality validation
+    python -m builder.core.cli telemetry:history         # View command history
 
 ## 📋 Command Overview
 
-Code Builder provides **53 CLI commands** organized into **8 categories**:
+Code Builder provides **104+ CLI commands** organized into **8 categories**:
 
 ### 🔍 Discovery Commands (6)
 - `discover:new` - Interactive discovery with guided prompts
@@ -155,6 +186,11 @@ Code Builder provides **53 CLI commands** organized into **8 categories**:
 - `agent:stop` - Stop agent session
 - `agent:list` - List active agents
 - `agent:cleanup` - Clean up old sessions
+
+### 📊 Telemetry & Status Commands (3) 🆕
+- `status` - Display project status and metrics
+- `telemetry:metrics` - View detailed telemetry metrics
+- `telemetry:history` - View command execution history
 
 ### 🎯 Orchestration Commands (12)
 - `orchestrator:add-task` - Add new task
@@ -708,10 +744,59 @@ python3 -m builder iter:finish src/hello.ts --winner B --scores-file cursor_resp
 - **Interactive discovery**: `python3 -m builder discover:new --interactive`
 - **Batch discovery**: `python3 -m builder discover:new --batch --template <type>`
 - **Template support**: `default`, `enterprise`, `startup` templates with tailored fields
+
+#### Telemetry & Metrics System 🆕
+- **Command tracking**: Automatic logging of all CLI executions with `@track_command` decorator
+- **Performance monitoring**: `cb status` shows execution times, success rates, and usage patterns
+- **Command history**: `cb telemetry:history` displays detailed execution logs with sensitive data redaction
+- **Metrics dashboard**: `cb telemetry:metrics` provides comprehensive usage analytics
+- **File rotation**: Automatic cleanup of large telemetry files with configurable size limits
+- **Sensitive data protection**: Automatic redaction of passwords, API keys, and tokens
+
+#### Quality Gates System 🆕
+- **Release validation**: `cb quality:gates` runs 10 comprehensive validation checks
+- **Idempotency testing**: Ensures operations produce consistent results on repeated runs
+- **Parity validation**: Checks consistency between index.json and .cursor/rules/ files
+- **Determinism checks**: Validates non-interactive operations produce consistent output
+- **UX validation**: Ensures rules files meet usability standards
+- **Test suite integration**: Comprehensive testing across discovery, context, orchestrator, and more
+- **Quality reports**: Generate detailed reports in JSON, YAML, and HTML formats
 - **Auto-generation**: `--auto-generate` flag for enhanced content generation
 - **Discovery scanning**: `python3 -m builder discover:scan --auto-generate`
 - **Context regeneration**: `python3 -m builder discover:regenerate --all`
 - **Artifact cleanup**: `python3 -m builder cleanup:artifacts --clean`
+
+## 🆕 Latest Updates Summary
+
+### Telemetry & Metrics System
+- **Automatic command tracking** with `@track_command` decorator
+- **Performance monitoring** with execution time tracking
+- **Usage analytics** showing command frequency and success rates
+- **Sensitive data protection** with automatic redaction of passwords and API keys
+- **File rotation** to prevent large log files from consuming disk space
+- **Status dashboard** providing real-time project metrics
+
+### Quality Gates System
+- **10 comprehensive validation checks** for release readiness
+- **Idempotency testing** ensuring consistent operation results
+- **Parity validation** between index.json and .cursor/rules/ files
+- **Determinism checks** for non-interactive operations
+- **UX validation** for rules file format and usability
+- **Test suite integration** across all major components
+- **Quality reports** in multiple formats (JSON, YAML, HTML)
+
+### Test Infrastructure
+- **Comprehensive test suites** for discovery, context, orchestrator, single-task, and interview
+- **Quality test runner** with detailed reporting
+- **Test consolidation** under unified `tests/` directory structure
+- **Automated test execution** with performance monitoring
+
+### CLI Enhancements
+- **104+ CLI commands** across 8 categories
+- **Status command** for real-time project monitoring
+- **Telemetry commands** for metrics and history viewing
+- **Quality commands** for validation and reporting
+- **Enhanced error handling** and user feedback
 
 #### Context System
 - **Graph building**: `python3 -m builder ctx:graph:build`

@@ -1,0 +1,160 @@
+---
+id: execute-TASK-2025-09-07-T3.2-templates
+title: Static Command Template Pack
+description: Provide templates for create-context, project-status, evaluate-code, fix-issues, create-task, analyze-project, plan-project, execute-tasks, execute-task
+status: active
+created: 2025-09-08
+updated: 2025-09-08
+owner: system
+domain: templates
+priority: 7
+agent_type: backend
+dependencies: T0.3, T0.4
+tags: [templates, commands]
+---
+
+# Command: Static Command Template Pack
+
+## Description
+Provide templates for create-context, project-status, evaluate-code, fix-issues, create-task, analyze-project, plan-project, execute-tasks, execute-task
+
+## Usage
+```bash
+cb execute-TASK-2025-09-07-T3.2-templates
+# or
+@rules/execute-TASK-2025-09-07-T3.2-templates
+```
+
+## Outputs
+- Task execution results
+- Updated task status
+- Generated artifacts (if applicable)
+
+## Flags
+- `--phase PHASE` - Execute specific phase only
+- `--skip-phases PHASES` - Skip specific phases (comma-separated)
+- `--dry-run` - Show execution plan without running
+- `--interactive` - Interactive mode with confirmations
+- `--force` - Force execution even if dependencies not met
+
+## Examples
+```bash
+# Execute complete task
+cb execute-TASK-2025-09-07-T3.2-templates
+
+# Execute specific phase
+cb execute-TASK-2025-09-07-T3.2-templates --phase implementation
+
+# Dry run
+cb execute-TASK-2025-09-07-T3.2-templates --dry-run
+
+# Interactive mode
+cb execute-TASK-2025-09-07-T3.2-templates --interactive
+```
+
+## Task Details
+
+---
+id: TASK-2025-09-07-T3.2-templates
+title: Static Command Template Pack
+description: Provide templates for create-context, project-status, evaluate-code, fix-issues, create-task, analyze-project, plan-project, execute-tasks, execute-task
+status: pending
+created: 2025-09-07
+updated: 2025-09-07
+owner: platform-agent
+domain: templates
+priority: 7
+agent_type: backend
+dependencies: [T0.3, T0.4]
+tags: [templates, commands]
+---
+
+# Task: Static Command Template Pack
+
+## Phases
+### Phase 1: 🚀 Implementation
+- [x] Place under `.cb/engine/templates/commands/`
+- [x] Support placeholder replacement (project type, language, framework)
+
+### Phase 2: 🧪 Testing
+- [x] `cb commands:refresh` hydrates `.cb/commands/*` and `.cursor/rules/*`
+
+### Phase 3: 📚 Documentation
+- [x] Template fields documented in `implement.md`
+
+### Phase 4: 🧹 Cleanup
+- [x] Validate required placeholders exist
+
+### Phase 5: 💾 Commit
+- [x] Commit
+
+## Acceptance Criteria
+- [x] Fresh projects hydrate to runnable @rules set
+
+## Completion Summary
+
+**Status:** ✅ COMPLETED  
+**Updated:** 2025-09-07
+
+### What Was Implemented
+
+**Static Command Template Pack:**
+- **9 Command Templates**: Created comprehensive Handlebars templates for all command types
+- **Template Processing**: Implemented Handlebars-like template processing with variable replacement
+- **Project Context Detection**: Automatic context loading from discovery data
+- **Command Generation**: Templates generate to `cb_docs/commands/` and sync to `.cursor/rules/`
+
+### Key Features
+
+**Template System:**
+- **Handlebars Syntax**: Support for `{{variable}}` placeholders and `{{variable | default("fallback")}}`
+- **Project Context**: Automatic detection of project name, type, framework, language
+- **Variable Replacement**: Dynamic replacement of template variables with project-specific values
+- **Command Generation**: Processed templates generate runnable command definitions
+
+**Command Templates:**
+1. **analyze-project.md.hbs** - Project analysis and discovery
+2. **create-context.md.hbs** - Context document generation
+3. **plan-project.md.hbs** - Project planning through guided interview
+4. **project-status.md.hbs** - Project status and metrics display
+5. **evaluate-code.md.hbs** - Code quality evaluation
+6. **fix-issues.md.hbs** - Automated issue fixing
+7. **create-task.md.hbs** - Task creation with structured format
+8. **execute-task.md.hbs** - Single task execution
+9. **execute-tasks.md.hbs** - Multiple task orchestration
+
+**Integration Points:**
+- **CLI Commands**: Enhanced `commands:refresh` command with template processing
+- **Rule System**: Automatic sync to `.cursor/rules/` for Cursor integration
+- **Context Detection**: Uses discovery data for project-specific template variables
+
+### Generated Files
+
+**Templates:**
+- `cb_docs/templates/commands/*.md.hbs` - Handlebars template files
+- `cb_docs/commands/*.md` - Generated command definitions
+- `.cursor/rules/*.md` - Generated @rules/ files for Cursor
+
+**Documentation:**
+- Added "Static Command Template Pack" section to `cb_docs/instructions/implement.md`
+- Documented all template variables, processing steps, and usage examples
+- Included integration points and context detection details
+
+### Testing Results
+
+**Template Processing:**
+- ✅ All 9 templates process correctly with project context
+- ✅ Handlebars syntax support works for variables and defaults
+- ✅ Command generation creates proper .md files
+- ✅ @rules/ sync functionality works correctly
+
+**Validation:**
+- ✅ All required placeholders exist in templates
+- ✅ Template variables are properly documented
+- ✅ Command refresh process works end-to-end
+- ✅ Fresh projects can hydrate to runnable @rules set
+
+### Ready for Production
+
+The Static Command Template Pack is now complete and ready for fresh project hydration. New projects can use `cb commands:refresh` to generate all necessary command definitions and @rules/ files with project-specific context.
+

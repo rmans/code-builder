@@ -58,7 +58,7 @@ def parse_vitest_report(path: str) -> Dict[str, float]:
         return {"tests": config.eval_default_score, "coverage": config.eval_default_score}
     
     # Test pass rate (0-100)
-    test_score = (passed_tests / total_tests) * 100
+    test_score = (float(passed_tests) / float(total_tests)) * 100
     
     # Coverage from coverageMap if available
     coverage_map = data.get('coverageMap', {})
@@ -72,7 +72,7 @@ def parse_vitest_report(path: str) -> Dict[str, float]:
                 total_statements += len(statements)
                 covered_statements += sum(1 for v in statements.values() if v > 0)
         
-        coverage_score = (covered_statements / total_statements * 100) if total_statements > 0 else config.eval_default_score
+        coverage_score = (float(covered_statements) / float(total_statements) * 100) if total_statements > 0 else config.eval_default_score
     else:
         coverage_score = config.eval_default_score
     
@@ -164,12 +164,13 @@ def evaluate_code(path: str) -> Dict[str, float]:
     reporter_paths = config.get('reporter_paths', {})
     
     # Initialize scores with neutral values
+    default_score = config.get('eval_default_score', 0.5)
     scores = {
-        "tests": config.eval_default_score,
-        "coverage": config.eval_default_score,
-        "lint": config.eval_default_score,
-        "spell": config.eval_default_score,
-        "guardrails": config.eval_default_score
+        "tests": default_score,
+        "coverage": default_score,
+        "lint": default_score,
+        "spell": default_score,
+        "guardrails": default_score
     }
     
     # Parse vitest report (contains both tests and coverage)

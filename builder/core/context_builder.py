@@ -15,6 +15,7 @@ from datetime import datetime
 from .context_graph import ContextGraph, GraphNode
 from .context_select import ContextSelector
 from .context_budget import ContextBudgetManager, BudgetItem
+from ..utils.rules_integration import RulesIntegrator
 
 
 class ContextBuilder:
@@ -70,6 +71,7 @@ class ContextBuilder:
         self.graph = ContextGraph()
         self.selector = ContextSelector(self.graph)
         self.budget_manager = ContextBudgetManager()
+        self.rules_integrator = RulesIntegrator()
         
         # Load existing context if available
         self._load_existing_context()
@@ -184,6 +186,9 @@ class ContextBuilder:
         # Write PRD file
         with open(prd_file, 'w', encoding='utf-8') as f:
             f.write(prd_content)
+        
+        # Validate document against rules
+        self._validate_document(prd_content, 'prd', prd_file)
         
         # Update master file
         self._update_master_file('prd', f"PRD-{today}-{title}", interview.get('product_name', 'Product'), 'draft', 'product')
@@ -585,6 +590,48 @@ Implement {feature} functionality for {project_name}.
         except Exception as e:
             # Silently fail - master file sync is optional
             print(f"⚠️  Warning: Could not sync master file: {e}")
+    
+    def _validate_document(self, content: str, doc_type: str, file_path: Path) -> bool:
+        """Validate a generated document against rules."""
+        try:
+            is_valid, report, frontmatter = self.rules_integrator.validate_document(
+                content, doc_type, str(file_path)
+            )
+            
+            if not is_valid:
+                print(f"⚠️  Rule violations in {file_path}:")
+                print(report)
+                return False
+            
+            # Add rule references to front-matter if needed
+            if frontmatter.get("rules"):
+                # Update the document with rule references
+                updated_content = self._add_rule_references_to_content(content, frontmatter)
+                if updated_content != content:
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(updated_content)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Warning: Could not validate document {file_path}: {e}")
+            return True  # Don't fail on validation errors
+    
+    def _add_rule_references_to_content(self, content: str, frontmatter: Dict[str, Any]) -> str:
+        """Add rule references to document content."""
+        if not content.startswith("---"):
+            return content
+        
+        parts = content.split("---", 2)
+        if len(parts) < 3:
+            return content
+        
+        try:
+            import yaml
+            new_frontmatter = yaml.dump(frontmatter, default_flow_style=False, sort_keys=False)
+            return f"---\n{new_frontmatter}---{parts[2]}"
+        except Exception:
+            return content
     
     def _generate_context_pack_data(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate context pack data without writing to file."""

@@ -2310,6 +2310,208 @@ When using this command, agents should:
 5. **Review results** in both individual JSON files and summary report
 6. **Use exit codes** to determine success/failure in scripts
 
+## Cursor Integration Hooks
+
+The Cursor Integration Hooks system provides real-time integration between the task orchestrator and Cursor agents, automatically updating current task information and regenerating per-task rules.
+
+### Overview
+
+The hook system consists of two main hooks that are triggered during task orchestration:
+
+1. **`on_task_create`** - Regenerates per-task rules when a new task is added
+2. **`on_agent_start`** - Updates `.cb/instructions/current.md` when an agent starts working on a task
+
+### Hook Implementation
+
+#### `on_task_create` Hook
+
+**Purpose**: Automatically regenerate per-task command files when a new task is added to the orchestrator.
+
+**Trigger**: Called from `add_task()` method in `CursorAgentOrchestrator`
+
+**Implementation**:
+```python
+def on_task_create(self, task: Task) -> None:
+    """Hook called when a task is created - regenerate per-task rules."""
+    if not self.hooks_enabled:
+        return
+    
+    try:
+        from ..overlay.command_generator import generate_task_commands
+        generate_task_commands()
+    except Exception as e:
+        print(f"⚠️  Warning: Could not regenerate per-task rules: {e}")
+```
+
+**Features**:
+- Regenerates command files for all tasks in the system
+- Integrated with existing `command_generator.generate_task_commands()`
+- Error handling to prevent hook failures from breaking task creation
+
+#### `on_agent_start` Hook
+
+**Purpose**: Update `.cb/instructions/current.md` with information about the active task and agent.
+
+**Trigger**: Called from `launch_cursor_agent_for_task()` method in `CursorAgentOrchestrator`
+
+**Implementation**:
+```python
+def on_agent_start(self, agent_id: str, task_id: str) -> None:
+    """Hook called when an agent starts - update current.md."""
+    if not self.hooks_enabled:
+        return
+    
+    # Debounce updates
+    current_time = time.time()
+    if current_time - self.last_update_time < self.update_debounce_seconds:
+        return
+    
+    self.last_update_time = current_time
+    
+    try:
+        self._update_current_md(task_id, agent_id)
+    except Exception as e:
+        print(f"⚠️  Warning: Could not update current.md: {e}")
+```
+
+**Features**:
+- Debouncing to prevent rapid file updates
+- Real-time task and agent information
+- Graceful error handling
+
+### Current.md File Format
+
+The `current.md` file provides a comprehensive overview of the active task execution:
+
+```markdown
+# Current Task Execution
+
+**Agent**: cursor-backend-agent (backend)
+**Task**: TEST-TASK12 - Test Task 12
+**Status**: pending
+**Started**: Not started
+**Priority**: 5
+
+## Task Description
+Test Description 12
+
+## Agent Capabilities
+api-development, database-design
+
+## Dependencies
+None
+
+## Acceptance Criteria
+Not specified
+
+## Current Phase
+Phase 1: 🚀 Implementation (Pending)
+
+---
+*Last updated: 2025-09-08 07:52:48*
+```
+
+### Agent Compatibility
+
+The hook system handles both types of agents:
+
+1. **Cursor Agents**: Added via `add_cursor_agent()` method
+2. **Base Orchestrator Agents**: Loaded from orchestrator state files
+
+**Fallback Logic**:
+```python
+# Try to get agent from cursor_agents first, then from base orchestrator
+agent = self.cursor_agents.get(agent_id)
+if not agent:
+    # Fallback to base orchestrator agents
+    base_agent = self.base_orchestrator.agents.get(agent_id)
+    if base_agent:
+        # Convert base agent to cursor agent for consistency
+        agent = CursorAgent(
+            agent_id=base_agent.agent_id,
+            agent_type=base_agent.agent_type,
+            capabilities=base_agent.capabilities
+        )
+```
+
+### Configuration
+
+#### Hook Control
+
+```python
+# Enable/disable hooks
+orchestrator.enable_hooks()
+orchestrator.disable_hooks()
+
+# Set debounce interval (seconds)
+orchestrator.set_update_debounce(5.0)  # 5 second debounce
+```
+
+#### Default Settings
+
+- **Hooks Enabled**: `True` by default
+- **Debounce Interval**: `1.0` seconds
+- **Current.md Path**: `.cb/instructions/current.md`
+
+### Integration Points
+
+1. **Task Orchestrator**: Hooks are integrated into task creation and agent launching
+2. **Command Generator**: Per-task rule regeneration uses existing command generation system
+3. **Multi-Agent Manager**: Agent launching triggers the `on_agent_start` hook
+4. **Overlay System**: Uses `.cb/instructions/` directory for current task tracking
+
+### Usage Examples
+
+#### Basic Usage
+
+```python
+from builder.utils.cursor_agent_integration import CursorAgentOrchestrator
+from builder.utils.task_orchestrator import Task
+
+# Create orchestrator
+orchestrator = CursorAgentOrchestrator()
+
+# Add agent
+orchestrator.add_cursor_agent('my-agent', 'backend', ['api-development'])
+
+# Create and add task (triggers on_task_create hook)
+task = Task('TASK-001', 'My Task', 'Task description', 'echo test', '.', [], 30, 5, 'backend')
+task_id = orchestrator.add_task(task)
+
+# Launch agent (triggers on_agent_start hook)
+success = orchestrator.launch_cursor_agent_for_task(task_id)
+```
+
+#### Hook Configuration
+
+```python
+# Configure debouncing
+orchestrator.set_update_debounce(2.0)  # 2 second debounce
+
+# Disable hooks temporarily
+orchestrator.disable_hooks()
+
+# Re-enable hooks
+orchestrator.enable_hooks()
+```
+
+### Error Handling
+
+The hook system includes comprehensive error handling:
+
+- **Hook Failures**: Don't prevent task creation or agent launching
+- **Missing Agents**: Graceful fallback to base orchestrator agents
+- **File System Errors**: Warnings logged but don't break orchestration
+- **Debouncing**: Prevents excessive file updates during rapid operations
+
+### Benefits
+
+1. **Real-time Updates**: Current task information is always up-to-date
+2. **Automatic Rule Generation**: New tasks automatically get their command files
+3. **Agent Awareness**: Clear visibility into which agent is working on which task
+4. **Debouncing**: Prevents performance issues from rapid updates
+5. **Compatibility**: Works with both cursor agents and base orchestrator agents
+
 ### Next Steps
 
 After scaffolding is complete:
@@ -2325,5 +2527,6 @@ After scaffolding is complete:
 10. **Template-Based Task Generation**: Generate task files from templates ✅
 11. **Execute-Tasks Orchestrator**: Task execution with dependency management ✅
 12. **Execute-Tasks Command & Rule**: Command and @rules/ integration ✅
-13. **State Management**: Implement state updates and persistence
-14. **Path Translation**: Use OverlayPaths for all new features
+13. **Cursor Integration Hooks**: Real-time current.md updates and per-task rule regeneration ✅
+14. **State Management**: Implement state updates and persistence
+15. **Path Translation**: Use OverlayPaths for all new features

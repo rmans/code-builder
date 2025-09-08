@@ -23,4 +23,4 @@ links:
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| ADR-2025-09-07-test-adr-for-cli-ref | Test ADR for CLI Refactoring | proposed |  | [ADR-2025-09-07-test-adr-for-cli-ref](ADR-2025-09-07-test-adr-for-cli-ref.md) |
+| *No documents currently defined* |  |  |  |  |

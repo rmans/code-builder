@@ -111,7 +111,7 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
             
             for status, count in status_counts.items():
-                percentage = (count / total_tasks * 100) if total_tasks > 0 else 0
+                percentage = (float(count) / float(total_tasks) * 100) if total_tasks > 0 else 0
                 summary_content += f"- **{status.title()}**: {count} ({percentage:.1f}%)\n"
             
             summary_content += "\n## Task Details\n\n"

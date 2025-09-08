@@ -1,10 +1,10 @@
 # Builder CLI
 
-Python CLI (builder/cli.py) manages ADRs, context generation, planning, iterations, rules, documentation, discovery, and code evaluation. The CLI provides a comprehensive set of **53 commands** across **8 categories** for AI-assisted development workflows with intelligent discovery, auto ADR linking, and comprehensive metrics tracking.
+Python CLI (builder/cli.py) manages ADRs, context generation, planning, iterations, rules, documentation, discovery, and code evaluation. The CLI provides a comprehensive set of **104+ commands** across **8 categories** for AI-assisted development workflows with intelligent discovery, auto ADR linking, comprehensive metrics tracking, telemetry, and quality gates.
 
 ## 🏗️ System Architecture
 
-The Builder CLI is built around **8 core systems**:
+The Builder CLI is built around **10 core systems**:
 
 ### 1. **Context Management System** (12 commands)
 - **Graph-based selection**: Discovers related items through explicit links and code proximity
@@ -32,7 +32,23 @@ The Builder CLI is built around **8 core systems**:
 - **Template system**: Jinja2-based document generation with consistent formatting
 - **8 document types**: PRD, ADR, ARCH, EXEC, IMPL, INTEGRATIONS, TASKS, UX
 
-### 5. **Evaluation System** (4 commands)
+### 5. **Telemetry & Metrics System** (3 commands) 🆕
+- **Command tracking**: Automatic logging of all CLI command executions
+- **Performance monitoring**: Execution time tracking and performance analytics
+- **Usage analytics**: Command frequency, success rates, and usage patterns
+- **Sensitive data protection**: Automatic redaction of passwords, API keys, and tokens
+- **File rotation**: Automatic cleanup of large log files with configurable size limits
+- **Status dashboard**: Real-time project status with comprehensive metrics
+
+### 6. **Quality Gates System** (3 commands) 🆕
+- **Release validation**: 10 comprehensive checks for release readiness
+- **Idempotency testing**: Ensures operations produce consistent results
+- **Parity validation**: Consistency between index and rules files
+- **Determinism checks**: Non-interactive operations produce consistent output
+- **UX validation**: Rules file format and usability standards
+- **Test suite integration**: Comprehensive testing across all major components
+
+### 7. **Evaluation System** (4 commands)
 - **Objective evaluation**: Automated scoring based on test coverage, linting, and metrics
 - **Subjective evaluation**: AI-powered quality assessment with structured prompts
 - **ABC iteration**: Systematic code improvement through variant generation and comparison

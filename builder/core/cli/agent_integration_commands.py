@@ -7,11 +7,11 @@ This module contains commands for integrating with Cursor agents.
 
 import click
 import json
-from .base import cli, get_project_root
+from .base import cli, get_project_root, track_command
 
 # Import required modules and functions
 try:
-    from ..overlay.paths import OverlayPaths
+    from ...overlay.paths import OverlayPaths
     overlay_paths = OverlayPaths()
     ROOT = overlay_paths.get_root()
     DOCS = overlay_paths.get_docs_dir()
@@ -24,6 +24,7 @@ except ImportError:
 @cli.command("agent:get-command")
 @click.option("--context", help="JSON context for command selection")
 @click.option("--output", type=click.Choice(['text', 'json']), default='text')
+@track_command("agent:get-command")
 def agent_get_command(context, output):
     """Get recommended command for Cursor agent based on current context."""
     try:
@@ -72,6 +73,7 @@ def agent_get_command(context, output):
 @cli.command("agent:create-rules")
 @click.argument("command_id")
 @click.option("--status", is_flag=True, help="Create project status rules instead")
+@track_command("agent:create-rules")
 def agent_create_rules(command_id, status):
     """Create @rules/ command files for Cursor agents."""
     try:
@@ -105,6 +107,7 @@ def agent_create_rules(command_id, status):
 
 @cli.command("agent:integrate")
 @click.option("--output", type=click.Choice(['text', 'json']), default='text')
+@track_command("agent:integrate")
 def agent_integrate(output):
     """Integrate command system with Cursor agents."""
     try:

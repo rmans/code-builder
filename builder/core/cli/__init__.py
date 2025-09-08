@@ -40,6 +40,15 @@ from ...overlay import task_generator
 
 # Import orchestrator commands
 from . import orchestrator_commands
+from . import task_runner_commands
+from . import simple_router_commands
+from . import evaluation_commands
+from . import rules_commands
+from . import document_types_commands
+from . import master_sync_commands
+from . import abc_iteration_commands
+from . import dynamic_updater_commands
+from . import current_instructions_commands
 
 __all__ = ['cli']
 

@@ -1,316 +1,167 @@
 #!/usr/bin/env python3
 """
-Simple Router for Code Builder Commands
+Simple Command Router
 
-This module provides simple command routing for basic Code Builder commands,
-mapping short commands to their full implementations.
+This module provides simple command mappings that map short commands
+to more complex command sequences for easier usage.
 """
 
-import click
+from typing import Dict, List, Optional, Any
+import subprocess
+import sys
 from pathlib import Path
-from .paths import OverlayPaths
-from ..core.cli.base import cli
 
-# Initialize overlay paths
-overlay_paths = OverlayPaths()
+# Import configuration system
+from ..config.settings import get_config
 
 
-@cli.command("analyze")
-@click.option("--depth", type=int, default=3, help="Analysis depth (default: 3)")
-@click.option("--ignore", help="Ignore files matching pattern")
-@click.option("--ci", is_flag=True, help="Non-interactive mode for CI/CD")
-def analyze_command(depth, ignore, ci):
-    """
-    Analyze project structure and generate discovery report.
+class SimpleRouter:
+    """Maps simple commands to complex command sequences."""
     
-    This is a simple implementation that creates basic project analysis.
-    """
-    try:
-        # Import the enhanced discovery engine
-        from ..discovery.enhanced_engine import analyze_project_enhanced
+    def __init__(self):
+        self.mappings = {
+            # Discovery and analysis
+            "discover": "discover:new",
+            "analyze": "discover:new",
+            
+            # Context building
+            "context": "ctx:build",
+            "ctx": "ctx:build",
+            
+            # Evaluation
+            "eval": "eval:objective",
+            "evaluate": "eval:objective",
+            
+            # Task management
+            "task": "execute-task --pick",
+            "tasks": "execute-tasks",
+            "run": "execute-task --pick",
+            
+            # Documentation
+            "docs": "doc:index",
+            "doc": "doc:index",
+            "documentation": "doc:index",
+            
+            # Fixing and maintenance
+            "fix": ["lint:fix", "format", "cleanup:artifacts"],
+            "clean": "cleanup:artifacts",
+            "format": "format",
+            "lint": "lint:fix",
+            
+            # Status and monitoring
+            "status": "orchestrator:status",
+            "state": "orchestrator:status",
+            "health": "orchestrator:status",
+            
+            # Quick actions
+            "list": "commands:list",
+            "help": "commands:list",
+            "refresh": "commands:refresh",
+        }
+    
+    def get_command(self, simple_command: str) -> Optional[str | List[str]]:
+        """Get the mapped command(s) for a simple command."""
+        return self.mappings.get(simple_command.lower())
+    
+    def list_available_commands(self) -> Dict[str, str | List[str]]:
+        """List all available simple commands and their mappings."""
+        return self.mappings.copy()
+    
+    def execute_simple_command(self, simple_command: str, args: List[str] = None) -> int:
+        """Execute a simple command by mapping it to complex commands."""
+        if args is None:
+            args = []
         
-        # Parse ignore patterns
-        ignore_patterns = []
-        if ignore:
-            ignore_patterns = [pattern.strip() for pattern in ignore.split(',')]
+        mapped_command = self.get_command(simple_command)
         
-        # Run enhanced analysis
-        results = analyze_project_enhanced(
-            root_path=".",
-            depth=depth,
-            ignore_patterns=ignore_patterns,
-            ci_mode=ci
-        )
+        if not mapped_command:
+            print(f"❌ Unknown simple command: {simple_command}")
+            print(f"Available commands: {', '.join(self.mappings.keys())}")
+            return 1
         
-        # Display results
-        project_info = results["project_info"]
-        languages = results["languages"]
-        frameworks = results["frameworks"]
+        # Handle single command
+        if isinstance(mapped_command, str):
+            return self._execute_command(mapped_command, args)
         
-        click.echo(f"✅ Analysis complete!")
-        click.echo(f"📄 Results saved to: {overlay_paths.get_docs_dir()}/discovery/report.json")
-        click.echo(f"📊 Summary saved to: {overlay_paths.get_docs_dir()}/discovery/summary.md")
-        click.echo(f"🔍 Files analyzed: {project_info['file_count']:,}")
-        click.echo(f"📁 Directories found: {project_info['directory_count']:,}")
-        click.echo(f"🛠️  Languages: {', '.join(languages['detected']) if languages['detected'] else 'None detected'}")
-        if frameworks["detected"]:
-            click.echo(f"🏗️  Frameworks: {', '.join(frameworks['detected'])}")
+        # Handle multiple commands
+        elif isinstance(mapped_command, list):
+            return self._execute_commands(mapped_command, args)
         
-    except Exception as e:
-        click.echo(f"❌ Error during analysis: {e}")
         return 1
     
-    return 0
-
-
-@cli.command("plan")
-@click.option("--persona", type=click.Choice(['dev', 'pm', 'ai']), default='dev', help="Interview persona")
-@click.option("--noninteractive", is_flag=True, help="Use defaults instead of prompts")
-def plan_command(persona, noninteractive):
-    """
-    Create project plan through guided interview.
+    def _execute_command(self, command: str, args: List[str]) -> int:
+        """Execute a single command."""
+        # Build the command as a list for subprocess
+        cmd_parts = ["python", "-m", "builder.core.cli"] + command.split()
+        if args:
+            cmd_parts.extend(args)
+        
+        print(f"🔄 Executing: {' '.join(cmd_parts)}")
+        
+        try:
+            result = subprocess.run(
+                cmd_parts,
+                cwd=Path.cwd()
+            )
+            return result.returncode
+        except Exception as e:
+            print(f"❌ Error executing command: {e}")
+            return 1
     
-    This command routes to the discover:analyze command with appropriate parameters.
-    """
-    try:
-        # Import the discover analyze command
-        from ..core.cli.discovery_commands import discover_analyze
+    def _execute_commands(self, commands: List[str], args: List[str]) -> int:
+        """Execute multiple commands in sequence."""
+        print(f"🔄 Executing {len(commands)} commands:")
         
-        # Call the discover:analyze command with parameters
-        discover_analyze(persona=persona, noninteractive=noninteractive)
+        for i, command in enumerate(commands, 1):
+            print(f"  {i}. cb {command}")
         
-    except ImportError as e:
-        click.echo(f"❌ Error: Discovery analyze command not available: {e}")
-        click.echo("💡 Try running: cb discover:analyze")
-        return 1
-    except Exception as e:
-        click.echo(f"❌ Error: {e}")
-        return 1
-    
-    return 0
-
-
-@cli.command("create-context")
-@click.option("--sections", multiple=True, type=click.Choice(['prd', 'arch', 'int', 'impl', 'exec', 'task']),
-              default=['prd', 'arch', 'int', 'impl', 'exec', 'task'], help="Sections to generate")
-@click.option("--overwrite", is_flag=True, help="Overwrite existing files")
-@click.option("--from", "from_sources", multiple=True, type=click.Choice(['discovery', 'interview']),
-              default=['discovery', 'interview'], help="Sources to build context from")
-def create_context_command(sections, overwrite, from_sources):
-    """
-    Create comprehensive project context from discovery and interview data.
-    
-    This command generates PRD, Architecture, Integration Plan, Implementation Roadmap,
-    Execution Plan, and Tasks from discovery and interview data.
-    """
-    try:
-        # Import the context builder
-        from ..core.context_builder import build_context_cli
+        print()
         
-        # Run context building
-        results = build_context_cli(
-            from_sources=list(from_sources),
-            overwrite=overwrite,
-            sections=list(sections)
-        )
+        for i, command in enumerate(commands, 1):
+            print(f"🔄 Step {i}/{len(commands)}: {command}")
+            
+            result = self._execute_command(command, args)
+            if result != 0:
+                print(f"❌ Command failed: {command}")
+                return result
+            
+            print(f"✅ Step {i} completed")
+            print()
         
-        # Display results
-        click.echo(f"✅ Context creation complete!")
-        click.echo(f"   Generated sections: {', '.join(sections)}")
-        click.echo(f"   Sources: {', '.join(from_sources)}")
-        
-        # Show generated files
-        for section, result in results.items():
-            if isinstance(result, dict) and 'file' in result:
-                click.echo(f"   📄 {section}: {result['file']}")
-            elif isinstance(result, dict) and 'files' in result:
-                click.echo(f"   📄 {section}: {len(result['files'])} files")
-        
+        print("✅ All commands completed successfully")
         return 0
-        
-    except Exception as e:
-        click.echo(f"❌ Error creating context: {e}")
-        return 1
-
-
-def register_simple_commands():
-    """Register simple command aliases with the main CLI."""
-    # Commands are already registered via the @cli.command decorators
-    pass
-
-
-def get_command_mapping():
-    """Get mapping of simple commands to their full implementations."""
-    return {
-        "analyze": "discover:new",
-        "plan": "discover:analyze",
-        "create-context": "ctx:build",
-        "status": "orchestrator:status",
-        "commands": "commands:list",
-        "help": "commands:list"
-    }
-
-
-def create_create_context_rule():
-    """Create the @rules/create-context rule file."""
-    try:
-        # Get the rules directory
-        rules_dir = Path(overlay_paths.cursor_rules_dir())
-        rules_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Create the create-context rule
-        rule_file = rules_dir / "create-context.md"
-        
-        rule_content = """---
-id: create-context
-title: Create Context
-description: Generate comprehensive project context from discovery and interview data
-status: active
-created: 2025-09-07
-updated: 2025-09-07
-owner: system
-domain: context
-priority: 8
-agent_type: backend
-dependencies: [analyze-project, plan-project]
-tags: [context, generation, documentation]
----
-
-# Command: Create Context
-
-## Description
-Generates comprehensive project context documents including PRD, Architecture, Integration Plan, Implementation Roadmap, Execution Plan, and Tasks from discovery and interview data.
-
-## Usage
-```bash
-cb create-context
-# or
-@rules/create-context
-```
-
-## Outputs
-- `cb_docs/prd/PRD-{date}-{title}.md` - Product Requirements Document
-- `cb_docs/arch/ARCH-{date}-{title}.md` - Architecture Document
-- `cb_docs/integrations/INT-{date}-{title}.md` - Integration Plan
-- `cb_docs/impl/IMPL-{date}-{title}.md` - Implementation Roadmap
-- `cb_docs/exec/EXEC-{date}-{title}.md` - Execution Plan
-- `cb_docs/tasks/TASK-{date}-F{num}.md` - Generated Tasks
-- `cb_docs/pack_context.json` - Context Pack Metadata
-
-## Flags
-- `--sections SECTIONS` - Specific sections to generate (prd,arch,int,impl,exec,task)
-- `--overwrite` - Overwrite existing files
-- `--from SOURCES` - Input sources (discovery,interview)
-
-## Examples
-```bash
-# Generate all context documents
-cb create-context
-
-# Generate only PRD and Architecture
-cb create-context --sections prd,arch
-
-# Overwrite existing files
-cb create-context --overwrite
-
-# Use specific input sources
-cb create-context --from discovery --from interview
-```
-
-## Template Variables
-- `{{project_name}}` - Project name from discovery
-- `{{product_name}}` - Product name from interview
-- `{{persona}}` - Interview persona
-- `{{technical_requirements}}` - Technical requirements
-- `{{project_type}}` - Project type (web, api, cli, etc.)
-- `{{framework}}` - Primary framework
-- `{{language}}` - Primary language
-"""
-        
-        with open(rule_file, 'w', encoding='utf-8') as f:
-            f.write(rule_content)
-        
-        return True
-        
-    except Exception as e:
-        print(f"Error creating create-context rule: {e}")
+    
+    def add_mapping(self, simple_command: str, mapped_command: str | List[str]) -> None:
+        """Add a new command mapping."""
+        self.mappings[simple_command.lower()] = mapped_command
+    
+    def remove_mapping(self, simple_command: str) -> bool:
+        """Remove a command mapping."""
+        if simple_command.lower() in self.mappings:
+            del self.mappings[simple_command.lower()]
+            return True
         return False
 
 
-def create_analyze_rule():
-    """Create the @rules/analyze-project rule file."""
-    try:
-        # Get the rules directory
-        rules_dir = Path(overlay_paths.cursor_rules_dir())
-        rules_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Create the analyze-project rule
-        rule_file = rules_dir / "analyze-project.md"
-        
-        docs_dir = overlay_paths.get_docs_dir()
-        rule_content = f"""# Analyze Project
-
-## Description
-Analyze project structure and generate discovery report.
-
-## Usage
-```bash
-cb analyze
-# or
-@rules/analyze-project
-```
-
-## Agent Instructions
-1. Execute the analyze command using Code Builder CLI
-2. Follow any prompts or interactive elements
-3. Report results and any issues encountered
-4. Check generated discovery files
-
-## Expected Outputs
-- `{docs_dir}/discovery/analysis.json` - Detailed project analysis
-- `{docs_dir}/discovery/summary.md` - Human-readable summary
-
-## Flags
-- `--depth N` - Analysis depth (default: 3)
-- `--ignore PATTERN` - Ignore files matching pattern
-- `--ci` - Non-interactive mode for CI/CD
-
-## Examples
-```bash
-# Basic analysis
-cb analyze
-
-# Deep analysis with custom ignore
-cb analyze --depth 5 --ignore "node_modules,dist"
-
-# CI mode
-cb analyze --ci
-```
-
-## Context
-This command has been selected based on current project state and dependencies.
-"""
-        
-        with open(rule_file, 'w', encoding='utf-8') as f:
-            f.write(rule_content)
-        
-        return str(rule_file)
-        
-    except Exception as e:
-        print(f"Error creating analyze-project rule: {e}")
-        return None
+def create_router() -> SimpleRouter:
+    """Create a new SimpleRouter instance."""
+    return SimpleRouter()
 
 
-if __name__ == "__main__":
-    # Test the simple router
-    print("Simple Router Commands:")
-    mapping = get_command_mapping()
-    for simple, full in mapping.items():
-        print(f"  {simple} -> {full}")
-    
-    # Create analyze rule
-    rule_file = create_analyze_rule()
-    if rule_file:
-        print(f"Created analyze-project rule: {rule_file}")
-    else:
-        print("Failed to create analyze-project rule")
+# Global router instance
+router = create_router()
+
+
+def execute_simple_command(command: str, args: List[str] = None) -> int:
+    """Execute a simple command using the global router."""
+    return router.execute_simple_command(command, args)
+
+
+def get_command_mapping(command: str) -> Optional[str | List[str]]:
+    """Get the mapping for a simple command."""
+    return router.get_command(command)
+
+
+def list_commands() -> Dict[str, str | List[str]]:
+    """List all available simple commands."""
+    return router.list_available_commands()

@@ -213,7 +213,7 @@ def merge_evaluations(objective: Dict[str, Any], subjective: Dict[str, Any],
             
             # Calculate confidence factor (how close objective and subjective are)
             score_diff = abs(obj_score - subj_score)
-            confidence = max(0, 1 - (score_diff / 100))  # Normalize to 0-1
+            confidence = max(0, 1 - (float(score_diff) / 100))  # Normalize to 0-1
             confidence_factors.append(confidence)
         else:
             # Use subjective score if no objective equivalent
@@ -227,7 +227,7 @@ def merge_evaluations(objective: Dict[str, Any], subjective: Dict[str, Any],
                       subj_overall * artifact_weights['subjective'])
     
     # Calculate confidence bounds
-    avg_confidence = sum(confidence_factors) / len(confidence_factors) if confidence_factors else config.eval_confidence_threshold
+    avg_confidence = float(sum(confidence_factors)) / float(len(confidence_factors)) if confidence_factors else config.eval_confidence_threshold
     confidence_interval = 10 * (1 - avg_confidence)  # Wider interval for lower confidence
     
     return {

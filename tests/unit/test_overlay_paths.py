@@ -15,7 +15,7 @@ import sys
 # Add the project root to the path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from .cb.engine.builder.overlay.paths import OverlayPaths, overlay_paths
+from builder.overlay.paths import OverlayPaths, overlay_paths
 
 
 class TestOverlayPaths:

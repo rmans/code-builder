@@ -1,42 +1,38 @@
 # Project Discovery Summary
 
-**Project:** code-builder
-**Type:** Node.js
-**Files:** 2,320
-**Size:** 59,276,956 bytes
+**Project:** empty_project
+**Type:** Mixed/Unknown
+**Files:** 0
+**Size:** 0 bytes
 
 ## Languages
-**Primary:** Markdown
-**Detected:** JSON, Markdown, YAML, JavaScript, INI, TypeScript, Shell, Config, PowerShell, Fish, Python
+No programming languages detected.
 
 ## Frameworks
-**Detected:** next, vue, nuxt, svelte, flask, express, react, django, fastapi, angular
+No frameworks detected.
 
 ## Package Managers
-**Primary:** pnpm
-**Detected:** yarn, pnpm, npm, pip
+No package managers detected.
 
 ## Testing
-**Runners:** vitest, pytest
-**Test Files:** 28
+No test runners detected.
 
 ## Code Quality
-**Tools:** eslint
+No linting/formatting tools detected.
 
 ## Monorepo
-**Is Monorepo:** True
-**Tools:** lerna, yarn-workspaces, multiple-package-json, pnpm-workspaces
+**Is Monorepo:** False
 
 ## Dependencies
-**Total:** 26
-**External:** 4
-**Dev Dependencies:** 17
+**Total:** 0
+**External:** 0
+**Dev Dependencies:** 0
 
 ## Configuration
-**Config Files:** 3
-**Categories:** ci_cd, documentation
+**Config Files:** 0
+**Categories:** 
 
 ## Analysis Metadata
 **Depth:** 3
-**Duration:** 1.21s
-**Timestamp:** 2025-09-07T19:35:47.761428
+**Duration:** 0.00s
+**Timestamp:** 2025-09-08T12:22:31.786945
