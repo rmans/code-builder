@@ -17,16 +17,10 @@ links:
   integrations: []
   tasks: []
   ux: []
-documents:
-- id: ADR-2025-09-07-test-adr-for-cli-ref
-  title: Test ADR for CLI Refactoring
-  status: proposed
-  domain: ''
-  created: '2025-09-07'
 ---
 
-# ADR Index
+# Master Decision Index
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| *No documents currently defined* |  |  |  |  |
+| ADR-2025-09-07-test-adr-for-cli-ref | Test ADR for CLI Refactoring | proposed |  | [ADR-2025-09-07-test-adr-for-cli-ref](ADR-2025-09-07-test-adr-for-cli-ref.md) |

@@ -20,8 +20,9 @@ links:
   ux: []
 ---
 
-# Architecture Index
+# Master Architecture Index
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| *No documents currently defined* |  |  |  |  |
+| ARCH-2025-09-07-Project-Management-System | Project Management System Architecture | draft | architecture | [ARCH-2025-09-07-Project-Management-System](ARCH-2025-09-07-Project-Management-System.md) |
+| TEST-ARCH-2025-09-07 | Test Architecture | draft | architecture | [TEST-ARCH-2025-09-07](TEST-ARCH-2025-09-07.md) |

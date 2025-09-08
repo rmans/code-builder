@@ -20,8 +20,8 @@ links:
   ux: []
 ---
 
-# PRD Index
+# Master Product Requirements Index
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| *No documents currently defined* |  |  |  |  |
+| PRD-2025-09-07-Project-Management-System | Project Management System | draft | product | [PRD-2025-09-07-Project-Management-System](PRD-2025-09-07-Project-Management-System.md) |

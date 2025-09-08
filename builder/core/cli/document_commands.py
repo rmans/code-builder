@@ -224,6 +224,92 @@ def doc_abc(doc_path):
 @cli.command("master:sync")
 @click.option("--type", help="Sync specific document type")
 def master_sync(type):
-    """Synchronize master index files - to be fully implemented."""
-    click.echo(f"🔄 Syncing master files for {type or 'all'} - to be implemented")
-    return 0
+    """Synchronize master index files by regenerating tables from frontmatter documents."""
+    try:
+        from builder.config.settings import get_config
+        config = get_config()
+        master_files = config.get_master_files()
+        
+        if type and type in master_files:
+            # Sync specific type
+            _sync_master_file(master_files[type], type)
+            click.echo(f"✅ Synced master file for {type}")
+        else:
+            # Sync all types
+            for doc_type, master_file in master_files.items():
+                if os.path.exists(master_file):
+                    _sync_master_file(master_file, doc_type)
+                    click.echo(f"✅ Synced master file for {doc_type}")
+        
+        click.echo("🔄 Master file sync complete!")
+        return 0
+        
+    except Exception as e:
+        click.echo(f"❌ Error syncing master files: {e}")
+        return 1
+
+def _sync_master_file(master_file, doc_type):
+    """Sync a single master file by regenerating the table from frontmatter documents."""
+    try:
+        with open(master_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        if not content.startswith('---'):
+            return
+        
+        # Parse frontmatter
+        parts = content.split('---', 2)
+        if len(parts) < 3:
+            return
+        
+        frontmatter_text = parts[1]
+        body = parts[2]
+        
+        try:
+            frontmatter = yaml.safe_load(frontmatter_text) or {}
+        except yaml.YAMLError:
+            return
+        
+        # Get documents from frontmatter
+        documents = frontmatter.get('documents', [])
+        
+        # Remove documents from frontmatter (it should only be in the table)
+        if 'documents' in frontmatter:
+            del frontmatter['documents']
+        
+        # Generate table
+        if documents:
+            table_lines = [
+                f"# {frontmatter.get('title', 'Index')}",
+                "",
+                "| ID | Title | Status | Domain | Link |",
+                "|---|---|---|---|---|"
+            ]
+            
+            for doc in documents:
+                doc_id = doc.get('id', '')
+                title = doc.get('title', '')
+                status = doc.get('status', '')
+                domain = doc.get('domain', '')
+                link = f"[{doc_id}]({doc_id}.md)" if doc_id else ""
+                
+                table_lines.append(f"| {doc_id} | {title} | {status} | {domain} | {link} |")
+        else:
+            table_lines = [
+                f"# {frontmatter.get('title', 'Index')}",
+                "",
+                "| ID | Title | Status | Domain | Link |",
+                "|---|---|---|---|---|",
+                "| *No documents currently defined* |  |  |  |  |"
+            ]
+        
+        # Reconstruct content
+        new_body = '\n'.join(table_lines)
+        new_content = '---\n' + yaml.dump(frontmatter, sort_keys=False).strip() + '\n---\n\n' + new_body
+        
+        # Write updated content
+        with open(master_file, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+            
+    except Exception as e:
+        print(f"⚠️  Warning: Could not sync {master_file}: {e}")

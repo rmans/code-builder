@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "generated": "2025-09-07T20:41:44.822376",
+    "total_tasks": 4,
+    "version": "1.0"
+  },
+  "tasks": [
+    {
+      "file": "/home/rmans/projects/code-builder/cb_docs/tasks/TASK-2025-09-07-F01.md",
+      "id": "TASK-2025-09-07-F01",
+      "status": "pending",
+      "title": "Task TASK-2025-09-07-F01"
+    },
+    {
+      "file": "/home/rmans/projects/code-builder/cb_docs/tasks/TASK-2025-09-07-F02.md",
+      "id": "TASK-2025-09-07-F02",
+      "status": "pending",
+      "title": "Task TASK-2025-09-07-F02"
+    },
+    {
+      "file": "/home/rmans/projects/code-builder/cb_docs/tasks/TASK-2025-09-07-F03.md",
+      "id": "TASK-2025-09-07-F03",
+      "status": "pending",
+      "title": "Task TASK-2025-09-07-F03"
+    },
+    {
+      "file": "/home/rmans/projects/code-builder/cb_docs/tasks/TASK-2025-09-07-F04.md",
+      "id": "TASK-2025-09-07-F04",
+      "status": "pending",
+      "title": "Task TASK-2025-09-07-F04"
+    }
+  ]
+}

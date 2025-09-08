@@ -232,3 +232,45 @@ def ctx_budget(target_path):
     """Calculate context budget - to be implemented."""
     click.echo(f"💰 Calculating context budget for {target_path} - to be implemented")
     return 0
+
+
+@cli.command("ctx:build")
+@click.option("--from", "from_sources", multiple=True, type=click.Choice(['discovery', 'interview']), 
+              default=['discovery', 'interview'], help="Sources to build context from")
+@click.option("--overwrite", is_flag=True, help="Overwrite existing files")
+@click.option("--sections", multiple=True, type=click.Choice(['prd', 'arch', 'int', 'impl', 'exec', 'task']),
+              default=['prd', 'arch', 'int', 'impl', 'exec', 'task'], help="Sections to generate")
+def ctx_build(from_sources, overwrite, sections):
+    """Build comprehensive context from discovery and interview data."""
+    try:
+        from ..context_builder import build_context_cli
+        
+        click.echo("🏗️  Building context from discovery and interview data...")
+        
+        # Convert tuple to list
+        from_sources_list = list(from_sources)
+        sections_list = list(sections)
+        
+        # Build context
+        results = build_context_cli(
+            from_sources=from_sources_list,
+            overwrite=overwrite,
+            sections=sections_list
+        )
+        
+        # Display results
+        click.echo("\n✅ Context building complete!")
+        click.echo(f"📊 Generated {len(results)} document types:")
+        
+        for doc_type, doc_info in results.items():
+            if isinstance(doc_info, dict) and 'file' in doc_info:
+                status = doc_info.get('status', 'unknown')
+                click.echo(f"  📄 {doc_type.upper()}: {doc_info['file']} ({status})")
+            elif isinstance(doc_info, dict) and 'files' in doc_info:
+                click.echo(f"  📄 {doc_type.upper()}: {len(doc_info['files'])} files generated")
+        
+        return 0
+        
+    except Exception as e:
+        click.echo(f"❌ Error building context: {e}")
+        return 1

@@ -20,7 +20,7 @@ links:
   ux: []
 ---
 
-# UX Index
+# Master UX Index
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|

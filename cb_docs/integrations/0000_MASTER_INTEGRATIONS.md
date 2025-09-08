@@ -20,8 +20,8 @@ links:
   ux: []
 ---
 
-# Integrations Index
+# Master Integrations Index
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| *No documents currently defined* |  |  |  |  |
+| INT-2025-09-07-Project-Management-System | Project Management System Integration Plan | draft | integration | [INT-2025-09-07-Project-Management-System](INT-2025-09-07-Project-Management-System.md) |
