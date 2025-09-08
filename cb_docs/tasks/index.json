@@ -1,33 +1,1063 @@
 {
   "metadata": {
-    "generated": "2025-09-07T20:41:44.822376",
-    "total_tasks": 4,
-    "version": "1.0"
+    "generated": "2025-09-07T23:46:51.285982",
+    "schema": {
+      "description": "Canonical task index schema for orchestrator and per-task commands",
+      "fields": {
+        "acceptance_criteria": "Array of acceptance criteria strings",
+        "agent_type": "Agent type (backend, frontend, ai, etc.)",
+        "cmd": "Command to execute this task",
+        "created": "Creation timestamp",
+        "deps": "Array of task IDs this task depends on",
+        "description": "Task description",
+        "domain": "Task domain/category",
+        "file": "Path to task file",
+        "id": "Unique task identifier",
+        "owner": "Task owner/assignee",
+        "priority": "Task priority (1-10, higher is more important)",
+        "status": "Task status (pending, in_progress, completed, cancelled)",
+        "tags": "Array of categorization tags",
+        "title": "Human-readable task title",
+        "type": "Task type (feature, bugfix, refactor, documentation, testing, infrastructure, general)",
+        "updated": "Last update timestamp",
+        "working_dir": "Working directory for task execution"
+      },
+      "version": "2.0"
+    },
+    "total_tasks": 37,
+    "version": "2.0"
   },
   "tasks": [
     {
-      "file": "/home/rmans/projects/code-builder/cb_docs/tasks/TASK-2025-09-07-F01.md",
+      "acceptance_criteria": [
+        "[ ] Clean end-to-end: `@rules/analyze-project \u2192 @rules/plan-project \u2192 @rules/create-context \u2192 @rules/execute-tasks`",
+        "[ ] All suites green"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-QG",
+      "created": "2025-09-07",
+      "deps": [
+        "T1.3",
+        "T2.4",
+        "T3.6",
+        "T4.4",
+        "T5.3"
+      ],
+      "description": "Idempotency, parity, determinism, Cursor UX, CI suites green",
+      "domain": "release",
+      "file": "cb_docs/tasks/TASK-2025-09-07-QG.md",
+      "id": "TASK-2025-09-07-QG",
+      "owner": "release-agent",
+      "priority": 10,
+      "status": "pending",
+      "tags": [
+        "quality",
+        "release",
+        "gates"
+      ],
+      "title": "Quality Gates \u2013 Release Criteria",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] All commands work in both modes without code changes"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T0.4-paths",
+      "created": "2025-09-07",
+      "deps": [
+        "T0.1"
+      ],
+      "description": "Dual-mode (overlay/standalone) path resolver used by all new features",
+      "domain": "infrastructure",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T0.4-paths.md",
+      "id": "TASK-2025-09-07-T0.4-paths",
+      "owner": "platform-agent",
+      "priority": 10,
+      "status": "completed",
+      "tags": [
+        "critical",
+        "paths",
+        "overlay",
+        "portability"
+      ],
+      "title": "Path Translation Layer \u2013 OverlayPaths",
+      "type": "infrastructure",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] Works from any repo root; dual-mode support verified"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T1.1-analyze-command",
+      "created": "2025-09-07",
+      "deps": [
+        "T0.1",
+        "T0.2",
+        "T0.3",
+        "T0.4"
+      ],
+      "description": "Route cb analyze \u2192 discover:new and generate @rules/analyze-project",
+      "domain": "commands",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T1.1-analyze-command.md",
+      "id": "TASK-2025-09-07-T1.1-analyze-command",
+      "owner": "backend-agent",
+      "priority": 10,
+      "status": "completed",
+      "tags": [
+        "commands",
+        "agent-os",
+        "discovery",
+        "overlay"
+      ],
+      "title": "Implement Simple Command \u2013 Analyze Project",
+      "type": "general",
+      "updated": "2025-01-15",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] Deterministic outputs given same inputs",
+        "[x] All 8 doc types linked (see T7.2)"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T3.1-context-builder",
+      "created": "2025-09-07",
+      "deps": [
+        "T2.1",
+        "T2.2"
+      ],
+      "description": "Orchestrate PRD\u2192ARCH\u2192INT\u2192IMPL\u2192EXEC\u2192TASK using context_graph/select/budget",
+      "domain": "context",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T3.1-context-builder.md",
+      "id": "TASK-2025-09-07-T3.1-context-builder",
+      "owner": "backend-agent",
+      "priority": 10,
+      "status": "completed",
+      "tags": [
+        "context",
+        "docs",
+        "tasks",
+        "orchestration"
+      ],
+      "title": "Context Builder \u2013 compose existing graph/select/budget",
+      "type": "general",
+      "updated": "2025-01-15",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Dry-run prints stable plan; real run streams status and halts on fatal"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T4.1-orchestrator",
+      "created": "2025-09-07",
+      "deps": [
+        "T3.4",
+        "T3.5"
+      ],
+      "description": "Use/extend builder/utils/task_orchestrator.py; respect deps/priority/max-parallel",
+      "domain": "orchestrator",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T4.1-orchestrator.md",
+      "id": "TASK-2025-09-07-T4.1-orchestrator",
+      "owner": "backend-agent",
+      "priority": 10,
+      "status": "pending",
+      "tags": [
+        "orchestrator",
+        "dag",
+        "parallelism"
+      ],
+      "title": "Execute-Tasks \u2013 Orchestrator Runner",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] Agents receive a valid `@rules/*` for current context"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T0.5-cursor-integration",
+      "created": "2025-09-07",
+      "deps": [
+        "T0.4"
+      ],
+      "description": "Wire command system to CursorAgentOrchestrator and MultiAgentCursorManager",
+      "domain": "cursor",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T0.5-cursor-integration.md",
+      "id": "TASK-2025-09-07-T0.5-cursor-integration",
+      "owner": "platform-agent",
+      "priority": 9,
+      "status": "completed",
+      "tags": [
+        "cursor",
+        "integration",
+        "agents"
+      ],
+      "title": "Integrate Existing Cursor Agent System",
+      "type": "general",
+      "updated": "2025-01-15",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] `state.json.project_state.discovered=true`"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T1.2-discovery-engine",
+      "created": "2025-09-07",
+      "deps": [
+        "T1.1"
+      ],
+      "description": "Reuse/extend existing discovery to produce report.json + summary.md",
+      "domain": "discovery",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T1.2-discovery-engine.md",
+      "id": "TASK-2025-09-07-T1.2-discovery-engine",
+      "owner": "backend-agent",
+      "priority": 9,
+      "status": "completed",
+      "tags": [
+        "discovery",
+        "detectors",
+        "summary"
+      ],
+      "title": "Enhance Discovery \u2013 builder/discovery/engine.py",
+      "type": "general",
+      "updated": "2025-01-15",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] Dual-mode operation; deterministic `--noninteractive`"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T2.1-plan-bridge",
+      "created": "2025-09-07",
+      "deps": [
+        "T1.1",
+        "T1.2",
+        "T0.4"
+      ],
+      "description": "Map plan-product \u2192 discover:new (+interview) and expose @rules/plan-project",
+      "domain": "commands",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T2.1-plan-bridge.md",
+      "id": "TASK-2025-09-07-T2.1-plan-bridge",
+      "owner": "backend-agent",
+      "priority": 9,
+      "status": "completed",
+      "tags": [
+        "agent-os",
+        "bridge",
+        "plan",
+        "interview"
+      ],
+      "title": "Agent-OS Bridge \u2013 plan-product",
+      "type": "general",
+      "updated": "2025-01-15",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] Running generator yields runnable `@rules/execute-TASK-###` for all tasks"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T3.4-task-command-gen",
+      "created": "2025-09-07",
+      "deps": [
+        "T3.1",
+        "T3.3"
+      ],
+      "description": "Generate `.cb/commands/execute-TASK-###.md` + `.cursor/rules/execute-TASK-###`",
+      "domain": "commands",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T3.4-task-command-gen.md",
+      "id": "TASK-2025-09-07-T3.4-task-command-gen",
+      "owner": "backend-agent",
+      "priority": 9,
+      "status": "pending",
+      "tags": [
+        "tasks",
+        "rules",
+        "generator"
+      ],
+      "title": "Per-Task Command Generator",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] All 61 CLI commands work exactly as before",
+        "[x] Code is organized into logical modules",
+        "[x] No functionality is lost or changed",
+        "[x] All tests pass",
+        "[x] Documentation is updated"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-01-15-refactor-cli",
+      "created": "2025-01-15",
+      "deps": [],
+      "description": "Refactor builder/core/cli.py into logical modules for better maintainability",
+      "domain": "refactoring",
+      "file": "cb_docs/tasks/TASK-2025-01-15-refactor-cli.md",
+      "id": "TASK-2025-01-15-refactor-cli",
+      "owner": "platform-agent",
+      "priority": 8,
+      "status": "completed",
+      "tags": [
+        "refactoring",
+        "cli",
+        "maintainability"
+      ],
+      "title": "Refactor CLI - Break into Modules",
+      "type": "general",
+      "updated": "2025-01-15",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Feature implemented according to specifications",
+        "[ ] Unit tests written and passing",
+        "[ ] Integration tests written and passing",
+        "[ ] Documentation updated",
+        "[ ] Code reviewed and approved"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-F01",
+      "created": "2025-09-07",
+      "deps": [],
+      "description": "Implement Planning tools for Project Management System",
+      "domain": "implementation",
+      "file": "cb_docs/tasks/TASK-2025-09-07-F01.md",
       "id": "TASK-2025-09-07-F01",
+      "owner": "development-team",
+      "priority": 8,
       "status": "pending",
-      "title": "Task TASK-2025-09-07-F01"
+      "tags": [
+        "feature",
+        "implementation",
+        "planning-tools"
+      ],
+      "title": "Implement Planning tools",
+      "type": "feature",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
     },
     {
-      "file": "/home/rmans/projects/code-builder/cb_docs/tasks/TASK-2025-09-07-F02.md",
+      "acceptance_criteria": [
+        "[ ] Feature implemented according to specifications",
+        "[ ] Unit tests written and passing",
+        "[ ] Integration tests written and passing",
+        "[ ] Documentation updated",
+        "[ ] Code reviewed and approved"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-F02",
+      "created": "2025-09-07",
+      "deps": [],
+      "description": "Implement Progress tracking for Project Management System",
+      "domain": "implementation",
+      "file": "cb_docs/tasks/TASK-2025-09-07-F02.md",
       "id": "TASK-2025-09-07-F02",
+      "owner": "development-team",
+      "priority": 8,
       "status": "pending",
-      "title": "Task TASK-2025-09-07-F02"
+      "tags": [
+        "feature",
+        "implementation",
+        "progress-tracking"
+      ],
+      "title": "Implement Progress tracking",
+      "type": "feature",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
     },
     {
-      "file": "/home/rmans/projects/code-builder/cb_docs/tasks/TASK-2025-09-07-F03.md",
+      "acceptance_criteria": [
+        "[ ] Feature implemented according to specifications",
+        "[ ] Unit tests written and passing",
+        "[ ] Integration tests written and passing",
+        "[ ] Documentation updated",
+        "[ ] Code reviewed and approved"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-F03",
+      "created": "2025-09-07",
+      "deps": [],
+      "description": "Implement Resource management for Project Management System",
+      "domain": "implementation",
+      "file": "cb_docs/tasks/TASK-2025-09-07-F03.md",
       "id": "TASK-2025-09-07-F03",
+      "owner": "development-team",
+      "priority": 8,
       "status": "pending",
-      "title": "Task TASK-2025-09-07-F03"
+      "tags": [
+        "feature",
+        "implementation",
+        "resource-management"
+      ],
+      "title": "Implement Resource management",
+      "type": "feature",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
     },
     {
-      "file": "/home/rmans/projects/code-builder/cb_docs/tasks/TASK-2025-09-07-F04.md",
+      "acceptance_criteria": [
+        "[ ] Feature implemented according to specifications",
+        "[ ] Unit tests written and passing",
+        "[ ] Integration tests written and passing",
+        "[ ] Documentation updated",
+        "[ ] Code reviewed and approved"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-F04",
+      "created": "2025-09-07",
+      "deps": [],
+      "description": "Implement Reporting for Project Management System",
+      "domain": "implementation",
+      "file": "cb_docs/tasks/TASK-2025-09-07-F04.md",
       "id": "TASK-2025-09-07-F04",
+      "owner": "development-team",
+      "priority": 8,
       "status": "pending",
-      "title": "Task TASK-2025-09-07-F04"
+      "tags": [
+        "feature",
+        "implementation",
+        "reporting"
+      ],
+      "title": "Implement Reporting",
+      "type": "feature",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] Links back to discovery summary; deterministic defaults"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T2.2-interview-runner",
+      "created": "2025-09-07",
+      "deps": [
+        "T2.1"
+      ],
+      "description": "Guided Q&A; saves interview.json, assumptions.md, decisions.md",
+      "domain": "discovery",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T2.2-interview-runner.md",
+      "id": "TASK-2025-09-07-T2.2-interview-runner",
+      "owner": "backend-agent",
+      "priority": 8,
+      "status": "completed",
+      "tags": [
+        "interview",
+        "adr",
+        "assumptions"
+      ],
+      "title": "Interactive Interview \u2013 builder/discovery/interview.py",
+      "type": "general",
+      "updated": "2025-01-15",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] Consumers can load pack and locate all linked assets"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T3.1.1-context-pack",
+      "created": "2025-09-07",
+      "deps": [
+        "T3.1"
+      ],
+      "description": "Generate pack_context.json with rules, acceptance criteria, code excerpts",
+      "domain": "context",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T3.1.1-context-pack.md",
+      "id": "TASK-2025-09-07-T3.1.1-context-pack",
+      "owner": "backend-agent",
+      "priority": 8,
+      "status": "pending",
+      "tags": [
+        "context-pack",
+        "metadata",
+        "rules"
+      ],
+      "title": "Context Pack Generation \u2013 pack_context.json",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] Deterministic outputs; partial sections respected"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T3.3-context-rule",
+      "created": "2025-09-07",
+      "deps": [
+        "T3.1",
+        "T3.2"
+      ],
+      "description": "Map cb context \u2192 ctx:build-enhanced and expose @rules/create-context",
+      "domain": "commands",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T3.3-context-rule.md",
+      "id": "TASK-2025-09-07-T3.3-context-rule",
+      "owner": "backend-agent",
+      "priority": 8,
+      "status": "pending",
+      "tags": [
+        "commands",
+        "router"
+      ],
+      "title": "Rule & Router \u2013 create-context",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Orchestrator + generator consume without fallback"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T3.5-task-index",
+      "created": "2025-09-07",
+      "deps": [
+        "T3.1"
+      ],
+      "description": "Canonical index schema for orchestrator + per-task commands",
+      "domain": "tasks",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T3.5-task-index.md",
+      "id": "TASK-2025-09-07-T3.5-task-index",
+      "owner": "backend-agent",
+      "priority": 8,
+      "status": "pending",
+      "tags": [
+        "schema",
+        "tasks",
+        "index"
+      ],
+      "title": "Task Index Schema \u2013 tasks/index.json",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Works overlay/standalone; produces results & summary"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T4.2-execute-tasks-command",
+      "created": "2025-09-07",
+      "deps": [
+        "T4.1"
+      ],
+      "description": "Expose cb tasks run and @rules/execute-tasks",
+      "domain": "commands",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T4.2-execute-tasks-command.md",
+      "id": "TASK-2025-09-07-T4.2-execute-tasks-command",
+      "owner": "backend-agent",
+      "priority": 8,
+      "status": "pending",
+      "tags": [
+        "commands",
+        "rules"
+      ],
+      "title": "Command & Rule \u2013 execute-tasks",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] current.md always reflects active task/agent"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T4.3-cursor-hooks",
+      "created": "2025-09-07",
+      "deps": [
+        "T0.5",
+        "T3.4"
+      ],
+      "description": "Use/extend builder/utils/cursor_agent_integration.py to update current.md and per-task rules",
+      "domain": "cursor",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T4.3-cursor-hooks.md",
+      "id": "TASK-2025-09-07-T4.3-cursor-hooks",
+      "owner": "backend-agent",
+      "priority": 8,
+      "status": "pending",
+      "tags": [
+        "cursor",
+        "hooks",
+        "current-md"
+      ],
+      "title": "Cursor Integration Hooks",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Picker lists only runnable tasks (deps satisfied)"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T5.1-task-runner",
+      "created": "2025-09-07",
+      "deps": [
+        "T4.1"
+      ],
+      "description": "Thin facade over task_orchestrator to run/pick one task and report result",
+      "domain": "orchestrator",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T5.1-task-runner.md",
+      "id": "TASK-2025-09-07-T5.1-task-runner",
+      "owner": "backend-agent",
+      "priority": 8,
+      "status": "pending",
+      "tags": [
+        "single-task",
+        "picker",
+        "retries"
+      ],
+      "title": "Execute-Task \u2013 Single Task Runner",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Evaluation works on any artifact; CI-friendly exit codes"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T6.3-eval-integration",
+      "created": "2025-09-07",
+      "deps": [
+        "T6.1"
+      ],
+      "description": "Use builder/evaluators/objective.py; router cb eval \u2192 eval:objective; rule @rules/evaluate-code",
+      "domain": "evaluation",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T6.3-eval-integration.md",
+      "id": "TASK-2025-09-07-T6.3-eval-integration",
+      "owner": "qa-agent",
+      "priority": 8,
+      "status": "pending",
+      "tags": [
+        "evaluation",
+        "commands"
+      ],
+      "title": "Evaluation Integration \u2013 evaluate-code",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] Fresh projects hydrate to runnable @rules set"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T3.2-templates",
+      "created": "2025-09-07",
+      "deps": [
+        "T0.3",
+        "T0.4"
+      ],
+      "description": "Provide templates for create-context, project-status, evaluate-code, fix-issues, create-task, analyze-project, plan-project, execute-tasks, execute-task",
+      "domain": "templates",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T3.2-templates.md",
+      "id": "TASK-2025-09-07-T3.2-templates",
+      "owner": "platform-agent",
+      "priority": 7,
+      "status": "pending",
+      "tags": [
+        "templates",
+        "commands"
+      ],
+      "title": "Static Command Template Pack",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Newly added tasks auto-conform to house style"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T3.5.1-task-template-gen",
+      "created": "2025-09-07",
+      "deps": [
+        "T3.5"
+      ],
+      "description": "Generate task files from docs/templates/tasks.md.hbs",
+      "domain": "templates",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T3.5.1-task-template-gen.md",
+      "id": "TASK-2025-09-07-T3.5.1-task-template-gen",
+      "owner": "tooling-agent",
+      "priority": 7,
+      "status": "pending",
+      "tags": [
+        "templates",
+        "hbs",
+        "tasks"
+      ],
+      "title": "Template-Based Task Generation \u2013 tasks.md.hbs",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] `@rules/execute-task` and `@rules/execute-TASK-###` share execution path"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T5.2-execute-task-command",
+      "created": "2025-09-07",
+      "deps": [
+        "T5.1",
+        "T3.4"
+      ],
+      "description": "Expose cb task run <ID>, @rules/execute-task, and @rules/execute-TASK-###",
+      "domain": "commands",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T5.2-execute-task-command.md",
+      "id": "TASK-2025-09-07-T5.2-execute-task-command",
+      "owner": "backend-agent",
+      "priority": 7,
+      "status": "pending",
+      "tags": [
+        "commands",
+        "rules",
+        "tasks"
+      ],
+      "title": "Command & Rules \u2013 execute-task + per-task rules",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] `cb <simple>` works predictably"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T6.1-simple-router",
+      "created": "2025-09-07",
+      "deps": [
+        "T0.3",
+        "T0.4"
+      ],
+      "description": "Map discover/context/eval/task/docs/fix/status to complex commands",
+      "domain": "commands",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T6.1-simple-router.md",
+      "id": "TASK-2025-09-07-T6.1-simple-router",
+      "owner": "backend-agent",
+      "priority": 7,
+      "status": "pending",
+      "tags": [
+        "router",
+        "mapping",
+        "commands"
+      ],
+      "title": "Simple Command Router",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Single index navigates to all 8 types"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T7.2-doc-types",
+      "created": "2025-09-07",
+      "deps": [
+        "T3.1"
+      ],
+      "description": "Ensure PRD, ADR, ARCH(FE/BE), INT, IMPL, EXEC, TASK are produced and linked",
+      "domain": "docs",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T7.2-doc-types.md",
+      "id": "TASK-2025-09-07-T7.2-doc-types",
+      "owner": "docs-agent",
+      "priority": 7,
+      "status": "pending",
+      "tags": [
+        "docs",
+        "index",
+        "linkage"
+      ],
+      "title": "Document Types Alignment \u2013 8 canonical types",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Selector chooses winner; artifacts stored with references"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T7.3-abc-iteration",
+      "created": "2025-09-07",
+      "deps": [
+        "T3.1",
+        "T6.3"
+      ],
+      "description": "Expose cb iterate run --target <phase|task> --rounds 5 and store iteration metadata",
+      "domain": "iteration",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T7.3-abc-iteration.md",
+      "id": "TASK-2025-09-07-T7.3-abc-iteration",
+      "owner": "research-agent",
+      "priority": 7,
+      "status": "pending",
+      "tags": [
+        "iteration",
+        "abc",
+        "evaluation"
+      ],
+      "title": "ABC Iteration Integration",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] Running install produces runnable `@rules/*` files",
+        "[x] No duplicate files on repeated runs"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T0.2-install-hook",
+      "created": "2025-09-07",
+      "deps": [
+        "T0.1"
+      ],
+      "description": "Add setup_commands() to install.sh to generate and sync commands",
+      "domain": "infrastructure",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T0.2-install-hook.md",
+      "id": "TASK-2025-09-07-T0.2-install-hook",
+      "owner": "platform-agent",
+      "priority": 6,
+      "status": "completed",
+      "tags": [
+        "install",
+        "bootstrap",
+        "commands"
+      ],
+      "title": "Install Hook \u2013 setup_commands",
+      "type": "infrastructure",
+      "updated": "2025-01-15",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] All four subcommands function and are discoverable via `cb --help`"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T0.3-cli-stubs",
+      "created": "2025-09-07",
+      "deps": [
+        "T0.1",
+        "T0.2"
+      ],
+      "description": "Add cb commands:refresh|sync|list|show in .cb/engine/core/cli.py",
+      "domain": "cli",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T0.3-cli-stubs.md",
+      "id": "TASK-2025-09-07-T0.3-cli-stubs",
+      "owner": "platform-agent",
+      "priority": 6,
+      "status": "completed",
+      "tags": [
+        "cli",
+        "commands",
+        "developer-experience"
+      ],
+      "title": "CLI Stubs \u2013 commands:* family",
+      "type": "general",
+      "updated": "2025-01-15",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] PRD/ARCH/INT/IMPL/EXEC include rule refs"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T7.1-rules-integration",
+      "created": "2025-09-07",
+      "deps": [
+        "T3.1"
+      ],
+      "description": "Honor style/format rules in generated docs and reference in front-matter",
+      "domain": "docs",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T7.1-rules-integration.md",
+      "id": "TASK-2025-09-07-T7.1-rules-integration",
+      "owner": "docs-agent",
+      "priority": 6,
+      "status": "pending",
+      "tags": [
+        "rules",
+        "docs"
+      ],
+      "title": "Rules System Integration \u2013 docs/rules/",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Masters always reflect current set with correct ordering"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T7.2.1-master-sync",
+      "created": "2025-09-07",
+      "deps": [
+        "T7.2"
+      ],
+      "description": "Hook document generation into master index/update flow",
+      "domain": "docs",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T7.2.1-master-sync.md",
+      "id": "TASK-2025-09-07-T7.2.1-master-sync",
+      "owner": "docs-agent",
+      "priority": 6,
+      "status": "pending",
+      "tags": [
+        "master",
+        "sync",
+        "docs"
+      ],
+      "title": "Master File Synchronization \u2013 0000_MASTER_*.md",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Command docs always reflect current state"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T8.1-dynamic-updater",
+      "created": "2025-09-07",
+      "deps": [
+        "T1.2",
+        "T3.4"
+      ],
+      "description": "Replace placeholders using discovery; update per-task command status; resync rules",
+      "domain": "tooling",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T8.1-dynamic-updater.md",
+      "id": "TASK-2025-09-07-T8.1-dynamic-updater",
+      "owner": "tooling-agent",
+      "priority": 6,
+      "status": "pending",
+      "tags": [
+        "updater",
+        "sync"
+      ],
+      "title": "DynamicContentUpdater \u2013 placeholders & task status",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Opening Cursor shows actionable next step"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T8.2-current-md",
+      "created": "2025-09-07",
+      "deps": [
+        "T4.3"
+      ],
+      "description": "Maintain active agent, task, next command, last errors",
+      "domain": "docs",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T8.2-current-md.md",
+      "id": "TASK-2025-09-07-T8.2-current-md",
+      "owner": "tooling-agent",
+      "priority": 6,
+      "status": "pending",
+      "tags": [
+        "current",
+        "status",
+        "docs"
+      ],
+      "title": "Current Instructions \u2013 .cb/instructions/current.md",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[x] All paths exist",
+        "[x] `cb commands:list` returns without error",
+        "[x] `state.json` & `metrics.json` valid against minimal schema"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T0.1-directories-cache",
+      "created": "2025-09-07",
+      "deps": [],
+      "description": "Create required directories, seed state/metrics, and ensure commands:list runs",
+      "domain": "infrastructure",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T0.1-directories-cache.md",
+      "id": "TASK-2025-09-07-T0.1-directories-cache",
+      "owner": "platform-agent",
+      "priority": 5,
+      "status": "completed",
+      "tags": [
+        "infra",
+        "paths",
+        "cache",
+        "commands"
+      ],
+      "title": "Scaffolding \u2013 Directories & Cache",
+      "type": "infrastructure",
+      "updated": "2025-01-15",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Metrics visible via `cb status`"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T9.1-metrics",
+      "created": "2025-09-07",
+      "deps": [
+        "T0.3",
+        "T6.1"
+      ],
+      "description": "time_to_first_rules, command_discovery_rate, execution_success_rate \u2192 metrics.json",
+      "domain": "telemetry",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T9.1-metrics.md",
+      "id": "TASK-2025-09-07-T9.1-metrics",
+      "owner": "telemetry-agent",
+      "priority": 5,
+      "status": "pending",
+      "tags": [
+        "telemetry",
+        "metrics"
+      ],
+      "title": "Metrics Collection \u2013 command metrics",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
+    },
+    {
+      "acceptance_criteria": [
+        "[ ] Concise, readable `cb status` output"
+      ],
+      "agent_type": "backend",
+      "cmd": "execute-TASK-2025-09-07-T9.2-command-history",
+      "created": "2025-09-07",
+      "deps": [
+        "T0.3"
+      ],
+      "description": "Record command_history[] and expose cb status summary",
+      "domain": "telemetry",
+      "file": "cb_docs/tasks/TASK-2025-09-07-T9.2-command-history.md",
+      "id": "TASK-2025-09-07-T9.2-command-history",
+      "owner": "telemetry-agent",
+      "priority": 5,
+      "status": "pending",
+      "tags": [
+        "telemetry",
+        "history",
+        "status"
+      ],
+      "title": "Instrumentation \u2013 command_history in state.json",
+      "type": "general",
+      "updated": "2025-09-07",
+      "working_dir": "cb_docs/tasks"
     }
   ]
 }

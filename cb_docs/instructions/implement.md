@@ -1532,6 +1532,176 @@ cb execute-TASK-2025-09-07-F01 --dry-run
 @rules/execute-TASK-2025-09-07-F01
 ```
 
+## Task Index Schema
+
+The Task Index Schema provides a canonical representation of all tasks in the system, enabling both orchestrator and per-task commands to work with consistent metadata.
+
+### Overview
+
+The task index (`cb_docs/tasks/index.json`) contains comprehensive metadata about every task, following a standardized schema that supports:
+
+- **Orchestrator Integration**: Full task metadata for execution planning
+- **Per-Task Commands**: Individual command generation and execution
+- **Dependency Resolution**: Task dependency tracking and ordering
+- **Status Management**: Task state tracking and updates
+- **Validation**: Schema validation and consistency checks
+
+### Schema Structure
+
+#### Metadata Section
+```json
+{
+  "metadata": {
+    "generated": "2025-09-07T23:43:47.404152",
+    "total_tasks": 37,
+    "version": "2.0",
+    "schema": {
+      "version": "2.0",
+      "fields": { /* Field definitions */ },
+      "description": "Canonical task index schema for orchestrator and per-task commands"
+    }
+  }
+}
+```
+
+#### Task Schema
+Each task in the `tasks` array contains:
+
+```json
+{
+  "id": "TASK-2025-09-07-F01",
+  "title": "Implement Planning tools",
+  "type": "feature",
+  "priority": 8,
+  "status": "pending",
+  "deps": [],
+  "cmd": "execute-TASK-2025-09-07-F01",
+  "working_dir": "/path/to/cb_docs/tasks",
+  "acceptance_criteria": [
+    "Implement Planning tools functionality",
+    "All tests pass"
+  ],
+  "tags": ["feature", "implementation", "planning-tools"],
+  "file": "/path/to/TASK-2025-09-07-F01.md",
+  "domain": "implementation",
+  "owner": "development-team",
+  "agent_type": "backend",
+  "created": "2025-09-07",
+  "updated": "2025-09-07",
+  "description": "Implement Planning tools functionality for Project Management System."
+}
+```
+
+### Field Definitions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique task identifier |
+| `title` | string | Human-readable task title |
+| `type` | string | Task type (feature, bugfix, refactor, documentation, testing, infrastructure, general) |
+| `priority` | integer | Task priority (1-10, higher is more important) |
+| `status` | string | Task status (pending, in_progress, completed, cancelled) |
+| `deps` | array | Array of task IDs this task depends on |
+| `cmd` | string | Command to execute this task |
+| `working_dir` | string | Working directory for task execution |
+| `acceptance_criteria` | array | Array of acceptance criteria strings |
+| `tags` | array | Array of categorization tags |
+| `file` | string | Path to task file |
+| `domain` | string | Task domain/category |
+| `owner` | string | Task owner/assignee |
+| `agent_type` | string | Agent type (backend, frontend, ai, etc.) |
+| `created` | string | Creation timestamp |
+| `updated` | string | Last update timestamp |
+| `description` | string | Task description |
+
+### Task Type Detection
+
+The system automatically determines task types based on:
+
+- **Tags**: `feature`, `bug`, `fix`, `refactor`, `documentation`, `test`, `testing`, `infrastructure`
+- **Domain**: `documentation`, `infrastructure`
+- **Default**: `general` if no specific type indicators found
+
+### CLI Commands
+
+#### Generate Task Index
+```bash
+# Generate comprehensive task index
+cb task-index:generate
+
+# Force regeneration of existing index
+cb task-index:generate --force
+```
+
+#### Validate Task Index
+```bash
+# Validate existing task index against schema
+cb task-index:validate
+```
+
+### Implementation Details
+
+#### TaskIndexManager Class
+- **Location**: `builder/core/task_index.py`
+- **Purpose**: Comprehensive task index management
+- **Features**:
+  - Task discovery and metadata extraction
+  - Schema validation and consistency checks
+  - JSON serialization with proper date handling
+  - CLI command integration
+
+#### Key Methods
+- `generate_index(force=False)`: Generate comprehensive task index
+- `load_index()`: Load existing task index
+- `validate_index(index_data)`: Validate index against schema
+- `_process_task_file(task_file)`: Process individual task files
+- `_extract_acceptance_criteria(content)`: Extract acceptance criteria from content
+- `_determine_task_type(metadata)`: Determine task type from metadata
+
+#### Integration Points
+- **Orchestrator**: Consumes task metadata for execution planning
+- **Per-Task Commands**: Uses task metadata for command generation
+- **Command Generator**: Reads task index for command creation
+- **Validation**: Ensures schema consistency across the system
+
+### Usage Examples
+
+#### Basic Index Generation
+```bash
+# Generate task index
+cb task-index:generate
+
+# Check generated index
+cat cb_docs/tasks/index.json | jq '.metadata'
+```
+
+#### Validation
+```bash
+# Validate index
+cb task-index:validate
+
+# Check specific task
+cat cb_docs/tasks/index.json | jq '.tasks[] | select(.id == "TASK-2025-09-07-F01")'
+```
+
+#### Programmatic Usage
+```python
+from builder.core.task_index import TaskIndexManager
+
+# Create manager
+manager = TaskIndexManager()
+
+# Generate index
+index_data = manager.generate_index(force=True)
+
+# Validate index
+is_valid = manager.validate_index(index_data)
+
+# Access tasks
+tasks = index_data.get('tasks', [])
+high_priority = [t for t in tasks if t['priority'] >= 8]
+```
+
 ### Next Steps
 
 After scaffolding is complete:
@@ -1543,5 +1713,6 @@ After scaffolding is complete:
 6. **Interactive Interview**: TTY-based planning interviews ✅
 7. **Rule & Router**: Command aliases and @rules/ integration ✅
 8. **Per-Task Commands**: Individual command generation for each task ✅
-9. **State Management**: Implement state updates and persistence
-10. **Path Translation**: Use OverlayPaths for all new features
+9. **Task Index Schema**: Canonical task index with comprehensive metadata ✅
+10. **State Management**: Implement state updates and persistence
+11. **Path Translation**: Use OverlayPaths for all new features
