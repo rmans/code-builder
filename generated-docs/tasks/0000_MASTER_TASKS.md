@@ -24,4 +24,4 @@ links:
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| *No documents currently defined* |  |  |  |  |
+| TASK-2025-01-01-rules-migration-setup | Setup Rules System with MDC Support (Dual-Path + Migration) | pending | rules | [TASK-2025-01-01-rules-migration-setup.md](TASK-2025-01-01-rules-migration-setup.md) |
