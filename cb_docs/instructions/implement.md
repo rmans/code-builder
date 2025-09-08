@@ -1170,6 +1170,129 @@ After scaffolding is complete:
 1. **Command System**: Implement `commands:list`, `commands:refresh`, etc. ✅
 2. **Rule Integration**: Set up rule merging with project rules ✅
 3. **Template System**: Create command templates ✅
+
+## Static Command Template Pack
+
+### Overview
+The Static Command Template Pack provides Handlebars-based templates for generating command definitions and @rules/ files. These templates support placeholder replacement with project-specific context variables.
+
+### Template Structure
+
+#### Location
+- **Templates**: `cb_docs/templates/commands/*.md.hbs`
+- **Generated Commands**: `cb_docs/commands/*.md`
+- **Generated Rules**: `.cursor/rules/*.md`
+
+#### Template Variables
+All command templates support the following context variables:
+
+**Project Context:**
+- `{{project_name}}` - Project name from discovery data
+- `{{project_type}}` - Project type (web, api, cli, etc.)
+- `{{framework}}` - Primary framework detected
+- `{{language}}` - Primary language detected
+
+**Metadata:**
+- `{{created}}` - Creation timestamp (YYYY-MM-DD)
+- `{{updated}}` - Last update timestamp (YYYY-MM-DD)
+- `{{owner}}` - Template owner (typically 'system')
+
+**Command-Specific Variables:**
+- `{{task_id}}` - Task identifier (for task-related commands)
+- `{{task_title}}` - Task title
+- `{{task_description}}` - Task description
+- `{{task_priority}}` - Task priority
+- `{{task_owner}}` - Task owner
+- `{{task_domain}}` - Task domain
+
+### Available Command Templates
+
+#### Core Commands
+1. **analyze-project.md.hbs** - Project analysis and discovery
+2. **plan-project.md.hbs** - Project planning through guided interview
+3. **create-context.md.hbs** - Context document generation
+4. **project-status.md.hbs** - Project status and metrics display
+
+#### Task Management
+5. **create-task.md.hbs** - Task creation with structured format
+6. **execute-task.md.hbs** - Single task execution
+7. **execute-tasks.md.hbs** - Multiple task orchestration
+
+#### Quality & Maintenance
+8. **evaluate-code.md.hbs** - Code quality evaluation
+9. **fix-issues.md.hbs** - Automated issue fixing
+
+### Template Processing
+
+#### Command Refresh Process
+```bash
+# Refresh all command templates
+cb commands:refresh
+
+# Force refresh (overwrite existing)
+cb commands:refresh --force
+```
+
+#### Processing Steps
+1. **Template Discovery**: Find all `*.md.hbs` files in `cb_docs/templates/commands/`
+2. **Context Loading**: Load project context from discovery data
+3. **Variable Replacement**: Replace `{{variable}}` placeholders with actual values
+4. **Command Generation**: Write processed templates to `cb_docs/commands/`
+5. **Rule Sync**: Sync generated commands to `.cursor/rules/` via rule merger
+
+#### Context Detection
+The system automatically detects project context from:
+- **Discovery Data**: `cb_docs/discovery/report.json`
+- **Project Info**: Name, type, framework, language
+- **Fallback Values**: Default values when discovery data unavailable
+
+### Template Features
+
+#### Handlebars Syntax Support
+- **Simple Variables**: `{{variable_name}}`
+- **Default Values**: `{{variable | default("fallback")}}`
+- **Nested Objects**: `{{object.property}}`
+
+#### Command Structure
+Each template includes:
+- **Frontmatter**: YAML metadata with template variables
+- **Description**: Command purpose and functionality
+- **Usage**: Command syntax and examples
+- **Outputs**: Generated files and artifacts
+- **Flags**: Command-line options
+- **Examples**: Usage examples with different flags
+
+#### Integration Points
+- **CLI Commands**: Generated commands integrate with existing CLI
+- **Rule System**: Templates generate @rules/ files for Cursor integration
+- **Documentation**: Templates include comprehensive usage documentation
+
+### Usage Examples
+
+#### Basic Template Processing
+```bash
+# Process all templates with current project context
+cb commands:refresh
+
+# Check generated commands
+ls cb_docs/commands/
+
+# Verify @rules/ sync
+ls .cursor/rules/
+```
+
+#### Custom Context
+Templates automatically use project context, but can be customized by:
+- Updating discovery data
+- Modifying template variables
+- Regenerating commands
+
+### Next Steps
+
+After scaffolding is complete:
+1. **Command System**: Implement `commands:list`, `commands:refresh`, etc. ✅
+2. **Rule Integration**: Set up rule merging with project rules ✅
+3. **Template System**: Create command templates ✅
 4. **Discovery Engine**: Enhanced project analysis ✅
 5. **Agent-OS Bridge**: Agent command mapping ✅
 6. **Interactive Interview**: TTY-based planning interviews ✅

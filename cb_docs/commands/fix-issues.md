@@ -1,0 +1,91 @@
+---
+id: fix-issues
+title: Fix Issues
+description: Automatically fix code issues and problems
+status: active
+created: 2025-09-07
+updated: 2025-09-07
+owner: system
+domain: maintenance
+priority: 6
+agent_type: backend
+dependencies: [evaluate-code]
+tags: [fix, issues, maintenance, automation]
+---
+
+# Command: Fix Issues
+
+## Description
+Automatically identifies and fixes common code issues, problems, and violations based on evaluation results and project standards.
+
+## Usage
+```bash
+cb fix
+# or
+@rules/fix-issues
+```
+
+## Outputs
+- `cb_docs/fixes/fix-report.json` - Detailed fix report
+- `cb_docs/fixes/applied-fixes.md` - List of applied fixes
+- `cb_docs/fixes/remaining-issues.md` - Issues that couldn't be auto-fixed
+
+## Flags
+- `--type TYPE` - Fix type (style,security,performance,all)
+- `--files PATTERN` - Specific files to fix
+- `--dry-run` - Show what would be fixed without applying
+- `--backup` - Create backup before applying fixes
+- `--interactive` - Confirm each fix before applying
+
+## Examples
+```bash
+# Fix all issues
+cb fix
+
+# Fix only style issues
+cb fix --type style
+
+# Dry run to see what would be fixed
+cb fix --dry-run
+
+# Interactive mode
+cb fix --interactive
+
+# Specific files
+cb fix --files "src/**/*.py"
+```
+
+## Fix Types
+
+### Style Fixes
+- **Formatting**: Auto-format code according to style guide
+- **Naming**: Fix naming convention violations
+- **Imports**: Organize and clean up imports
+- **Whitespace**: Fix indentation and spacing
+
+### Security Fixes
+- **Vulnerabilities**: Update vulnerable dependencies
+- **Anti-patterns**: Fix security anti-patterns
+- **Secrets**: Remove or secure exposed secrets
+- **Permissions**: Fix file permission issues
+
+### Performance Fixes
+- **Optimization**: Apply performance optimizations
+- **Memory**: Fix memory leaks and inefficiencies
+- **Database**: Optimize database queries
+- **Bundle**: Optimize bundle size
+
+### Code Quality Fixes
+- **Linting**: Fix linting errors and warnings
+- **Type Safety**: Fix type-related issues
+- **Dead Code**: Remove unused code
+- **Documentation**: Add missing documentation
+
+## Template Variables
+- `code-builder` - Project name
+- `Node.js` - Project type
+- `next` - Primary framework
+- `JSON` - Primary language
+- `{{total_issues}}` - Total number of issues found
+- `{{fixed_issues}}` - Number of issues fixed
+- `{{remaining_issues}}` - Number of remaining issues

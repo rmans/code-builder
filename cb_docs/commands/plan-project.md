@@ -3,8 +3,8 @@ id: plan-project
 title: Plan Project
 description: Create project plan through guided interview
 status: active
-created: 2025-01-15
-updated: 2025-01-15
+created: 2025-09-07
+updated: 2025-09-07
 owner: system
 domain: planning
 priority: 9
@@ -45,3 +45,12 @@ cb plan --persona dev
 # Non-interactive with defaults
 cb plan --noninteractive
 ```
+
+## Template Variables
+- `code-builder` - Project name
+- `{{product_name}}` - Product name
+- `{{persona}}` - Interview persona
+- `{{technical_requirements}}` - Technical requirements
+- `Node.js` - Project type
+- `next` - Primary framework
+- `JSON` - Primary language

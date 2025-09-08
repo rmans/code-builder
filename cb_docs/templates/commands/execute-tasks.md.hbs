@@ -1,0 +1,87 @@
+---
+id: execute-tasks
+title: Execute Tasks
+description: Execute multiple tasks in dependency order
+status: active
+created: {{created}}
+updated: {{updated}}
+owner: {{owner}}
+domain: orchestration
+priority: 8
+agent_type: backend
+dependencies: [create-task]
+tags: [execution, orchestration, tasks, automation]
+---
+
+# Command: Execute Tasks
+
+## Description
+Executes multiple tasks in dependency order, managing task execution flow, dependencies, and parallel execution where possible.
+
+## Usage
+```bash
+cb execute-tasks
+# or
+@rules/execute-tasks
+```
+
+## Outputs
+- `cb_docs/execution/execution-log.json` - Detailed execution log
+- `cb_docs/execution/task-results.json` - Individual task results
+- `cb_docs/execution/summary.md` - Execution summary report
+
+## Flags
+- `--tasks TASKS` - Specific tasks to execute (comma-separated)
+- `--parallel` - Execute independent tasks in parallel
+- `--max-parallel N` - Maximum parallel tasks (default: 3)
+- `--continue-on-error` - Continue execution even if tasks fail
+- `--dry-run` - Show execution plan without running
+- `--from-task TASK` - Start execution from specific task
+
+## Examples
+```bash
+# Execute all pending tasks
+cb execute-tasks
+
+# Execute specific tasks
+cb execute-tasks --tasks "TASK-001,TASK-002"
+
+# Parallel execution
+cb execute-tasks --parallel --max-parallel 5
+
+# Dry run to see execution plan
+cb execute-tasks --dry-run
+
+# Continue on error
+cb execute-tasks --continue-on-error
+```
+
+## Execution Flow
+
+### Dependency Resolution
+- Analyzes task dependencies
+- Creates execution order based on dependency graph
+- Identifies tasks that can run in parallel
+- Validates all dependencies are met
+
+### Task Execution
+- Executes tasks in dependency order
+- Manages parallel execution where possible
+- Tracks execution status and progress
+- Handles errors and rollback scenarios
+
+### Progress Tracking
+- Real-time progress updates
+- Detailed execution logging
+- Performance metrics collection
+- Error reporting and handling
+
+## Template Variables
+- `{{project_name}}` - Project name
+- `{{project_type}}` - Project type
+- `{{framework}}` - Primary framework
+- `{{language}}` - Primary language
+- `{{total_tasks}}` - Total number of tasks
+- `{{completed_tasks}}` - Number of completed tasks
+- `{{failed_tasks}}` - Number of failed tasks
+- `{{execution_time}}` - Total execution time

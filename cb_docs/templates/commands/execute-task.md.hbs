@@ -1,0 +1,98 @@
+---
+id: execute-task
+title: Execute Task
+description: Execute a single task with full lifecycle management
+status: active
+created: {{created}}
+updated: {{updated}}
+owner: {{owner}}
+domain: execution
+priority: 8
+agent_type: backend
+dependencies: [create-task]
+tags: [execution, single-task, lifecycle, automation]
+---
+
+# Command: Execute Task
+
+## Description
+Executes a single task through its complete lifecycle, including all phases (Implementation, Testing, Documentation, Cleanup, Commit).
+
+## Usage
+```bash
+cb execute-task TASK_ID
+# or
+@rules/execute-task TASK_ID
+```
+
+## Outputs
+- `cb_docs/execution/TASK-{{task_id}}-results.json` - Task execution results
+- `cb_docs/execution/TASK-{{task_id}}-log.md` - Detailed execution log
+- `cb_docs/execution/TASK-{{task_id}}-artifacts/` - Generated artifacts
+
+## Flags
+- `--phase PHASE` - Execute specific phase only
+- `--skip-phases PHASES` - Skip specific phases (comma-separated)
+- `--dry-run` - Show execution plan without running
+- `--interactive` - Interactive mode with confirmations
+- `--force` - Force execution even if dependencies not met
+
+## Examples
+```bash
+# Execute complete task
+cb execute-task TASK-2025-09-07-T1.1
+
+# Execute specific phase
+cb execute-task TASK-2025-09-07-T1.1 --phase implementation
+
+# Skip certain phases
+cb execute-task TASK-2025-09-07-T1.1 --skip-phases testing,documentation
+
+# Dry run
+cb execute-task TASK-2025-09-07-T1.1 --dry-run
+
+# Interactive mode
+cb execute-task TASK-2025-09-07-T1.1 --interactive
+```
+
+## Task Lifecycle
+
+### Phase 1: Implementation
+- Core implementation work
+- Code generation and modification
+- Feature development
+- Integration work
+
+### Phase 2: Testing
+- Unit testing
+- Integration testing
+- Validation and verification
+- Quality assurance
+
+### Phase 3: Documentation
+- Documentation updates
+- README modifications
+- API documentation
+- User guides
+
+### Phase 4: Cleanup
+- Code cleanup and optimization
+- Linting and formatting
+- Dead code removal
+- Performance optimization
+
+### Phase 5: Commit
+- Git staging and commit
+- Tag creation
+- Release preparation
+- Final validation
+
+## Template Variables
+- `{{project_name}}` - Project name
+- `{{project_type}}` - Project type
+- `{{framework}}` - Primary framework
+- `{{language}}` - Primary language
+- `{{task_id}}` - Task identifier
+- `{{task_title}}` - Task title
+- `{{task_status}}` - Current task status
+- `{{current_phase}}` - Current execution phase

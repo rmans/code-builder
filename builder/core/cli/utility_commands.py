@@ -8,7 +8,9 @@ This module contains utility commands like commands:*, cleanup:*, yaml:*, fields
 import click
 import shutil
 import subprocess
+import re
 from pathlib import Path
+from datetime import datetime
 from .base import cli, safe_yaml_load, safe_json_dumps, common_output_format_option, common_force_option, common_dry_run_option
 
 # Commands family
@@ -185,18 +187,28 @@ def commands_refresh(force):
         # Create commands directory
         commands_dir.mkdir(parents=True, exist_ok=True)
         
-        # Copy templates to commands
-        template_files = list(templates_dir.glob('*.md'))
+        # Process templates to commands
+        template_files = list(templates_dir.glob('*.md.hbs'))
         if not template_files:
             click.echo("❌ No command templates found.")
             return 1
         
+        # Get project context for template variables
+        project_context = _get_project_context()
+        
         copied_count = 0
         for template_file in template_files:
-            dest_file = commands_dir / template_file.name
-            shutil.copy2(template_file, dest_file)
+            # Process template with variables
+            processed_content = _process_template(template_file, project_context)
+            
+            # Write to commands directory (remove .hbs extension)
+            dest_name = template_file.stem  # removes .hbs
+            dest_file = commands_dir / dest_name
+            with open(dest_file, 'w', encoding='utf-8') as f:
+                f.write(processed_content)
+            
             copied_count += 1
-            click.echo(f"✅ Copied {template_file.name}")
+            click.echo(f"✅ Processed {template_file.name} -> {dest_name}")
         
         click.echo(f"✅ Refreshed {copied_count} commands")
         
@@ -457,3 +469,75 @@ def fields_check(target, context_pack):
         return 1
     
     return 0
+
+
+def _get_project_context():
+    """Get project context for template variables."""
+    try:
+        # Try to load from discovery data
+        discovery_file = Path('cb_docs/discovery/report.json')
+        if discovery_file.exists():
+            import json
+            with open(discovery_file, 'r', encoding='utf-8') as f:
+                discovery_data = json.load(f)
+            
+            project_info = discovery_data.get('project_info', {})
+            return {
+                'project_name': project_info.get('name', 'Unknown Project'),
+                'project_type': project_info.get('type', 'Unknown'),
+                'framework': _detect_primary_framework(discovery_data),
+                'language': _detect_primary_language(discovery_data),
+                'created': datetime.now().strftime('%Y-%m-%d'),
+                'updated': datetime.now().strftime('%Y-%m-%d'),
+                'owner': 'system'
+            }
+    except Exception:
+        pass
+    
+    # Default context
+    return {
+        'project_name': 'Unknown Project',
+        'project_type': 'Unknown',
+        'framework': 'Unknown',
+        'language': 'Unknown',
+        'created': datetime.now().strftime('%Y-%m-%d'),
+        'updated': datetime.now().strftime('%Y-%m-%d'),
+        'owner': 'system'
+    }
+
+
+def _detect_primary_framework(discovery_data):
+    """Detect primary framework from discovery data."""
+    frameworks = discovery_data.get('frameworks', {}).get('detected', [])
+    if frameworks:
+        return frameworks[0]
+    return 'Unknown'
+
+
+def _detect_primary_language(discovery_data):
+    """Detect primary language from discovery data."""
+    languages = discovery_data.get('languages', {}).get('detected', [])
+    if languages:
+        return languages[0]
+    return 'Unknown'
+
+
+def _process_template(template_file, context):
+    """Process a Handlebars template with context variables."""
+    try:
+        with open(template_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Simple Handlebars-like template processing
+        for key, value in context.items():
+            placeholder = f'{{{{{key}}}}}'
+            content = content.replace(placeholder, str(value))
+        
+        # Handle default values like {{links.arch | default([])}}
+        content = re.sub(r'\{\{([^}]+)\s*\|\s*default\([^)]+\)\}\}', r'[]', content)
+        
+        return content
+        
+    except Exception as e:
+        click.echo(f"⚠️  Warning: Could not process template {template_file}: {e}")
+        return ""

@@ -3,9 +3,9 @@ id: analyze-project
 title: Analyze Project
 description: Analyze project structure and generate discovery report
 status: active
-created: 2025-01-15
-updated: 2025-01-15
-owner: system
+created: {{created}}
+updated: {{updated}}
+owner: {{owner}}
 domain: discovery
 priority: 8
 agent_type: backend
@@ -45,3 +45,10 @@ cb analyze --depth 5 --ignore "node_modules,dist"
 # CI mode
 cb analyze --ci
 ```
+
+## Template Variables
+- `{{project_name}}` - Project name
+- `{{project_type}}` - Project type
+- `{{framework}}` - Primary framework
+- `{{language}}` - Primary language
+- `{{analysis_depth}}` - Analysis depth setting

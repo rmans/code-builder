@@ -3,9 +3,9 @@ id: plan-project
 title: Plan Project
 description: Create project plan through guided interview
 status: active
-created: 2025-01-15
-updated: 2025-01-15
-owner: system
+created: {{created}}
+updated: {{updated}}
+owner: {{owner}}
 domain: planning
 priority: 9
 agent_type: backend
@@ -45,3 +45,12 @@ cb plan --persona dev
 # Non-interactive with defaults
 cb plan --noninteractive
 ```
+
+## Template Variables
+- `{{project_name}}` - Project name
+- `{{product_name}}` - Product name
+- `{{persona}}` - Interview persona
+- `{{technical_requirements}}` - Technical requirements
+- `{{project_type}}` - Project type
+- `{{framework}}` - Primary framework
+- `{{language}}` - Primary language

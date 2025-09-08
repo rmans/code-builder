@@ -3,8 +3,8 @@ id: analyze-project
 title: Analyze Project
 description: Analyze project structure and generate discovery report
 status: active
-created: 2025-01-15
-updated: 2025-01-15
+created: 2025-09-07
+updated: 2025-09-07
 owner: system
 domain: discovery
 priority: 8
@@ -45,3 +45,10 @@ cb analyze --depth 5 --ignore "node_modules,dist"
 # CI mode
 cb analyze --ci
 ```
+
+## Template Variables
+- `code-builder` - Project name
+- `Node.js` - Project type
+- `next` - Primary framework
+- `JSON` - Primary language
+- `{{analysis_depth}}` - Analysis depth setting

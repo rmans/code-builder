@@ -1,0 +1,64 @@
+---
+id: create-context
+title: Create Context
+description: Generate comprehensive project context from discovery and interview data
+status: active
+created: {{created}}
+updated: {{updated}}
+owner: {{owner}}
+domain: context
+priority: 8
+agent_type: backend
+dependencies: [analyze-project, plan-project]
+tags: [context, generation, documentation]
+---
+
+# Command: Create Context
+
+## Description
+Generates comprehensive project context documents including PRD, Architecture, Integration Plan, Implementation Roadmap, Execution Plan, and Tasks from discovery and interview data.
+
+## Usage
+```bash
+cb create-context
+# or
+@rules/create-context
+```
+
+## Outputs
+- `cb_docs/prd/PRD-{{date}}-{{title}}.md` - Product Requirements Document
+- `cb_docs/arch/ARCH-{{date}}-{{title}}.md` - Architecture Document
+- `cb_docs/integrations/INT-{{date}}-{{title}}.md` - Integration Plan
+- `cb_docs/impl/IMPL-{{date}}-{{title}}.md` - Implementation Roadmap
+- `cb_docs/exec/EXEC-{{date}}-{{title}}.md` - Execution Plan
+- `cb_docs/tasks/TASK-{{date}}-F{{num}}.md` - Generated Tasks
+- `cb_docs/pack_context.json` - Context Pack Metadata
+
+## Flags
+- `--sections SECTIONS` - Specific sections to generate (prd,arch,int,impl,exec,task)
+- `--overwrite` - Overwrite existing files
+- `--from SOURCES` - Input sources (discovery,interview)
+
+## Examples
+```bash
+# Generate all context documents
+cb create-context
+
+# Generate only PRD and Architecture
+cb create-context --sections prd,arch
+
+# Overwrite existing files
+cb create-context --overwrite
+
+# Use specific input sources
+cb create-context --from discovery --from interview
+```
+
+## Template Variables
+- `{{project_name}}` - Project name from discovery
+- `{{product_name}}` - Product name from interview
+- `{{persona}}` - Interview persona
+- `{{technical_requirements}}` - Technical requirements
+- `{{project_type}}` - Project type (web, api, cli, etc.)
+- `{{framework}}` - Primary framework
+- `{{language}}` - Primary language
