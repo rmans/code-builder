@@ -28,10 +28,10 @@ class MasterFileSync:
             "prd": self.docs_dir / "prd" / "0000_MASTER_PRD.md",
             "adr": self.docs_dir / "adrs" / "0000_MASTER_ADR.md",
             "arch": self.docs_dir / "arch" / "0000_MASTER_ARCH.md",
-            "int": self.docs_dir / "exec" / "0000_MASTER_INT.md",
+            "int": self.docs_dir / "integrations" / "0000_MASTER_INTEGRATIONS.md",
             "impl": self.docs_dir / "impl" / "0000_MASTER_IMPL.md",
             "exec": self.docs_dir / "exec" / "0000_MASTER_EXEC.md",
-            "task": self.docs_dir / "tasks" / "0000_MASTER_TASK.md",
+            "task": self.docs_dir / "tasks" / "0000_MASTER_TASKS.md",
             "ux": self.docs_dir / "ux" / "0000_MASTER_UX.md"
         }
     

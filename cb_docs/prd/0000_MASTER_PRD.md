@@ -24,4 +24,4 @@ links:
 
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
-| *No documents currently defined* |  |  |  |  || PRD-2025-09-08-unknownproduct | Unknown Product | draft |  | ./PRD-2025-09-08-unknownproduct.md |
+| *No documents currently defined* |  |  |  |  |
