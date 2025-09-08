@@ -38,6 +38,9 @@ from .. import task_index
 # Import task generator
 from ...overlay import task_generator
 
+# Import orchestrator commands
+from . import orchestrator_commands
+
 __all__ = ['cli']
 
 if __name__ == "__main__":

@@ -1912,6 +1912,219 @@ Each phase includes:
 - **Orchestrator**: Tasks can be executed as part of workflows
 - **Documentation**: Tasks follow consistent documentation standards
 
+## Execute-Tasks Orchestrator
+
+The Execute-Tasks Orchestrator provides intelligent task execution with dependency management, parallelism control, and comprehensive result tracking.
+
+### Overview
+
+The orchestrator system enables:
+
+- **Dependency Management**: Automatic task ordering based on dependencies
+- **Parallelism Control**: Configurable parallel execution limits
+- **Filtering**: Task selection by tags, priority, or specific IDs
+- **Dry Run**: Execution planning without actual execution
+- **Result Tracking**: Individual task results and aggregated summaries
+- **Deadlock Detection**: Automatic detection of circular dependencies
+
+### CLI Commands
+
+#### Execute Tasks
+```bash
+# Basic execution
+cb execute-tasks
+
+# Dry run to see execution plan
+cb execute-tasks --dry-run
+
+# Filter by priority
+cb execute-tasks --priority 8
+
+# Filter by tags
+cb execute-tasks --filter backend --filter api
+
+# Execute specific tasks
+cb execute-tasks --tasks TASK-2025-09-07-F01 TASK-2025-09-07-F02
+
+# Control parallelism
+cb execute-tasks --max-parallel 3
+
+# Custom output directory
+cb execute-tasks --output-dir results/
+```
+
+#### Orchestrator Status
+```bash
+# Show orchestrator status
+cb orchestrator:status
+
+# Validate task dependencies
+cb orchestrator:validate
+```
+
+### Command Options
+
+| Option | Type | Description | Example |
+|--------|------|-------------|---------|
+| `--filter` | multiple | Filter tasks by tags | `--filter backend --filter api` |
+| `--priority` | integer | Minimum priority threshold | `--priority 8` |
+| `--max-parallel` | integer | Maximum parallel tasks | `--max-parallel 3` |
+| `--dry-run` | flag | Show execution plan without running | `--dry-run` |
+| `--tasks` | multiple | Specific task IDs to execute | `--tasks TASK-2025-09-07-F01` |
+| `--output-dir` | string | Output directory for results | `--output-dir results/` |
+
+### Execution Flow
+
+#### 1. Task Loading
+- Loads tasks from `cb_docs/tasks/index.json`
+- Applies filters (tags, priority, specific IDs)
+- Converts task index data to Task objects
+
+#### 2. Dependency Analysis
+- Builds dependency graph using NetworkX
+- Detects circular dependencies (deadlocks)
+- Generates execution plan with dependency levels
+
+#### 3. Execution Planning
+- Groups tasks by dependency level
+- Shows execution order in dry-run mode
+- Validates task dependencies
+
+#### 4. Task Execution
+- Assigns tasks to available agents
+- Runs tasks with parallelism control
+- Tracks execution status and results
+
+#### 5. Result Collection
+- Saves individual task results to JSON files
+- Generates aggregated summary markdown
+- Reports final execution status
+
+### Output Files
+
+#### Individual Task Results
+Each task generates a JSON result file in `cb_docs/tasks/results/`:
+
+```json
+{
+  "task_id": "TASK-2025-09-07-F01",
+  "name": "Implement Planning tools",
+  "status": "completed",
+  "started_at": "2025-09-08T10:30:00",
+  "completed_at": "2025-09-08T10:45:00",
+  "assigned_agent": "agent-1",
+  "error_message": null
+}
+```
+
+#### Summary Report
+Generated `cb_docs/tasks/results/summary.md`:
+
+```markdown
+# Task Execution Summary
+
+Generated: 2025-09-08 10:45:00
+
+## Overview
+- **Total Tasks**: 5
+- **Completed**: 4
+- **Failed**: 1
+- **Pending**: 0
+- **Running**: 0
+
+## Results by Status
+- **Completed**: 4 (80.0%)
+- **Failed**: 1 (20.0%)
+
+## Task Details
+
+### TASK-2025-09-07-F01
+- **Status**: completed
+- **Started**: 2025-09-08T10:30:00
+- **Completed**: 2025-09-08T10:45:00
+```
+
+### Implementation Details
+
+#### OrchestratorRunner Class
+- **Location**: `builder/core/cli/orchestrator_commands.py`
+- **Purpose**: CLI runner for task orchestration
+- **Features**:
+  - Task loading and filtering
+  - Execution planning and validation
+  - Result collection and reporting
+  - Deadlock detection
+
+#### Key Methods
+- `load_tasks_from_index()`: Load and filter tasks from index
+- `get_execution_plan()`: Generate dependency-based execution plan
+- `run_execution()`: Execute tasks with parallelism control
+- `detect_deadlocks()`: Check for circular dependencies
+- `generate_summary()`: Create aggregated result summary
+
+#### Integration Points
+- **Task Index**: Reads tasks from canonical task index
+- **Task Orchestrator**: Uses existing orchestrator for execution
+- **Result Management**: Saves results to structured output directory
+- **CLI Integration**: Full command-line interface with options
+
+### Usage Examples
+
+#### Basic Execution
+```bash
+# Execute all tasks
+cb execute-tasks
+
+# Dry run to see plan
+cb execute-tasks --dry-run
+```
+
+#### Filtered Execution
+```bash
+# High priority tasks only
+cb execute-tasks --priority 8
+
+# Backend tasks only
+cb execute-tasks --filter backend
+
+# Specific tasks
+cb execute-tasks --tasks TASK-2025-09-07-F01 TASK-2025-09-07-F02
+```
+
+#### Parallel Execution
+```bash
+# Run up to 3 tasks in parallel
+cb execute-tasks --max-parallel 3
+
+# Dry run with parallelism
+cb execute-tasks --dry-run --max-parallel 3
+```
+
+#### Status and Validation
+```bash
+# Check orchestrator status
+cb orchestrator:status
+
+# Validate dependencies
+cb orchestrator:validate
+```
+
+### Error Handling
+
+#### Deadlock Detection
+- Automatically detects circular dependencies
+- Reports deadlocks in dry-run mode
+- Prevents execution if deadlocks detected
+
+#### Fatal Error Handling
+- Stops execution on task failures
+- Reports failed tasks clearly
+- Provides error messages and context
+
+#### Exit Codes
+- `0`: Success (all tasks completed)
+- `1`: Failure (tasks failed or errors detected)
+
 ### Next Steps
 
 After scaffolding is complete:
@@ -1925,5 +2138,6 @@ After scaffolding is complete:
 8. **Per-Task Commands**: Individual command generation for each task ✅
 9. **Task Index Schema**: Canonical task index with comprehensive metadata ✅
 10. **Template-Based Task Generation**: Generate task files from templates ✅
-11. **State Management**: Implement state updates and persistence
-12. **Path Translation**: Use OverlayPaths for all new features
+11. **Execute-Tasks Orchestrator**: Task execution with dependency management ✅
+12. **State Management**: Implement state updates and persistence
+13. **Path Translation**: Use OverlayPaths for all new features
