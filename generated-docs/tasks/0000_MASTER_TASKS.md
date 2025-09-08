@@ -25,3 +25,4 @@ links:
 | ID | Title | Status | Domain | Link |
 |---|---|---|---|---|
 | TASK-2025-01-01-rules-migration-setup | Setup Rules System with MDC Support (Dual-Path + Migration) | pending | rules | [TASK-2025-01-01-rules-migration-setup.md](TASK-2025-01-01-rules-migration-setup.md) |
+| TASK-2025-01-02-base-rule-always | Base Repo Rule (Always, Migrated) | pending | rules | [TASK-2025-01-02-base-rule-always.md](TASK-2025-01-02-base-rule-always.md) |
