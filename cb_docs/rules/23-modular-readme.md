@@ -23,7 +23,7 @@ The main README.md must contain:
 - **Quick navigation** footer (lines 123-125)
 
 ### 2. Specialized Documentation Modules
-Create focused documentation modules in `docs/` directory:
+Create focused documentation modules in `cb_docs/readme/` directory:
 - `README-ARCHITECTURE.md` - Detailed system architecture and interactions
 - `README-STATISTICS.md` - Comprehensive statistics and recent improvements
 - `README-QUICKSTART.md` - Installation, configuration, and basic usage
@@ -63,13 +63,13 @@ Create focused documentation modules in `docs/` directory:
 wc -l README.md | grep -q "125" || echo "README too long"
 
 # Validate internal links
-grep -o '\[.*\](docs/.*\.md)' README.md | while read link; do
+grep -o '\[.*\](cb_docs/readme/.*\.md)' README.md | while read link; do
   file=$(echo "$link" | sed 's/.*(\(.*\))/\1/')
   [ -f "$file" ] || echo "Missing file: $file"
 done
 
 # Check for content duplication
-for file in docs/README-*.md; do
+for file in cb_docs/readme/README-*.md; do
   echo "Checking $file for duplication..."
   # Add specific duplication checks here
 done
@@ -98,9 +98,9 @@ done
 ## 📚 Documentation
 
 ### Core Documentation
-- **[System Architecture](docs/README-ARCHITECTURE.md)** - 10 core systems and their interactions
-- **[Quickstart Guide](docs/README-QUICKSTART.md)** - Installation and basic usage
-- **[Command Reference](docs/README-COMMANDS.md)** - 104+ CLI commands organized by module
+- **[System Architecture](cb_docs/readme/README-ARCHITECTURE.md)** - 10 core systems and their interactions
+- **[Quickstart Guide](cb_docs/readme/README-QUICKSTART.md)** - Installation and basic usage
+- **[Command Reference](cb_docs/readme/README-COMMANDS.md)** - 104+ CLI commands organized by module
 ```
 
 ### Bad: Inline Content

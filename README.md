@@ -25,10 +25,10 @@ python3 -m builder.core.cli quality:gates --verbose
 ## 📚 Documentation
 
 ### Core Documentation
-- **[System Architecture](docs/README-ARCHITECTURE.md)** - 10 core systems and their interactions
-- **[Quickstart Guide](docs/README-QUICKSTART.md)** - Installation and basic usage
-- **[Command Reference](docs/README-COMMANDS.md)** - 104+ CLI commands organized by module
-- **[Directory Structure](docs/README-DIRECTORY.md)** - Complete project layout and organization
+- **[System Architecture](cb_docs/readme/README-ARCHITECTURE.md)** - 10 core systems and their interactions
+- **[Quickstart Guide](cb_docs/readme/README-QUICKSTART.md)** - Installation and basic usage
+- **[Command Reference](cb_docs/readme/README-COMMANDS.md)** - 104+ CLI commands organized by module
+- **[Directory Structure](cb_docs/readme/README-DIRECTORY.md)** - Complete project layout and organization
 
 ### Specialized Guides
 - **[Discovery System](cb_docs/instructions/discover.md)** - Interactive discovery and analysis
@@ -52,7 +52,7 @@ Code Builder is built around **10 core systems**:
 9. **Telemetry & Metrics** - Command tracking and usage analytics 🆕
 10. **Quality Gates** - Release validation and compliance checks 🆕
 
-> **📖 Detailed Architecture**: See [System Architecture](docs/README-ARCHITECTURE.md) for comprehensive details about each system.
+> **📖 Detailed Architecture**: See [System Architecture](cb_docs/readme/README-ARCHITECTURE.md) for comprehensive details about each system.
 
 ## 📊 Key Features
 
@@ -103,7 +103,7 @@ Code Builder is built around **10 core systems**:
 - **Test Suites**: 5 comprehensive quality test suites
 - **Rules System**: 20+ rule files with hierarchical precedence
 
-> **📊 Detailed Statistics**: See [System Statistics](docs/README-STATISTICS.md) for comprehensive metrics and recent improvements.
+> **📊 Detailed Statistics**: See [System Statistics](cb_docs/readme/README-STATISTICS.md) for comprehensive metrics and recent improvements.
 
 ## 🤝 Contributing
 
@@ -116,10 +116,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🔗 Links
 
 - **GitHub Repository**: [rmans/code-builder](https://github.com/rmans/code-builder)
-- **Documentation**: [docs/](docs/)
+- **Documentation**: [cb_docs/](cb_docs/)
 - **Issue Tracker**: [GitHub Issues](https://github.com/rmans/code-builder/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/rmans/code-builder/discussions)
 
 ---
 
-**Quick Navigation**: [Architecture](docs/README-ARCHITECTURE.md) | [Quickstart](docs/README-QUICKSTART.md) | [Commands](docs/README-COMMANDS.md) | [Directory](docs/README-DIRECTORY.md)
+**Quick Navigation**: [Architecture](cb_docs/readme/README-ARCHITECTURE.md) | [Quickstart](cb_docs/readme/README-QUICKSTART.md) | [Commands](cb_docs/readme/README-COMMANDS.md) | [Directory](cb_docs/readme/README-DIRECTORY.md)
