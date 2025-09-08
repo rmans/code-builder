@@ -25,17 +25,17 @@ python3 -m builder.core.cli quality:gates --verbose
 ## 📚 Documentation
 
 ### Core Documentation
-- **[System Architecture](builder-docs/readme/README-ARCHITECTURE.md)** - 10 core systems and their interactions
-- **[Quickstart Guide](builder-docs/readme/README-QUICKSTART.md)** - Installation and basic usage
-- **[Command Reference](builder-docs/readme/README-COMMANDS.md)** - 104+ CLI commands organized by module
-- **[Directory Structure](builder-docs/readme/README-DIRECTORY.md)** - Complete project layout and organization
+- **[System Architecture](.cb/builder-docs/readme/README-ARCHITECTURE.md)** - 10 core systems and their interactions
+- **[Quickstart Guide](.cb/builder-docs/readme/README-QUICKSTART.md)** - Installation and basic usage
+- **[Command Reference](.cb/builder-docs/readme/README-COMMANDS.md)** - 104+ CLI commands organized by module
+- **[Directory Structure](.cb/builder-docs/readme/README-DIRECTORY.md)** - Complete project layout and organization
 
 ### Specialized Guides
-- **[Discovery System](builder-docs/instructions/discover.md)** - Interactive discovery and analysis
-- **[Context Management](builder-docs/instructions/context.md)** - Context generation and optimization
-- **[Agent Orchestration](builder-docs/instructions/agents.md)** - Multi-agent task execution
-- **[Quality Gates](builder-docs/instructions/evaluate.md)** - Release validation and compliance
-- **[Telemetry & Metrics](builder-docs/instructions/telemetry.md)** - Command tracking and analytics
+- **[Discovery System](.cb/builder-docs/instructions/discover.md)** - Interactive discovery and analysis
+- **[Context Management](.cb/builder-docs/instructions/context.md)** - Context generation and optimization
+- **[Agent Orchestration](.cb/builder-docs/instructions/agents.md)** - Multi-agent task execution
+- **[Quality Gates](.cb/builder-docs/instructions/evaluate.md)** - Release validation and compliance
+- **[Telemetry & Metrics](.cb/builder-docs/instructions/telemetry.md)** - Command tracking and analytics
 
 ## 🏗️ System Overview
 
@@ -52,7 +52,7 @@ Code Builder is built around **10 core systems**:
 9. **Telemetry & Metrics** - Command tracking and usage analytics 🆕
 10. **Quality Gates** - Release validation and compliance checks 🆕
 
-> **📖 Detailed Architecture**: See [System Architecture](builder-docs/readme/README-ARCHITECTURE.md) for comprehensive details about each system.
+> **📖 Detailed Architecture**: See [System Architecture](.cb/builder-docs/readme/README-ARCHITECTURE.md) for comprehensive details about each system.
 
 ## 📊 Key Features
 
@@ -103,7 +103,7 @@ Code Builder is built around **10 core systems**:
 - **Test Suites**: 5 comprehensive quality test suites
 - **Rules System**: 20+ rule files with hierarchical precedence
 
-> **📊 Detailed Statistics**: See [System Statistics](builder-docs/readme/README-STATISTICS.md) for comprehensive metrics and recent improvements.
+> **📊 Detailed Statistics**: See [System Statistics](.cb/builder-docs/readme/README-STATISTICS.md) for comprehensive metrics and recent improvements.
 
 ## 🤝 Contributing
 
@@ -116,11 +116,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🔗 Links
 
 - **GitHub Repository**: [rmans/code-builder](https://github.com/rmans/code-builder)
-- **Builder Documentation**: [builder-docs/](builder-docs/)
+- **Builder Documentation**: [.cb/builder-docs/](.cb/builder-docs/) (installed in .cb/)
 - **Generated Documentation**: [generated-docs/](generated-docs/)
 - **Issue Tracker**: [GitHub Issues](https://github.com/rmans/code-builder/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/rmans/code-builder/discussions)
 
 ---
 
-**Quick Navigation**: [Architecture](builder-docs/readme/README-ARCHITECTURE.md) | [Quickstart](builder-docs/readme/README-QUICKSTART.md) | [Commands](builder-docs/readme/README-COMMANDS.md) | [Directory](builder-docs/readme/README-DIRECTORY.md)
+**Quick Navigation**: [Architecture](.cb/builder-docs/readme/README-ARCHITECTURE.md) | [Quickstart](.cb/builder-docs/readme/README-QUICKSTART.md) | [Commands](.cb/builder-docs/readme/README-COMMANDS.md) | [Directory](.cb/builder-docs/readme/README-DIRECTORY.md)

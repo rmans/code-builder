@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Code Builder Overlay Installer
-# Simple approach: .cb/ = project copy, cb_cb_docs/ = cb_docs/ copy
+# Simple approach: .cb/ = project copy, builder-docs/ and generated-docs/ = documentation
 
 set -e
 
@@ -28,16 +28,22 @@ setup_commands() {
     mkdir -p .cb/engine/templates/commands
     mkdir -p .cb/commands
     
-    # Copy command files from cb_docs/ to .cb/commands/
-    if [ -d "cb_docs/commands" ]; then
-        echo "   📋 Copying commands from cb_docs/commands/ to .cb/commands/"
-        cp cb_docs/commands/*.md .cb/commands/ 2>/dev/null || true
+    # Copy entire builder-docs/ to .cb/builder-docs/
+    if [ -d "builder-docs" ]; then
+        echo "   📋 Copying builder-docs/ to .cb/builder-docs/"
+        cp -r builder-docs .cb/
     fi
-    
-    # Copy templates from cb_docs/ to .cb/engine/templates/commands/
-    if [ -d "cb_docs/templates/commands" ]; then
-        echo "   📋 Copying templates from cb_docs/templates/commands/ to .cb/engine/templates/commands/"
-        cp cb_docs/templates/commands/*.md .cb/engine/templates/commands/ 2>/dev/null || true
+
+    # Copy command files from .cb/builder-docs/commands/ to .cb/commands/
+    if [ -d ".cb/builder-docs/commands" ]; then
+        echo "   📋 Copying commands from .cb/builder-docs/commands/ to .cb/commands/"
+        cp .cb/builder-docs/commands/*.md .cb/commands/ 2>/dev/null || true
+    fi
+
+    # Copy templates from .cb/builder-docs/templates/commands/ to .cb/engine/templates/commands/
+    if [ -d ".cb/builder-docs/templates/commands" ]; then
+        echo "   📋 Copying templates from .cb/builder-docs/templates/commands/ to .cb/engine/templates/commands/"
+        cp .cb/builder-docs/templates/commands/*.md .cb/engine/templates/commands/ 2>/dev/null || true
     fi
     
     # Create basic command files in .cb/commands/ if none exist
@@ -74,8 +80,8 @@ cb analyze
 ```
 
 ## Outputs
-- `cb_docs/discovery/report.json` - Detailed project analysis
-- `cb_docs/discovery/summary.md` - Human-readable summary
+- `generated-docs/discovery/report.json` - Detailed project analysis
+- `generated-docs/discovery/summary.md` - Human-readable summary
 
 ## Flags
 - `--depth N` - Analysis depth (default: 3)
@@ -126,9 +132,9 @@ cb plan
 ```
 
 ## Outputs
-- `cb_docs/planning/interview.json` - Interview responses
-- `cb_docs/planning/assumptions.md` - Documented assumptions
-- `cb_docs/planning/decisions.md` - Key decisions made
+- `generated-docs/planning/interview.json` - Interview responses
+- `generated-docs/planning/assumptions.md` - Documented assumptions
+- `generated-docs/planning/decisions.md` - Key decisions made
 
 ## Flags
 - `--persona TYPE` - Interview persona (dev|pm|ai)
@@ -189,8 +195,8 @@ if [ -n "$PROJECT_RULES" ]; then
     echo "" >> .cb/.cursor/rules/merged_rules.md
     
     # Add Code Builder rules
-    if [ -d "cb_docs/rules" ]; then
-        find cb_docs/rules -name "*.md" -exec echo "### {}" \; -exec cat {} \; >> .cb/.cursor/rules/merged_rules.md
+    if [ -d ".cb/builder-docs/rules" ]; then
+        find .cb/builder-docs/rules -name "*.md" -exec echo "### {}" \; -exec cat {} \; >> .cb/.cursor/rules/merged_rules.md
     fi
     
     echo "" >> .cb/.cursor/rules/merged_rules.md
@@ -198,9 +204,9 @@ if [ -n "$PROJECT_RULES" ]; then
     echo "" >> .cb/.cursor/rules/merged_rules.md
     
     # Add guardrails
-    if [ -f "cb_docs/rules/guardrails.json" ]; then
+    if [ -f ".cb/builder-docs/rules/guardrails.json" ]; then
         echo "Guardrails configuration:" >> .cb/.cursor/rules/merged_rules.md
-        cat cb_docs/rules/guardrails.json >> .cb/.cursor/rules/merged_rules.md
+        cat .cb/builder-docs/rules/guardrails.json >> .cb/.cursor/rules/merged_rules.md
     fi
     
     echo "   ✅ Rules merged successfully"
@@ -209,8 +215,8 @@ else
     echo "   📝 Using Code Builder rules only"
     
     # Copy Code Builder rules directly
-    if [ -d "cb_docs/rules" ]; then
-        cp -r cb_docs/rules/* .cb/.cursor/rules/ 2>/dev/null || true
+    if [ -d ".cb/builder-docs/rules" ]; then
+        cp -r .cb/builder-docs/rules/* .cb/.cursor/rules/ 2>/dev/null || true
     fi
 fi
 
@@ -257,7 +263,7 @@ fi
 
 # Ensure cb_docs exists and is complete (source of truth for documentation)
 if [ ! -d "cb_docs" ]; then
-    echo "⚠️  cb_docs/ not found. Creating from git history..."
+    echo "⚠️  generated-docs/ not found. Creating from git history..."
     if git checkout 2bc80cc -- docs 2>/dev/null; then
         cp -r docs cb_docs && rm -rf docs
         echo "   ✅ cb_docs/ created from git history"

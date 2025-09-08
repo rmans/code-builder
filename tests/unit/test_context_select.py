@@ -23,7 +23,7 @@ class TestContextSelector(unittest.TestCase):
             id="PRD-test",
             node_type="prd",
             title="Test PRD",
-            file_path="/cb_docs/prd/PRD-test.md",
+            file_path="/generated-docs/prd/PRD-test.md",
             metadata={
                 "type": "prd",
                 "id": "PRD-test",
@@ -39,7 +39,7 @@ class TestContextSelector(unittest.TestCase):
             id="ARCH-test",
             node_type="arch",
             title="Test Architecture",
-            file_path="/cb_docs/arch/ARCH-test.md",
+            file_path="/generated-docs/arch/ARCH-test.md",
             metadata={
                 "type": "arch",
                 "id": "ARCH-test",
@@ -118,7 +118,7 @@ class TestContextSelector(unittest.TestCase):
             
     def test_approved_status_scoring(self):
         """Test that approved status gets +2 score."""
-        items = self.selector.select_context(start_path="/cb_docs/arch/ARCH-test.md", max_items=5)
+        items = self.selector.select_context(start_path="/generated-docs/arch/ARCH-test.md", max_items=5)
         
         # Find approved items
         approved_items = [item for item in items if item.node.metadata.get('status') == 'approved']
@@ -128,7 +128,7 @@ class TestContextSelector(unittest.TestCase):
             
     def test_recent_scoring(self):
         """Test that recent items get +1 score."""
-        items = self.selector.select_context(start_path="/cb_docs/arch/ARCH-test.md", max_items=5)
+        items = self.selector.select_context(start_path="/generated-docs/arch/ARCH-test.md", max_items=5)
         
         # All test items are recent (2025-01-01)
         for item in items:
