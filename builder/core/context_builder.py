@@ -144,7 +144,13 @@ class ContextBuilder:
         discovery_file = self.docs_dir / "discovery" / "report.json"
         if discovery_file.exists():
             with open(discovery_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+                
+                # Convert absolute paths to relative paths
+                if 'project_info' in data and 'path' in data['project_info']:
+                    data['project_info']['path'] = "."
+                
+                return data
         return None
     
     def _load_interview_data(self) -> Optional[Dict[str, Any]]:
@@ -579,6 +585,164 @@ Implement {feature} functionality for {project_name}.
         except Exception as e:
             # Silently fail - master file sync is optional
             print(f"⚠️  Warning: Could not sync master file: {e}")
+    
+    def _generate_context_pack_data(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate context pack data without writing to file."""
+        try:
+            # Create context pack data
+            pack_data = {
+                "metadata": {
+                    "generated": datetime.now().isoformat(),
+                    "version": "1.0",
+                    "generator": "Code Builder Context Builder",
+                    "total_documents": 0  # Will be updated when documents are generated
+                },
+                "inputs": {
+                    "discovery": input_data.get('discovery', {}),
+                    "interview": input_data.get('interview', {})
+                },
+                "documents": {},
+                "rules": self._collect_rules_links(),
+                "acceptance_criteria": {},
+                "code_excerpts": self._collect_code_excerpts({}),
+                "paths": {
+                    "root": ".",
+                    "docs": "cb_docs",
+                    "templates": "cb_docs/templates",
+                    "cache": ".cb/cache"
+                }
+            }
+            
+            return pack_data
+            
+        except Exception as e:
+            print(f"⚠️  Warning: Could not generate context pack data: {e}")
+            return {}
+    
+    def _generate_context_pack(self, results: Dict[str, Any], input_data: Dict[str, Any]):
+        """Generate pack_context.json with metadata about the context pack."""
+        try:
+            # Create context pack data
+            pack_data = {
+                "metadata": {
+                    "generated": datetime.now().isoformat(),
+                    "version": "1.0",
+                    "generator": "Code Builder Context Builder",
+                    "total_documents": len([r for r in results.values() if isinstance(r, dict) and r.get('status') == 'generated'])
+                },
+                "inputs": {
+                    "discovery": input_data.get('discovery', {}),
+                    "interview": input_data.get('interview', {})
+                },
+                "documents": {},
+                "rules": self._collect_rules_links(),
+                "acceptance_criteria": self._collect_acceptance_criteria(results),
+                "code_excerpts": self._collect_code_excerpts(results),
+                "paths": {
+                    "root": ".",
+                    "docs": "cb_docs",
+                    "templates": "cb_docs/templates",
+                    "cache": ".cb/cache"
+                }
+            }
+            
+            # Add document metadata
+            for doc_type, doc_info in results.items():
+                if isinstance(doc_info, dict) and 'file' in doc_info:
+                    doc_path = Path(doc_info['file'])
+                    pack_data["documents"][doc_type] = {
+                        "file": str(doc_path.relative_to(self.root_path)),
+                        "status": doc_info.get('status', 'unknown'),
+                        "size": doc_path.stat().st_size if doc_path.exists() else 0,
+                        "modified": datetime.fromtimestamp(doc_path.stat().st_mtime).isoformat() if doc_path.exists() else None
+                    }
+                elif isinstance(doc_info, dict) and 'files' in doc_info:
+                    # Handle task files
+                    pack_data["documents"][doc_type] = {
+                        "files": [str(Path(f).relative_to(self.root_path)) for f in doc_info['files']],
+                        "count": len(doc_info['files']),
+                        "index": str(Path(doc_info['index']).relative_to(self.root_path)) if 'index' in doc_info else None,
+                        "status": doc_info.get('status', 'unknown')
+                    }
+            
+            # Write pack_context.json
+            pack_file = self.docs_dir / "pack_context.json"
+            with open(pack_file, 'w', encoding='utf-8') as f:
+                json.dump(pack_data, f, indent=2, sort_keys=True)
+            
+            print(f"📦 Generated context pack: {pack_file}")
+            
+        except Exception as e:
+            print(f"⚠️  Warning: Could not generate context pack: {e}")
+    
+    def _collect_rules_links(self) -> List[str]:
+        """Collect links to relevant rules files."""
+        rules_links = []
+        try:
+            rules_dir = self.docs_dir / "rules"
+            if rules_dir.exists():
+                for rule_file in rules_dir.glob("*.md"):
+                    rules_links.append(str(rule_file.relative_to(self.root_path)))
+        except Exception as e:
+            print(f"⚠️  Warning: Could not collect rules links: {e}")
+        return rules_links
+    
+    def _collect_acceptance_criteria(self, results: Dict[str, Any]) -> Dict[str, List[str]]:
+        """Collect acceptance criteria from generated documents."""
+        criteria = {}
+        try:
+            for doc_type, doc_info in results.items():
+                if isinstance(doc_info, dict) and 'file' in doc_info:
+                    doc_path = Path(doc_info['file'])
+                    if doc_path.exists():
+                        # Read document and extract acceptance criteria
+                        with open(doc_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                        
+                        # Look for acceptance criteria sections
+                        import re
+                        criteria_pattern = r'## Acceptance Criteria\s*\n(.*?)(?=\n##|\Z)'
+                        matches = re.findall(criteria_pattern, content, re.DOTALL | re.IGNORECASE)
+                        
+                        if matches:
+                            criteria[doc_type] = [line.strip() for line in matches[0].split('\n') if line.strip() and line.strip().startswith('-')]
+        except Exception as e:
+            print(f"⚠️  Warning: Could not collect acceptance criteria: {e}")
+        return criteria
+    
+    def _collect_code_excerpts(self, results: Dict[str, Any]) -> Dict[str, List[str]]:
+        """Collect relevant code excerpts from the project."""
+        excerpts = {}
+        try:
+            # Look for key source files
+            source_files = [
+                "builder/core/context_builder.py",
+                "builder/core/cli/context_commands.py",
+                "builder/discovery/interview.py",
+                "builder/discovery/enhanced_engine.py"
+            ]
+            
+            for source_file in source_files:
+                file_path = self.root_path / source_file
+                if file_path.exists():
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Extract key functions/classes
+                    import re
+                    function_pattern = r'def\s+(\w+)\s*\([^)]*\):'
+                    class_pattern = r'class\s+(\w+)\s*[\(:]'
+                    
+                    functions = re.findall(function_pattern, content)
+                    classes = re.findall(class_pattern, content)
+                    
+                    excerpts[source_file] = {
+                        "functions": functions[:10],  # Limit to first 10
+                        "classes": classes[:5]        # Limit to first 5
+                    }
+        except Exception as e:
+            print(f"⚠️  Warning: Could not collect code excerpts: {e}")
+        return excerpts
     
     def _load_existing_context(self):
         """Load existing context from cache."""

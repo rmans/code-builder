@@ -7,6 +7,7 @@ This module contains context-related commands like ctx:*, context:*
 
 import click
 import os
+import json
 import yaml
 from pathlib import Path
 from .base import cli, get_project_root
@@ -193,11 +194,38 @@ def ctx_validate(context_file):
     return 0
 
 @cli.command("ctx:pack")
-@click.option("--output", default="", help="Output file path")
-def ctx_pack(output):
-    """Pack context data - to be implemented."""
-    click.echo(f"📦 Packing context data to {output or 'stdout'} - to be implemented")
-    return 0
+@click.option("--output", default="cb_docs/pack_context.json", help="Output file path")
+@click.option("--from", "from_sources", multiple=True, type=click.Choice(['discovery', 'interview']),
+              default=['discovery', 'interview'], help="Sources to build context from")
+def ctx_pack(output, from_sources):
+    """Pack context data into pack_context.json with metadata."""
+    try:
+        from ..context_builder import ContextBuilder
+        
+        # Initialize context builder
+        builder = ContextBuilder()
+        
+        # Load input data
+        input_data = builder._load_input_data(from_sources)
+        
+        # Generate context pack
+        pack_data = builder._generate_context_pack_data(input_data)
+        
+        # Write pack file
+        output_path = Path(output)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(pack_data, f, indent=2, sort_keys=True)
+        
+        click.echo(f"📦 Context pack generated: {output_path}")
+        click.echo(f"   Documents: {pack_data['metadata']['total_documents']}")
+        click.echo(f"   Rules: {len(pack_data['rules'])}")
+        click.echo(f"   Code excerpts: {len(pack_data['code_excerpts'])}")
+        
+        return 0
+        
+    except Exception as e:
+        click.echo(f"❌ Error packing context: {e}")
+        return 1
 
 @cli.command("ctx:trace")
 @click.option("--output", default="builder/cache/trace.csv")

@@ -1020,6 +1020,152 @@ The interview system provides robust error handling:
 
 ### Next Steps
 
+## Context Pack Generation
+
+### Overview
+The Context Pack Generation system creates comprehensive metadata packages (`pack_context.json`) that contain all relevant information about a project's context, including rules, acceptance criteria, code excerpts, and input summaries. This enables downstream tooling to understand and work with the project context.
+
+### Features
+
+#### Metadata Collection
+- **Generation Info**: Timestamp, version, generator details
+- **Document Count**: Total number of generated documents
+- **Input Sources**: Discovery and interview data summaries
+
+#### Rules Integration
+- **Rule Links**: Relative paths to all rules files
+- **Rule Discovery**: Automatic detection of rules in `cb_docs/rules/`
+- **Cross-Reference**: Validation that all rule files exist
+
+#### Code Excerpts
+- **Function Extraction**: Key functions from source files
+- **Class Extraction**: Important classes and their methods
+- **Source Files**: Core builder modules and CLI components
+
+#### Document Metadata
+- **File Paths**: Relative paths to generated documents
+- **Status Information**: Generation status and timestamps
+- **Size Tracking**: File sizes and modification times
+
+### Usage
+
+#### Command Line
+```bash
+# Generate context pack with default settings
+python -m builder.core.cli ctx:pack
+
+# Specify output file
+python -m builder.core.cli ctx:pack --output custom_pack.json
+
+# Use specific input sources
+python -m builder.core.cli ctx:pack --from discovery --from interview
+```
+
+#### Programmatic Usage
+```python
+from builder.core.context_builder import ContextBuilder
+
+builder = ContextBuilder()
+input_data = builder._load_input_data(['discovery', 'interview'])
+pack_data = builder._generate_context_pack_data(input_data)
+```
+
+### Pack Structure
+
+#### Metadata Section
+```json
+{
+  "metadata": {
+    "generated": "2025-09-07T22:13:17.598154",
+    "version": "1.0",
+    "generator": "Code Builder Context Builder",
+    "total_documents": 0
+  }
+}
+```
+
+#### Inputs Section
+```json
+{
+  "inputs": {
+    "discovery": {
+      "configuration": { ... },
+      "dependencies": { ... },
+      "project_structure": { ... }
+    },
+    "interview": {
+      "product_name": "...",
+      "persona": "...",
+      "technical_requirements": "..."
+    }
+  }
+}
+```
+
+#### Documents Section
+```json
+{
+  "documents": {
+    "prd": {
+      "file": "cb_docs/prd/PRD-2025-09-07-Project-Name.md",
+      "status": "generated",
+      "size": 1045,
+      "modified": "2025-09-07T22:04:29.040527"
+    }
+  }
+}
+```
+
+#### Rules Section
+```json
+{
+  "rules": [
+    "cb_docs/rules/20-shell-scripting.md",
+    "cb_docs/rules/10-project.md",
+    "cb_docs/rules/17-no-cb-directory-creation.md"
+  ]
+}
+```
+
+#### Code Excerpts Section
+```json
+{
+  "code_excerpts": {
+    "builder/core/context_builder.py": {
+      "classes": ["ContextBuilder"],
+      "functions": ["__init__", "_create_tasks_index", "_update_context_graph"]
+    }
+  }
+}
+```
+
+#### Paths Section
+```json
+{
+  "paths": {
+    "root": "/home/user/project",
+    "docs": "/home/user/project/cb_docs",
+    "templates": "/home/user/project/cb_docs/templates",
+    "cache": "/home/user/project/.cb/cache"
+  }
+}
+```
+
+### Integration Points
+
+#### Downstream Tooling
+- **Context Loaders**: Load and parse context packs
+- **Rule Processors**: Access rule files and metadata
+- **Document Indexers**: Track document status and changes
+- **Code Analyzers**: Access code excerpts and structure
+
+#### Validation
+- **JSON Schema**: Validates pack structure
+- **Path Validation**: Ensures all referenced files exist
+- **Cross-Reference**: Validates links between components
+
+### Next Steps
+
 After scaffolding is complete:
 1. **Command System**: Implement `commands:list`, `commands:refresh`, etc. ✅
 2. **Rule Integration**: Set up rule merging with project rules ✅
