@@ -18,6 +18,18 @@ def cli():
     """Code Builder CLI"""
     pass
 
+# Import task generator commands
+from ...overlay.task_generator import (
+    generate_task_cli,
+    list_task_templates_cli,
+    validate_task_template_cli
+)
+
+# Register task generator commands
+cli.add_command(generate_task_cli)
+cli.add_command(list_task_templates_cli)
+cli.add_command(validate_task_template_cli)
+
 # Common utilities
 def safe_yaml_load(content, error_context=""):
     """Safely load YAML content with error handling."""

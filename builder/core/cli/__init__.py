@@ -35,6 +35,9 @@ from ...overlay import command_generator
 # Import task index management
 from .. import task_index
 
+# Import task generator
+from ...overlay import task_generator
+
 __all__ = ['cli']
 
 if __name__ == "__main__":

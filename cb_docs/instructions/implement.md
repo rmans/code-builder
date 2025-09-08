@@ -1702,6 +1702,216 @@ tasks = index_data.get('tasks', [])
 high_priority = [t for t in tasks if t['priority'] >= 8]
 ```
 
+## Template-Based Task Generation
+
+The Template-Based Task Generation system provides automated creation of task files following the standardized 5-phase workflow structure, ensuring consistency and completeness across all tasks.
+
+### Overview
+
+The task generation system uses Handlebars-like templates to create new task files with:
+
+- **Standardized Structure**: All tasks follow the 5-phase workflow (Implementation, Testing, Documentation, Cleanup, Commit)
+- **Consistent Metadata**: Proper frontmatter with all required fields
+- **Template Variables**: Dynamic content based on task parameters
+- **Validation**: Template validation and error checking
+- **Idempotent Generation**: Safe regeneration with overwrite protection
+
+### Template Structure
+
+#### Task Template (`cb_docs/templates/tasks.md.hbs`)
+The template provides a complete task structure with:
+
+```yaml
+---
+type: tasks
+id: {{id}}
+title: {{title}}
+status: draft
+owner: {{owner}}
+created: {{created}}
+priority: {{priority}}
+agent_type: {{agent_type}}
+tags: {{tags}}
+# ABC Iteration Support (optional)
+requires_abc_iteration: {{requires_abc_iteration}}
+abc_target_file: "{{abc_target_file}}"
+abc_rounds: {{abc_rounds}}
+links:
+  prd: {{links.prd | default([])}}
+  arch: {{links.arch | default([])}}
+  ux: {{links.ux | default([])}}
+  impl: {{links.impl | default([])}}
+  exec: {{links.exec | default([])}}
+---
+```
+
+#### 5-Phase Workflow Structure
+Each generated task includes:
+
+1. **Phase 1: 🚀 Implementation** - Core functionality development
+2. **Phase 2: 🧪 Testing** - Verification and quality assurance
+3. **Phase 3: 📚 Documentation** - Code documentation and examples
+4. **Phase 4: 🧹 Cleanup** - Code quality and organization
+5. **Phase 5: 💾 Commit** - Version control and completion
+
+### CLI Commands
+
+#### Generate Task
+```bash
+# Basic task generation
+cb generate-task --id "TASK-2025-09-07-F05" --title "New Feature"
+
+# Full task generation with all options
+cb generate-task \
+  --id "TASK-2025-09-07-F05" \
+  --title "Implement New Feature" \
+  --description "Add new functionality to the system" \
+  --owner "development-team" \
+  --priority 8 \
+  --agent-type "backend" \
+  --tags "feature" "backend" "api" \
+  --dependencies "TASK-2025-09-07-F01" "TASK-2025-09-07-F02" \
+  --acceptance-criteria "Feature works correctly" "Tests pass" \
+  --overwrite
+```
+
+#### List Templates
+```bash
+# List available task templates
+cb list-task-templates
+```
+
+#### Validate Template
+```bash
+# Validate task template structure
+cb validate-task-template
+```
+
+### Template Variables
+
+| Variable | Type | Description | Example |
+|----------|------|-------------|---------|
+| `id` | string | Unique task identifier | `TASK-2025-09-07-F05` |
+| `title` | string | Task title | `Implement New Feature` |
+| `owner` | string | Task owner/assignee | `development-team` |
+| `created` | string | Creation date | `2025-09-08` |
+| `priority` | string | Task priority (1-10) | `8` |
+| `agent_type` | string | Agent type | `backend` |
+| `tags` | string | Task tags (JSON array) | `['feature', 'backend']` |
+| `requires_abc_iteration` | string | ABC iteration flag | `false` |
+| `abc_target_file` | string | ABC target file | `src/feature.py` |
+| `abc_rounds` | string | Number of ABC rounds | `3` |
+| `links` | object | Document links | `{prd: [], arch: []}` |
+
+### Implementation Details
+
+#### TaskGenerator Class
+- **Location**: `builder/overlay/task_generator.py`
+- **Purpose**: Template-based task file generation
+- **Features**:
+  - Handlebars-like template processing
+  - Input validation and error handling
+  - Overwrite protection
+  - Template validation
+  - CLI command integration
+
+#### Key Methods
+- `generate_task(...)`: Generate new task file from template
+- `_process_template(content, context)`: Process Handlebars template
+- `validate_task_template()`: Validate template structure
+- `list_available_templates()`: List available templates
+
+#### Template Processing
+The system uses simple string replacement for Handlebars-like syntax:
+
+```python
+# Replace variables
+content = content.replace('{{variable}}', str(value))
+
+# Handle default values
+content = re.sub(r'\{\{([^}]+)\s*\|\s*default\([^)]+\)\}\}', r'[]', content)
+```
+
+### Usage Examples
+
+#### Basic Task Generation
+```bash
+# Generate a simple task
+cb generate-task --id "TASK-2025-09-07-F05" --title "New Feature"
+
+# Check generated task
+cat cb_docs/tasks/TASK-2025-09-07-F05.md
+```
+
+#### Advanced Task Generation
+```bash
+# Generate complex task with all options
+cb generate-task \
+  --id "TASK-2025-09-07-API" \
+  --title "Implement REST API" \
+  --description "Create RESTful API endpoints for user management" \
+  --owner "backend-team" \
+  --priority 9 \
+  --agent_type "backend" \
+  --tags "api" "backend" "rest" \
+  --acceptance-criteria "All endpoints work" "Tests pass" "Documentation complete" \
+  --abc-iteration \
+  --abc-target "src/api/" \
+  --abc-rounds 5
+```
+
+#### Programmatic Usage
+```python
+from builder.overlay.task_generator import TaskGenerator
+
+# Create generator
+generator = TaskGenerator()
+
+# Generate task
+success = generator.generate_task(
+    task_id="TASK-2025-09-07-F05",
+    title="New Feature",
+    description="Implement new feature",
+    owner="dev-team",
+    priority=8,
+    agent_type="backend",
+    tags=["feature", "backend"],
+    acceptance_criteria=["Feature works", "Tests pass"],
+    overwrite=True
+)
+```
+
+### Generated Task Structure
+
+Each generated task includes:
+
+#### Frontmatter
+- Complete metadata with all required fields
+- Proper YAML formatting
+- Template variable substitution
+
+#### Content Sections
+- **Description**: Task description and context
+- **5-Phase Workflow**: Standardized workflow structure
+- **Acceptance Criteria**: Specific, measurable criteria
+- **Implementation Details**: Placeholder for implementation notes
+- **Command to Execute**: Example commands for each phase
+- **Dependencies**: Task dependency list
+- **Notes**: Additional context and considerations
+
+#### Workflow Phases
+Each phase includes:
+- **Clear goals** and objectives
+- **Specific tasks** to complete
+- **Checkboxes** for progress tracking
+- **Examples** and guidance
+
+### Integration Points
+- **Task Index**: Generated tasks are automatically included in task index
+- **Command Generator**: Tasks can be converted to executable commands
+- **Orchestrator**: Tasks can be executed as part of workflows
+- **Documentation**: Tasks follow consistent documentation standards
+
 ### Next Steps
 
 After scaffolding is complete:
@@ -1714,5 +1924,6 @@ After scaffolding is complete:
 7. **Rule & Router**: Command aliases and @rules/ integration ✅
 8. **Per-Task Commands**: Individual command generation for each task ✅
 9. **Task Index Schema**: Canonical task index with comprehensive metadata ✅
-10. **State Management**: Implement state updates and persistence
-11. **Path Translation**: Use OverlayPaths for all new features
+10. **Template-Based Task Generation**: Generate task files from templates ✅
+11. **State Management**: Implement state updates and persistence
+12. **Path Translation**: Use OverlayPaths for all new features
