@@ -1,28 +1,41 @@
 {
-  "persona": "ai",
-  "planning_data": {
-    "features": [
-      "AI code generation",
-      "Intelligent analysis",
-      "Automated testing"
-    ],
-    "idea": "Intelligent code generation and project assistance",
-    "metrics": [
-      "Code generation accuracy",
-      "Development efficiency",
-      "Bug reduction"
-    ],
-    "problem": "Manual coding and project setup is inefficient",
-    "product": "AI-Powered Development Tool",
-    "team_size": "3-7 AI specialists",
-    "tech": [
-      "Machine learning",
-      "Python",
-      "AI frameworks"
-    ],
-    "timeline": "12-18 months",
-    "users": "AI researchers, developers, technical teams"
-  },
-  "status": "completed",
-  "timestamp": "2025-09-07T19:50:29.027081"
+  "assumptions": [
+    "Stakeholders will provide clear requirements",
+    "Team has project management experience",
+    "Budget is approved and stable"
+  ],
+  "budget": "High",
+  "decisions": [
+    "Use agile methodology",
+    "Implement iterative development",
+    "Focus on stakeholder communication"
+  ],
+  "key_features": [
+    "Planning tools",
+    "Progress tracking",
+    "Resource management",
+    "Reporting"
+  ],
+  "product_description": "Streamlined project planning and execution platform",
+  "product_name": "Project Management System",
+  "risks": [
+    "Scope creep",
+    "Resource availability",
+    "Stakeholder alignment"
+  ],
+  "success_metrics": [
+    "Project completion rate",
+    "Budget adherence",
+    "Timeline accuracy",
+    "Stakeholder satisfaction"
+  ],
+  "target_users": "Project managers, stakeholders, development teams",
+  "team_size": "5-10 team members",
+  "technical_requirements": [
+    "Web technologies",
+    "Database systems",
+    "Reporting tools",
+    "API integration"
+  ],
+  "timeline": "6-12 months"
 }

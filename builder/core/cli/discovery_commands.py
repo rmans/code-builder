@@ -356,3 +356,118 @@ def discover_regenerate(batch):
     """Regenerate discovery contexts - to be implemented."""
     click.echo(f"🔄 Regenerating discovery contexts - to be implemented")
     return 0
+
+
+@cli.command("discover:interview")
+@click.option("--persona", type=click.Choice(['dev', 'pm', 'ai']), default='dev', help="Interview persona")
+@click.option("--noninteractive", is_flag=True, help="Use defaults instead of prompts")
+@click.option("--output", help="Output directory for interview files")
+def discover_interview(persona, noninteractive, output):
+    """Conduct interactive interview for project planning."""
+    try:
+        from ...discovery.interview import DiscoveryInterview
+        import json
+        from pathlib import Path
+        
+        # Initialize interview
+        interview = DiscoveryInterview(question_set=persona)
+        
+        # Set output directory
+        if output:
+            output_dir = Path(output)
+        else:
+            # Use overlay paths if available
+            try:
+                from ...overlay.paths import OverlayPaths
+                overlay_paths = OverlayPaths()
+                output_dir = Path(overlay_paths.get_docs_dir()) / "planning"
+            except ImportError:
+                output_dir = Path("cb_docs") / "planning"
+        
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Conduct interview
+        click.echo(f"📋 Starting interview for {persona} persona...")
+        responses = interview.conduct_interactive(persona=persona, noninteractive=noninteractive)
+        
+        # Save interview.json
+        interview_file = output_dir / "interview.json"
+        with open(interview_file, 'w', encoding='utf-8') as f:
+            json.dump(responses, f, indent=2, sort_keys=True)
+        
+        # Create assumptions.md
+        assumptions_file = output_dir / "assumptions.md"
+        _create_assumptions_file(assumptions_file, responses)
+        
+        # Create decisions.md
+        decisions_file = output_dir / "decisions.md"
+        _create_decisions_file(decisions_file, responses)
+        
+        click.echo(f"✅ Interview complete!")
+        click.echo(f"📄 Interview responses: {interview_file}")
+        click.echo(f"📋 Assumptions: {assumptions_file}")
+        click.echo(f"🎯 Decisions: {decisions_file}")
+        
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        raise SystemExit(1)
+
+
+def _create_assumptions_file(file_path, responses):
+    """Create assumptions.md file from interview responses."""
+    content = f"""# Project Assumptions
+
+## Product Assumptions
+- **Product**: {responses.get('product_name', 'Unknown')}
+- **Description**: {responses.get('product_description', 'Not specified')}
+- **Target Users**: {responses.get('target_users', 'Not specified')}
+
+## Technical Assumptions
+- **Requirements**: {responses.get('technical_requirements', 'Not specified')}
+- **Timeline**: {responses.get('timeline', 'Not specified')}
+- **Team Size**: {responses.get('team_size', 'Not specified')}
+- **Budget**: {responses.get('budget', 'Not specified')}
+
+## Feature Assumptions
+- **Key Features**: {', '.join(responses.get('key_features', []))}
+- **Success Metrics**: {', '.join(responses.get('success_metrics', []))}
+
+## Risk Assumptions
+- **Identified Risks**: {', '.join(responses.get('risks', []))}
+
+## Generated Assumptions
+{chr(10).join(f"- {assumption}" for assumption in responses.get('assumptions', []))}
+
+*Generated on {responses.get('timestamp', 'Unknown')}*
+"""
+    
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+
+def _create_decisions_file(file_path, responses):
+    """Create decisions.md file from interview responses."""
+    content = f"""# Key Project Decisions
+
+## Product Decisions
+- **Product Name**: {responses.get('product_name', 'Unknown')}
+- **Target Users**: {responses.get('target_users', 'Not specified')}
+- **Core Features**: {', '.join(responses.get('key_features', []))}
+
+## Technical Decisions
+- **Technology Stack**: {responses.get('technical_requirements', 'Not specified')}
+- **Development Timeline**: {responses.get('timeline', 'Not specified')}
+- **Team Structure**: {responses.get('team_size', 'Not specified')}
+- **Budget Allocation**: {responses.get('budget', 'Not specified')}
+
+## Success Criteria
+- **Primary Metrics**: {', '.join(responses.get('success_metrics', []))}
+
+## Generated Decisions
+{chr(10).join(f"- {decision}" for decision in responses.get('decisions', []))}
+
+*Generated on {responses.get('timestamp', 'Unknown')}*
+"""
+    
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(content)

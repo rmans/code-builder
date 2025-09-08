@@ -748,6 +748,276 @@ The Agent-OS Bridge provides robust error handling:
 3. **File System Errors**: Graceful handling of permission and path issues
 4. **Analysis Dependencies**: Automatic analysis triggering when needed
 
+## Interactive Interview System
+
+### Overview
+The Interactive Interview System provides guided Q&A functionality for project planning, with TTY support and persona-based defaults. It generates structured planning documents through interactive or non-interactive modes.
+
+### Features
+
+#### TTY Interactive Support
+- **Interactive Mode**: Full TTY-based interview with prompts and defaults
+- **Non-Interactive Mode**: Deterministic defaults based on persona
+- **TTY Detection**: Automatic fallback to non-interactive in non-TTY environments
+
+#### Persona-Based Planning
+- **Developer (dev)**: Focus on technical implementation and code quality
+- **Project Manager (pm)**: Focus on project management and resource planning
+- **AI Specialist (ai)**: Focus on AI/ML capabilities and intelligent automation
+
+#### Structured Outputs
+- **interview.json**: Complete interview responses with metadata
+- **assumptions.md**: Generated project assumptions document
+- **decisions.md**: Key project decisions and criteria
+
+### Implementation
+
+#### Discovery Interview Module
+The interview functionality is implemented in `builder/discovery/interview.py`:
+
+```python
+class DiscoveryInterview:
+    def conduct_interactive(self, persona: str = "dev", noninteractive: bool = False) -> Dict[str, Any]:
+        """Conduct interactive interview with TTY support."""
+        # Implementation details...
+```
+
+#### CLI Command
+The interview is accessible via the `discover:interview` command:
+
+```bash
+# Interactive interview with developer persona
+cb discover:interview --persona dev
+
+# Non-interactive interview with project manager persona
+cb discover:interview --persona pm --noninteractive
+
+# Custom output directory
+cb discover:interview --persona ai --output /path/to/output
+```
+
+### Question Catalog
+
+#### Core Product Questions
+1. **Product Name**: What is the name of your product?
+2. **Product Description**: Describe your product in one sentence
+3. **Target Users**: Who are your target users?
+
+#### Feature Questions
+4. **Key Features**: List the main features (multi-line input)
+5. **Success Metrics**: Define success criteria (multi-line input)
+
+#### Technical Questions
+6. **Technical Requirements**: Technology stack and requirements
+7. **Timeline**: Project development timeline
+8. **Team Size**: Development team size
+9. **Budget**: Budget level (Low/Moderate/High/Very high)
+
+#### Generated Questions
+- **Assumptions**: Automatically generated based on responses
+- **Decisions**: Key decisions derived from input
+- **Risks**: Persona-specific risk factors
+
+### Persona Defaults
+
+#### Developer Persona
+```json
+{
+  "product_name": "Code Builder Project",
+  "product_description": "Automated code generation and project management tool",
+  "target_users": "Developers, technical teams, project managers",
+  "key_features": ["CLI interface", "Project analysis", "Automated workflows", "Code generation"],
+  "success_metrics": ["Development speed", "Code quality", "Project success rate", "Developer satisfaction"],
+  "technical_requirements": ["Python", "JavaScript", "Markdown", "YAML"],
+  "timeline": "3-6 months",
+  "team_size": "2-5 developers",
+  "budget": "Moderate"
+}
+```
+
+#### Project Manager Persona
+```json
+{
+  "product_name": "Project Management System",
+  "product_description": "Streamlined project planning and execution platform",
+  "target_users": "Project managers, stakeholders, development teams",
+  "key_features": ["Planning tools", "Progress tracking", "Resource management", "Reporting"],
+  "success_metrics": ["Project completion rate", "Budget adherence", "Timeline accuracy", "Stakeholder satisfaction"],
+  "technical_requirements": ["Web technologies", "Database systems", "Reporting tools", "API integration"],
+  "timeline": "6-12 months",
+  "team_size": "5-10 team members",
+  "budget": "High"
+}
+```
+
+#### AI Specialist Persona
+```json
+{
+  "product_name": "AI-Powered Development Tool",
+  "product_description": "Intelligent code generation and project assistance platform",
+  "target_users": "AI researchers, developers, technical teams",
+  "key_features": ["AI code generation", "Intelligent analysis", "Automated testing", "Machine learning"],
+  "success_metrics": ["Code generation accuracy", "Development efficiency", "Bug reduction", "AI model performance"],
+  "technical_requirements": ["Machine learning", "Python", "AI frameworks", "Data processing"],
+  "timeline": "12-18 months",
+  "team_size": "3-7 AI specialists",
+  "budget": "Very high"
+}
+```
+
+### Output Schema
+
+#### Interview JSON Structure
+```json
+{
+  "persona": "dev",
+  "timestamp": "2025-01-15T12:00:00Z",
+  "product_name": "My Project",
+  "product_description": "Project description",
+  "target_users": "Target user base",
+  "key_features": ["Feature 1", "Feature 2"],
+  "success_metrics": ["Metric 1", "Metric 2"],
+  "technical_requirements": "Tech stack",
+  "timeline": "Project timeline",
+  "team_size": "Team size",
+  "budget": "Budget level",
+  "assumptions": ["Generated assumption 1", "Generated assumption 2"],
+  "decisions": ["Decision 1", "Decision 2"],
+  "risks": ["Risk 1", "Risk 2"]
+}
+```
+
+#### Assumptions Document
+```markdown
+# Project Assumptions
+
+## Product Assumptions
+- **Product**: Project Name
+- **Description**: Project description
+- **Target Users**: Target user base
+
+## Technical Assumptions
+- **Requirements**: Technology requirements
+- **Timeline**: Development timeline
+- **Team Size**: Team structure
+- **Budget**: Budget allocation
+
+## Feature Assumptions
+- **Key Features**: Core functionality
+- **Success Metrics**: Success criteria
+
+## Risk Assumptions
+- **Identified Risks**: Known risk factors
+
+## Generated Assumptions
+- Assumption 1
+- Assumption 2
+```
+
+#### Decisions Document
+```markdown
+# Key Project Decisions
+
+## Product Decisions
+- **Product Name**: Project name
+- **Target Users**: User base
+- **Core Features**: Main functionality
+
+## Technical Decisions
+- **Technology Stack**: Tech choices
+- **Development Timeline**: Timeline
+- **Team Structure**: Team organization
+- **Budget Allocation**: Resource allocation
+
+## Success Criteria
+- **Primary Metrics**: Success measures
+
+## Generated Decisions
+- Decision 1
+- Decision 2
+```
+
+### Usage Examples
+
+#### Interactive Interview
+```bash
+# Start interactive interview
+cb discover:interview --persona dev
+
+# Example interaction:
+# What is the name of your product? [Code Builder Project]: My Awesome App
+# Describe your product in one sentence: [Automated code generation and project management tool]: A web app for task management
+# Who are your target users? [Developers, technical teams, project managers]: Small business owners
+# 
+# Key Features (press Enter when done):
+# Feature 1: User authentication
+# Feature 2: Task creation
+# Feature 3: 
+# 
+# Success Metrics (press Enter when done):
+# Metric 1: User engagement
+# Metric 2: Task completion rate
+# Metric 3: 
+```
+
+#### Non-Interactive Interview
+```bash
+# Use defaults for quick planning
+cb discover:interview --persona pm --noninteractive
+
+# Output:
+# 📋 Starting interview for pm persona...
+# ✅ Interview complete!
+# 📄 Interview responses: cb_docs/planning/interview.json
+# 📋 Assumptions: cb_docs/planning/assumptions.md
+# 🎯 Decisions: cb_docs/planning/decisions.md
+```
+
+#### Custom Output
+```bash
+# Specify custom output directory
+cb discover:interview --persona ai --output /path/to/planning
+
+# Files created:
+# /path/to/planning/interview.json
+# /path/to/planning/assumptions.md
+# /path/to/planning/decisions.md
+```
+
+### Integration Points
+
+#### Agent-OS Bridge
+The interview system integrates with the Agent-OS Bridge:
+- **`cb plan`** command uses interview functionality
+- **Persona mapping** between bridge and interview
+- **Output file generation** for agent consumption
+
+#### Discovery Engine
+- **Question sets** align with discovery analysis
+- **Output format** compatible with discovery reports
+- **Path resolution** uses OverlayPaths for consistency
+
+### Error Handling
+
+The interview system provides robust error handling:
+
+1. **TTY Detection**: Automatic fallback to non-interactive mode
+2. **Input Validation**: Graceful handling of empty responses
+3. **File System Errors**: Proper error messages for permission issues
+4. **Import Errors**: Clear messages when dependencies are missing
+
+### Testing
+
+#### Stability Testing
+- **Deterministic Output**: Same inputs produce identical outputs
+- **JSON Schema**: Consistent structure across runs
+- **File Generation**: Reliable file creation and content
+
+#### Persona Testing
+- **Default Values**: Each persona has appropriate defaults
+- **Response Generation**: Assumptions and decisions are contextually relevant
+- **Output Quality**: Generated documents are well-structured
+
 ### Next Steps
 
 After scaffolding is complete:
@@ -756,5 +1026,6 @@ After scaffolding is complete:
 3. **Template System**: Create command templates ✅
 4. **Discovery Engine**: Enhanced project analysis ✅
 5. **Agent-OS Bridge**: Agent command mapping ✅
-6. **State Management**: Implement state updates and persistence
-7. **Path Translation**: Use OverlayPaths for all new features
+6. **Interactive Interview**: TTY-based planning interviews ✅
+7. **State Management**: Implement state updates and persistence
+8. **Path Translation**: Use OverlayPaths for all new features

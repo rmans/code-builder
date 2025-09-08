@@ -7,6 +7,8 @@ gathering basic information about structure, dependencies, and context.
 
 import os
 import ast
+import json
+import sys
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
@@ -751,3 +753,203 @@ class DiscoveryInterview:
                 return answers[question_id]
         
         return None
+    
+    def conduct_interactive(self, persona: str = "dev", noninteractive: bool = False) -> Dict[str, Any]:
+        """Conduct interactive interview with TTY support.
+        
+        Args:
+            persona: Interview persona (dev, pm, ai)
+            noninteractive: Use defaults instead of prompts
+            
+        Returns:
+            Interview data dictionary
+        """
+        if noninteractive:
+            return self._get_persona_defaults(persona)
+        
+        # Check if we're in a TTY environment
+        if not sys.stdin.isatty():
+            print("⚠️  Not in TTY environment, using non-interactive mode")
+            return self._get_persona_defaults(persona)
+        
+        print(f"📋 Starting interactive interview for {persona} persona...")
+        print("Press Ctrl+C to cancel at any time\n")
+        
+        # Collect interactive responses
+        responses = self._collect_interactive_responses(persona)
+        
+        # Generate additional data
+        responses = self._generate_interview_data(responses, persona)
+        
+        return responses
+    
+    def _get_persona_defaults(self, persona: str) -> Dict[str, Any]:
+        """Get default responses for a specific persona."""
+        defaults = {
+            "dev": {
+                "product_name": "Code Builder Project",
+                "product_description": "Automated code generation and project management tool",
+                "target_users": "Developers, technical teams, project managers",
+                "key_features": ["CLI interface", "Project analysis", "Automated workflows", "Code generation"],
+                "success_metrics": ["Development speed", "Code quality", "Project success rate", "Developer satisfaction"],
+                "technical_requirements": "Python, JavaScript, Markdown, YAML",
+                "timeline": "3-6 months",
+                "team_size": "2-5 developers",
+                "budget": "Moderate",
+                "risks": ["Technical complexity", "Integration challenges", "User adoption"],
+                "assumptions": [
+                    "Users have technical background",
+                    "Project will be open source",
+                    "Focus on developer productivity"
+                ],
+                "decisions": [
+                    "Use Python for core implementation",
+                    "Implement CLI-first approach",
+                    "Focus on modular architecture"
+                ]
+            },
+            "pm": {
+                "product_name": "Project Management System",
+                "product_description": "Streamlined project planning and execution platform",
+                "target_users": "Project managers, stakeholders, development teams",
+                "key_features": ["Planning tools", "Progress tracking", "Resource management", "Reporting"],
+                "success_metrics": ["Project completion rate", "Budget adherence", "Timeline accuracy", "Stakeholder satisfaction"],
+                "technical_requirements": "Web technologies, Database systems, Reporting tools, API integration",
+                "timeline": "6-12 months",
+                "team_size": "5-10 team members",
+                "budget": "High",
+                "risks": ["Scope creep", "Resource availability", "Stakeholder alignment"],
+                "assumptions": [
+                    "Stakeholders will provide clear requirements",
+                    "Team has project management experience",
+                    "Budget is approved and stable"
+                ],
+                "decisions": [
+                    "Use agile methodology",
+                    "Implement iterative development",
+                    "Focus on stakeholder communication"
+                ]
+            },
+            "ai": {
+                "product_name": "AI-Powered Development Tool",
+                "product_description": "Intelligent code generation and project assistance platform",
+                "target_users": "AI researchers, developers, technical teams",
+                "key_features": ["AI code generation", "Intelligent analysis", "Automated testing", "Machine learning"],
+                "success_metrics": ["Code generation accuracy", "Development efficiency", "Bug reduction", "AI model performance"],
+                "technical_requirements": "Machine learning, Python, AI frameworks, Data processing",
+                "timeline": "12-18 months",
+                "team_size": "3-7 AI specialists",
+                "budget": "Very high",
+                "risks": ["AI model complexity", "Data quality", "Computational resources"],
+                "assumptions": [
+                    "AI models will improve over time",
+                    "Sufficient training data available",
+                    "Team has AI/ML expertise"
+                ],
+                "decisions": [
+                    "Use transformer-based models",
+                    "Implement continuous learning",
+                    "Focus on code quality metrics"
+                ]
+            }
+        }
+        
+        data = defaults.get(persona, defaults["dev"]).copy()
+        data["persona"] = persona
+        return data
+    
+    def _collect_interactive_responses(self, persona: str) -> Dict[str, Any]:
+        """Collect responses through interactive prompts."""
+        responses = {"persona": persona}
+        
+        # Core product questions
+        responses["product_name"] = self._prompt("What is the name of your product?", 
+                                               default=self._get_persona_defaults(persona)["product_name"])
+        responses["product_description"] = self._prompt("Describe your product in one sentence:",
+                                                      default=self._get_persona_defaults(persona)["product_description"])
+        responses["target_users"] = self._prompt("Who are your target users?",
+                                               default=self._get_persona_defaults(persona)["target_users"])
+        
+        # Features
+        print("\n📋 Key Features (press Enter when done):")
+        features = []
+        i = 1
+        while True:
+            feature = self._prompt(f"Feature {i}:", default="")
+            if not feature:
+                break
+            features.append(feature)
+            i += 1
+        
+        if not features:
+            features = self._get_persona_defaults(persona)["key_features"]
+        responses["key_features"] = features
+        
+        # Success metrics
+        print("\n📊 Success Metrics (press Enter when done):")
+        metrics = []
+        i = 1
+        while True:
+            metric = self._prompt(f"Metric {i}:", default="")
+            if not metric:
+                break
+            metrics.append(metric)
+            i += 1
+        
+        if not metrics:
+            metrics = self._get_persona_defaults(persona)["success_metrics"]
+        responses["success_metrics"] = metrics
+        
+        # Technical requirements
+        responses["technical_requirements"] = self._prompt("Technical requirements (comma-separated):",
+                                                          default=self._get_persona_defaults(persona)["technical_requirements"])
+        responses["timeline"] = self._prompt("Project timeline:",
+                                           default=self._get_persona_defaults(persona)["timeline"])
+        responses["team_size"] = self._prompt("Team size:",
+                                            default=self._get_persona_defaults(persona)["team_size"])
+        responses["budget"] = self._prompt("Budget level (Low/Moderate/High/Very high):",
+                                         default=self._get_persona_defaults(persona)["budget"])
+        
+        return responses
+    
+    def _prompt(self, question: str, default: str = "") -> str:
+        """Prompt user for input with default value."""
+        if default:
+            response = input(f"{question} [{default}]: ").strip()
+            return response if response else default
+        else:
+            return input(f"{question}: ").strip()
+    
+    def _generate_interview_data(self, responses: Dict[str, Any], persona: str) -> Dict[str, Any]:
+        """Generate additional interview data based on responses."""
+        # Ensure persona is included
+        responses["persona"] = persona
+        
+        # Add timestamp
+        from datetime import datetime
+        responses["timestamp"] = datetime.now().isoformat()
+        
+        # Generate assumptions based on responses
+        assumptions = [
+            f"Product '{responses['product_name']}' will meet user needs",
+            f"Target users '{responses['target_users']}' will adopt the product",
+            f"Technical requirements '{responses['technical_requirements']}' are feasible",
+            f"Timeline of '{responses['timeline']}' is realistic"
+        ]
+        responses["assumptions"] = assumptions
+        
+        # Generate decisions based on responses
+        decisions = [
+            f"Product name: {responses['product_name']}",
+            f"Target users: {responses['target_users']}",
+            f"Technical stack: {responses['technical_requirements']}",
+            f"Timeline: {responses['timeline']}",
+            f"Team size: {responses['team_size']}"
+        ]
+        responses["decisions"] = decisions
+        
+        # Add persona-specific data
+        persona_defaults = self._get_persona_defaults(persona)
+        responses["risks"] = persona_defaults["risks"]
+        
+        return responses
