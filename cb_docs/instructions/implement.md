@@ -1398,6 +1398,140 @@ cb create-context
 - **Documentation**: Comprehensive command documentation
 - **Usage Examples**: Clear examples and flag descriptions
 
+## Per-Task Command Generator
+
+### Overview
+The Per-Task Command Generator automatically creates individual command files and @rules/ files for each task, enabling per-task execution through both CLI commands and Cursor @rules/ integration.
+
+### Features
+
+#### Command Generation
+- **Individual Commands**: Creates `.cb/commands/execute-TASK-###.md` for each task
+- **@rules/ Integration**: Generates `.cursor/rules/execute-TASK-###.md` for Cursor
+- **Task Metadata**: Extracts and uses task metadata from frontmatter
+- **Consistent Structure**: All generated commands follow the same format
+
+#### Task Processing
+- **Automatic Discovery**: Reads tasks from `cb_docs/tasks/index.json`
+- **Metadata Extraction**: Parses task frontmatter for command details
+- **Dependency Mapping**: Includes task dependencies in command metadata
+- **Tag Integration**: Uses task tags for command categorization
+
+### Usage
+
+#### CLI Command
+```bash
+# Generate commands for all tasks
+cb generate-task-commands
+
+# Force regeneration of existing commands
+cb generate-task-commands --force
+```
+
+#### Programmatic Usage
+```python
+from builder.overlay.command_generator import generate_task_commands
+
+# Generate commands for all tasks
+results = generate_task_commands()
+
+# Generate commands for specific tasks
+results = generate_task_commands(tasks_data)
+```
+
+### Generated Command Structure
+
+#### Command Files (.cb/commands/)
+Each task generates a command file with:
+- **Frontmatter**: Task metadata and command details
+- **Description**: Task description and purpose
+- **Usage**: Command syntax and @rules/ integration
+- **Outputs**: Expected outputs and artifacts
+- **Flags**: Command-line options for task execution
+- **Examples**: Usage examples with different flags
+- **Task Details**: Full task content for reference
+
+#### @rules/ Files (.cursor/rules/)
+Each task generates a @rules/ file with:
+- **Same Structure**: Identical to command files
+- **Cursor Integration**: Ready for Cursor agent usage
+- **Command Aliases**: Both CLI and @rules/ usage patterns
+
+### Command Features
+
+#### Task Execution Flags
+- `--phase PHASE` - Execute specific phase only
+- `--skip-phases PHASES` - Skip specific phases (comma-separated)
+- `--dry-run` - Show execution plan without running
+- `--interactive` - Interactive mode with confirmations
+- `--force` - Force execution even if dependencies not met
+
+#### Task Lifecycle Support
+Each generated command supports the 5-phase task lifecycle:
+1. **Implementation** - Core implementation work
+2. **Testing** - Testing and validation
+3. **Documentation** - Documentation updates
+4. **Cleanup** - Code cleanup and optimization
+5. **Commit** - Git commit and finalization
+
+### Integration Points
+
+#### CLI Integration
+- **Command Registration**: Commands are registered with the main CLI
+- **Help System**: Full help and documentation for each command
+- **Error Handling**: Consistent error reporting and exit codes
+
+#### Cursor Integration
+- **@rules/ Files**: Each task has a corresponding @rules/ file
+- **Agent Usage**: Cursor agents can execute tasks using @rules/ syntax
+- **Documentation**: Comprehensive task documentation for agents
+
+### Implementation Details
+
+#### Command Generator Module
+- **Location**: `builder/overlay/command_generator.py`
+- **Main Function**: `generate_task_commands(tasks_data=None)`
+- **CLI Command**: `cb generate-task-commands`
+- **Path Resolution**: Uses OverlayPaths for consistent path handling
+
+#### Task Processing
+- **Input**: Tasks from `cb_docs/tasks/index.json`
+- **Metadata**: Extracted from task frontmatter
+- **Output**: Command and @rules/ files for each task
+- **Idempotent**: Safe to run multiple times
+
+### Usage Examples
+
+#### Basic Command Generation
+```bash
+# Generate all task commands
+cb generate-task-commands
+
+# Check generated commands
+ls .cb/commands/execute-TASK-*
+
+# Check generated @rules/
+ls .cursor/rules/execute-TASK-*
+```
+
+#### Task Execution
+```bash
+# Execute a specific task
+cb execute-TASK-2025-09-07-F01
+
+# Execute with specific phase
+cb execute-TASK-2025-09-07-F01 --phase implementation
+
+# Dry run
+cb execute-TASK-2025-09-07-F01 --dry-run
+```
+
+#### Cursor Integration
+```markdown
+# Use in Cursor with @rules/
+@rules/execute-TASK-2025-09-07-F01
+```
+
 ### Next Steps
 
 After scaffolding is complete:
@@ -1408,5 +1542,6 @@ After scaffolding is complete:
 5. **Agent-OS Bridge**: Agent command mapping ✅
 6. **Interactive Interview**: TTY-based planning interviews ✅
 7. **Rule & Router**: Command aliases and @rules/ integration ✅
-8. **State Management**: Implement state updates and persistence
-9. **Path Translation**: Use OverlayPaths for all new features
+8. **Per-Task Commands**: Individual command generation for each task ✅
+9. **State Management**: Implement state updates and persistence
+10. **Path Translation**: Use OverlayPaths for all new features

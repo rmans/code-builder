@@ -106,6 +106,10 @@ class OverlayPaths:
         """Get the templates directory."""
         return str(self._cb_root / 'cb_docs' / 'templates')
     
+    def commands_dir(self) -> str:
+        """Get commands directory path."""
+        return str(self._cb_root / '.cb' / 'commands')
+    
     def adrs_dir(self) -> str:
         """Get the ADRs directory."""
         return str(self._cb_root / 'cb_docs' / 'adrs')

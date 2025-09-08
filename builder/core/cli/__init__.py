@@ -29,6 +29,9 @@ from ...overlay import simple_router
 # Import agent-OS bridge for agent commands
 from ...overlay import agent_os_bridge
 
+# Import command generator for task commands
+from ...overlay import command_generator
+
 __all__ = ['cli']
 
 if __name__ == "__main__":
