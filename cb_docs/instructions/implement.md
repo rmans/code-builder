@@ -1287,6 +1287,117 @@ Templates automatically use project context, but can be customized by:
 - Modifying template variables
 - Regenerating commands
 
+## Rule & Router Integration
+
+### Overview
+The Rule & Router system provides command aliases and @rules/ integration for Code Builder commands. This enables natural language command usage and Cursor integration through @rules/ files.
+
+### Command Mapping
+
+#### Simple Router Commands
+The simple router provides short aliases for common commands:
+
+- `cb analyze` → `discover:new` - Project analysis
+- `cb plan` → `discover:analyze` - Project planning
+- `cb create-context` → `ctx:build` - Context generation
+- `cb status` → `orchestrator:status` - Project status
+- `cb commands` → `commands:list` - List commands
+- `cb help` → `commands:list` - Show help
+
+#### @rules/ Integration
+Commands are automatically exposed as @rules/ files for Cursor integration:
+
+- `@rules/analyze-project` - Project analysis command
+- `@rules/plan-project` - Project planning command
+- `@rules/create-context` - Context generation command
+
+### Create Context Command
+
+#### Usage
+```bash
+# Generate all context documents
+cb create-context
+
+# Generate specific sections
+cb create-context --sections prd,arch
+
+# Overwrite existing files
+cb create-context --overwrite
+
+# Use specific input sources
+cb create-context --from discovery --from interview
+```
+
+#### Flags
+- `--sections SECTIONS` - Specific sections to generate (prd,arch,int,impl,exec,task)
+- `--overwrite` - Overwrite existing files
+- `--from SOURCES` - Input sources (discovery,interview)
+
+#### Outputs
+- `cb_docs/prd/PRD-{date}-{title}.md` - Product Requirements Document
+- `cb_docs/arch/ARCH-{date}-{title}.md` - Architecture Document
+- `cb_docs/integrations/INT-{date}-{title}.md` - Integration Plan
+- `cb_docs/impl/IMPL-{date}-{title}.md` - Implementation Roadmap
+- `cb_docs/exec/EXEC-{date}-{title}.md` - Execution Plan
+- `cb_docs/tasks/TASK-{date}-F{num}.md` - Generated Tasks
+- `cb_docs/pack_context.json` - Context Pack Metadata
+- `cb_docs/tasks/index.json` - Task index
+
+#### Examples
+```bash
+# Basic context creation
+cb create-context
+
+# PRD and Architecture only
+cb create-context --sections prd,arch --overwrite
+
+# Use only discovery data
+cb create-context --from discovery --sections prd
+
+# Full context with all sections
+cb create-context --overwrite --from discovery --from interview
+```
+
+### Router Implementation
+
+#### Command Registration
+Commands are registered using Click decorators in the simple router:
+
+```python
+@cli.command("create-context")
+@click.option("--sections", multiple=True, ...)
+@click.option("--overwrite", is_flag=True, ...)
+def create_context_command(sections, overwrite, from_sources):
+    # Command implementation
+```
+
+#### Rule File Generation
+@rules/ files are automatically generated with command documentation:
+
+```markdown
+---
+id: create-context
+title: Create Context
+description: Generate comprehensive project context
+---
+# Command: Create Context
+## Usage
+cb create-context
+@rules/create-context
+```
+
+### Integration Points
+
+#### CLI Integration
+- **Command Aliases**: Short commands map to full implementations
+- **Help System**: Integrated help and documentation
+- **Error Handling**: Consistent error reporting and exit codes
+
+#### Cursor Integration
+- **@rules/ Files**: Commands exposed as Cursor rules
+- **Documentation**: Comprehensive command documentation
+- **Usage Examples**: Clear examples and flag descriptions
+
 ### Next Steps
 
 After scaffolding is complete:
@@ -1296,5 +1407,6 @@ After scaffolding is complete:
 4. **Discovery Engine**: Enhanced project analysis ✅
 5. **Agent-OS Bridge**: Agent command mapping ✅
 6. **Interactive Interview**: TTY-based planning interviews ✅
-7. **State Management**: Implement state updates and persistence
-8. **Path Translation**: Use OverlayPaths for all new features
+7. **Rule & Router**: Command aliases and @rules/ integration ✅
+8. **State Management**: Implement state updates and persistence
+9. **Path Translation**: Use OverlayPaths for all new features
