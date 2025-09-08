@@ -2125,6 +2125,191 @@ cb orchestrator:validate
 - `0`: Success (all tasks completed)
 - `1`: Failure (tasks failed or errors detected)
 
+## Execute-Tasks Command & Rule
+
+The Execute-Tasks Command & Rule provides complete integration of the orchestrator functionality through command definitions and Cursor agent rules.
+
+### Overview
+
+The command and rule system enables:
+
+- **Command Definition**: Complete command specification with flags and outputs
+- **Cursor Integration**: @rules/ integration for agent interaction
+- **Documentation**: Comprehensive usage examples and flag descriptions
+- **Agent Instructions**: Clear guidance for AI agents using the command
+- **Integration**: Seamless integration with the orchestrator system
+
+### Command Definition
+
+#### Command File (`.cb/commands/execute-tasks.md`)
+Complete command specification including:
+
+```yaml
+---
+id: execute-tasks
+title: Execute Tasks
+description: Execute tasks with dependency management and parallelism control
+status: active
+created: 2025-09-08
+updated: 2025-09-08
+owner: system
+domain: orchestration
+priority: 8
+agent_type: backend
+tags: [orchestration, tasks, execution, dependencies]
+flags:
+  - name: filter
+    type: multiple
+    description: Filter tasks by tags
+    example: --filter backend --filter api
+  - name: priority
+    type: integer
+    description: Minimum priority threshold
+    example: --priority 8
+  - name: max-parallel
+    type: integer
+    description: Maximum parallel tasks
+    default: 1
+    example: --max-parallel 3
+  - name: dry-run
+    type: flag
+    description: Show execution plan without running
+    example: --dry-run
+  - name: tasks
+    type: multiple
+    description: Specific task IDs to execute
+    example: --tasks TASK-2025-09-07-F01 TASK-2025-09-07-F02
+  - name: output-dir
+    type: string
+    description: Output directory for results
+    default: cb_docs/tasks/results
+    example: --output-dir results/
+outputs:
+  - type: directory
+    path: cb_docs/tasks/results
+    description: Task execution results and summary
+  - type: file
+    path: cb_docs/tasks/results/summary.md
+    description: Aggregated execution summary
+  - type: files
+    path: cb_docs/tasks/results/*.json
+    description: Individual task results
+---
+```
+
+#### Cursor Rule File (`.cursor/rules/execute-tasks.md`)
+Agent-friendly rule specification including:
+
+- **Agent Instructions**: Clear guidance for AI agents
+- **Usage Examples**: Practical examples for different scenarios
+- **Flag Documentation**: Complete flag reference
+- **Output Descriptions**: Detailed output file descriptions
+- **Error Handling**: Error scenarios and handling guidance
+
+### Command Features
+
+#### Flag Support
+- **Multiple Values**: Support for multiple filter and task flags
+- **Type Validation**: Proper type checking for integer and string flags
+- **Default Values**: Sensible defaults for optional flags
+- **Examples**: Clear examples for each flag
+
+#### Output Specification
+- **Directory Outputs**: Results directory specification
+- **File Outputs**: Individual result files and summary
+- **Path Documentation**: Clear paths for all outputs
+- **Description**: Detailed descriptions for each output
+
+#### Agent Integration
+- **Clear Instructions**: Step-by-step guidance for agents
+- **Error Handling**: Proper error handling instructions
+- **Best Practices**: Recommended usage patterns
+- **Integration Notes**: How to work with other commands
+
+### Usage Examples
+
+#### Basic Command Usage
+```bash
+# Execute all tasks
+cb execute-tasks
+
+# Dry run to see execution plan
+cb execute-tasks --dry-run
+```
+
+#### Filtered Execution
+```bash
+# High priority tasks only
+cb execute-tasks --priority 8
+
+# Backend tasks only
+cb execute-tasks --filter backend
+
+# Specific tasks
+cb execute-tasks --tasks TASK-2025-09-07-F01 TASK-2025-09-07-F02
+```
+
+#### Parallel Execution
+```bash
+# Run up to 3 tasks in parallel
+cb execute-tasks --max-parallel 3
+
+# Dry run with parallelism
+cb execute-tasks --dry-run --max-parallel 3
+```
+
+#### Cursor Agent Usage
+```markdown
+# Use in Cursor with @rules/
+@rules/execute-tasks
+
+# With specific flags
+@rules/execute-tasks --priority 8 --dry-run
+```
+
+### Implementation Details
+
+#### Command Definition Structure
+- **Metadata**: Complete command metadata and classification
+- **Flags**: Detailed flag specifications with types and examples
+- **Outputs**: Comprehensive output file and directory specifications
+- **Documentation**: Complete usage documentation and examples
+
+#### Cursor Rule Structure
+- **Agent Instructions**: Clear guidance for AI agents
+- **Usage Examples**: Practical examples for different scenarios
+- **Flag Reference**: Complete flag documentation
+- **Error Handling**: Error scenarios and handling guidance
+
+#### Integration Points
+- **Orchestrator**: Direct integration with orchestrator system
+- **Command System**: Full integration with CLI command system
+- **Rule System**: Complete @rules/ integration for Cursor
+- **Documentation**: Comprehensive documentation for users and agents
+
+### Generated Files
+
+#### Command Definition
+- `.cb/commands/execute-tasks.md` - Complete command specification
+- Includes all flags, outputs, and usage examples
+- Provides comprehensive documentation for users
+
+#### Cursor Rule
+- `.cursor/rules/execute-tasks.md` - Agent-friendly rule specification
+- Includes agent instructions and usage guidance
+- Provides clear examples and error handling
+
+### Agent Instructions
+
+When using this command, agents should:
+
+1. **Always start with dry-run** to understand the execution plan
+2. **Use appropriate filters** to focus on relevant tasks
+3. **Set reasonable parallelism** based on system resources
+4. **Monitor execution progress** and handle failures gracefully
+5. **Review results** in both individual JSON files and summary report
+6. **Use exit codes** to determine success/failure in scripts
+
 ### Next Steps
 
 After scaffolding is complete:
@@ -2139,5 +2324,6 @@ After scaffolding is complete:
 9. **Task Index Schema**: Canonical task index with comprehensive metadata ✅
 10. **Template-Based Task Generation**: Generate task files from templates ✅
 11. **Execute-Tasks Orchestrator**: Task execution with dependency management ✅
-12. **State Management**: Implement state updates and persistence
-13. **Path Translation**: Use OverlayPaths for all new features
+12. **Execute-Tasks Command & Rule**: Command and @rules/ integration ✅
+13. **State Management**: Implement state updates and persistence
+14. **Path Translation**: Use OverlayPaths for all new features
