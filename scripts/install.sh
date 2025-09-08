@@ -45,6 +45,12 @@ setup_commands() {
         echo "   📋 Copying templates from .cb/builder-docs/templates/commands/ to .cb/engine/templates/commands/"
         cp .cb/builder-docs/templates/commands/*.md .cb/engine/templates/commands/ 2>/dev/null || true
     fi
+
+    # Copy rules from .cb/builder-docs/rules/ to .cursor/rules/
+    if [ -d ".cb/builder-docs/rules" ]; then
+        echo "   📋 Copying rules from .cb/builder-docs/rules/ to .cursor/rules/"
+        cp .cb/builder-docs/rules/*.md .cursor/rules/ 2>/dev/null || true
+    fi
     
     # Create basic command files in .cb/commands/ if none exist
     echo "   📝 Creating command files..."
@@ -195,8 +201,8 @@ if [ -n "$PROJECT_RULES" ]; then
     echo "" >> .cb/.cursor/rules/merged_rules.md
     
     # Add Code Builder rules
-    if [ -d ".cb/builder-docs/rules" ]; then
-        find .cb/builder-docs/rules -name "*.md" -exec echo "### {}" \; -exec cat {} \; >> .cb/.cursor/rules/merged_rules.md
+    if [ -d ".cursor/rules" ]; then
+        find .cursor/rules -name "*.md" -exec echo "### {}" \; -exec cat {} \; >> .cb/.cursor/rules/merged_rules.md
     fi
     
     echo "" >> .cb/.cursor/rules/merged_rules.md
@@ -204,9 +210,9 @@ if [ -n "$PROJECT_RULES" ]; then
     echo "" >> .cb/.cursor/rules/merged_rules.md
     
     # Add guardrails
-    if [ -f ".cb/builder-docs/rules/guardrails.json" ]; then
+    if [ -f ".cursor/rules/guardrails.json" ]; then
         echo "Guardrails configuration:" >> .cb/.cursor/rules/merged_rules.md
-        cat .cb/builder-docs/rules/guardrails.json >> .cb/.cursor/rules/merged_rules.md
+        cat .cursor/rules/guardrails.json >> .cb/.cursor/rules/merged_rules.md
     fi
     
     echo "   ✅ Rules merged successfully"
@@ -215,8 +221,8 @@ else
     echo "   📝 Using Code Builder rules only"
     
     # Copy Code Builder rules directly
-    if [ -d ".cb/builder-docs/rules" ]; then
-        cp -r .cb/builder-docs/rules/* .cb/.cursor/rules/ 2>/dev/null || true
+    if [ -d ".cursor/rules" ]; then
+        cp -r .cursor/rules/* .cb/.cursor/rules/ 2>/dev/null || true
     fi
 fi
 

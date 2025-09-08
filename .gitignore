@@ -76,5 +76,8 @@ dist/**/*.cjs
 !eslint.config.js
 !vitest.config.ts
 !scripts/**/*.js
+
+# Code Builder cache and local workspace
 .cb/
 .cb/*
+.cursor/rules/
